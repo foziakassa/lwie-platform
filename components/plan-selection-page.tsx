@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from "react"
@@ -83,15 +82,14 @@ export default function PlanSelectionPage() {
           <PostCounter />
         </div>
 
-
-<div className="grid md:grid-cols-3 gap-6 mb-10">
+        <div className="grid md:grid-cols-3 gap-6 mb-10">
           {allPlans.map((plan) => (
             <Card
               key={plan.id}
-              className={`relative overflow-hidden transition-all${
+              className={`relative overflow-hidden transition-all ${
                 selectedPlan === plan.id
                   ? "border-teal-500 border-2 shadow-lg"
-                  : "border-gray-200 hover:border-teal-300"
+                  : "border-gray-200 hover:border-teal-300 "
               }`}
             >
               {plan.isPopular && (
@@ -119,7 +117,11 @@ export default function PlanSelectionPage() {
               <CardFooter>
                 <Button
                   variant={selectedPlan === plan.id ? "default" : "outline"}
-                  className={`w-full ${selectedPlan === plan.id ? "bg-teal-500 hover:bg-teal-600" : "text-teal-500 border-teal-500 hover:bg-teal-50"}`}
+                  className={`w-full ${
+                    selectedPlan === plan.id
+                      ? "bg-teal-700 hover:bg-teal-600 text-white"
+                      : "text-teal-500 border-teal-500 hover:bg-teal-50"
+                  }`}
                   onClick={() => setSelectedPlan(plan.id)}
                 >
                   {selectedPlan === plan.id ? "Selected" : "Select Plan"}
@@ -131,7 +133,7 @@ export default function PlanSelectionPage() {
 
         <div className="flex justify-center">
           <Button
-            className="bg-teal-500 hover:bg-teal-600 px-8 py-6 text-lg"
+            className="bg-teal-600 hover:bg-teal-700 px-8 py-6 text-lg text-white"
             onClick={handleContinue}
             disabled={!selectedPlan || isProcessing}
           >

@@ -55,6 +55,7 @@
     "framer-motion": "latest",
     "input-otp": "1.4.1",
     "jose": "latest",
+    "js-cookie": "^3.0.5",
     "lucide-react": "^0.454.0",
     "next": "15.1.0",
     "next-auth": "latest",
@@ -66,6 +67,7 @@
     "react-day-picker": "8.10.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "latest",
+    "react-hot-toast": "^2.5.2",
     "react-resizable-panels": "^2.1.7",
     "react-webcam": "^7.2.0",
     "recharts": "2.15.0",
@@ -79,6 +81,7 @@
     "zod": "latest"
   },
   "devDependencies": {
+    "@types/js-cookie": "^3.0.6",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

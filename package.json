@@ -55,6 +55,7 @@
     "framer-motion": "latest",
     "input-otp": "1.4.1",
     "jose": "latest",
+    "js-cookie": "^3.0.5",
     "lucide-react": "^0.454.0",
     "next": "15.1.0",
     "next-auth": "latest",
@@ -80,6 +81,7 @@
     "zod": "latest"
   },
   "devDependencies": {
+    "@types/js-cookie": "^3.0.6",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

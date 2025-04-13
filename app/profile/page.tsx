@@ -14,31 +14,32 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Camera, Edit, LogOut, Mail, MapPin, Phone, User, Calendar, Package, Repeat } from "lucide-react"
-
+import Cookies from 'js-cookie';
 export default function ProfilePage() {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
 
   // Mock user data
-  const userData = {
-    name: "John Doe",
-    username: "johndoe123",
-    email: "john.doe@example.com",
-    phone: "+251 912 345 678",
-    location: "Addis Ababa, Ethiopia",
-    bio: "Passionate about swapping items and finding treasures. I love vintage cameras, books, and tech gadgets.",
-    memberSince: "January 2023",
-    itemsListed: 12,
-    successfulSwaps: 8,
-  }
+  const userInfoStr = Cookies.get('userData');
+
+    let userInfo = null;
+
+    if (userInfoStr) {
+        try {
+            userInfo = JSON.parse(userInfoStr); // Parse the string back to an object
+        } catch (error) {
+            console.error("Failed to parse user info:", error);
+        }
+    }
 
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn")
-    router.push("/")
+    router.push("/login")
   }
 
   return (
     <div className="min-h-screen bg-[#f9fafb] dark:bg-[#1f2937] py-8"> 
+     {userInfo ? (
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Cover Image and Profile Section */}
         <div className="relative mb-8">
@@ -47,15 +48,15 @@ export default function ProfilePage() {
           <div className="flex flex-col md:flex-row items-start md:items-end gap-4 -mt-16 md:-mt-12 px-4">
             <div>
               <Avatar className="h-32 w-32 border-4 border-white shadow-lg bg-gradient-to-br from-teal-500 to-emerald-500 text-white hover:from-teal-600 hover:to-emerald-600 transition-all duration-300">
-                <AvatarFallback className="text-4xl font-bold">{userData.name.charAt(0)}</AvatarFallback>
+                <AvatarFallback className="text-4xl font-bold">{userInfo.firstName}</AvatarFallback>
               </Avatar>
             </div>
 
             <div className="flex-1 pb-4">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold">{userData.name}</h1>
-                  <p className="text-gray-500 dark:text-gray-400">@{userData.username}</p>
+                  <h1 className="text-2xl md:text-3xl font-bold">{userInfo.lastName}</h1>
+                  <p className="text-gray-500 dark:text-gray-400">@{userInfo.email}</p>
                 </div>
                 <div className="flex items-center gap-2 mt-2 md:mt-0">
                   <Button
@@ -93,7 +94,7 @@ export default function ProfilePage() {
                   <User className="h-5 w-5 text-teal-500 mt-0.5" />
                   <div>
                     <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Bio</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{userData.bio}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{userInfo.bio}</p>
                   </div>
                 </div>
 
@@ -101,7 +102,7 @@ export default function ProfilePage() {
                   <Mail className="h-5 w-5 text-teal-500" />
                   <div>
                     <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Email</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{userData.email}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{userInfo.email}</p>
                   </div>
                 </div>
 
@@ -109,7 +110,7 @@ export default function ProfilePage() {
                   <Phone className="h-5 w-5 text-teal-500" />
                   <div>
                     <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Phone</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{userData.phone}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{userInfo.phone}</p>
                   </div>
                 </div>
 
@@ -117,7 +118,7 @@ export default function ProfilePage() {
                   <MapPin className="h-5 w-5 text-teal-500" />
                   <div>
                     <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Location</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{userData.location}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{userInfo.location}</p>
                   </div>
                 </div>
               </CardContent>
@@ -133,7 +134,7 @@ export default function ProfilePage() {
                     <Calendar className="h-4 w-4 text-teal-500" />
                     <span className="text-sm text-gray-700 dark:text-gray-300">Member Since</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{userData.memberSince}</span>
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{userInfo.memberSince}</span>
                 </div>
                 <Separator className="bg-gray-200 dark:bg-gray-700" />
                 <div className="flex items-center justify-between">
@@ -141,7 +142,7 @@ export default function ProfilePage() {
                     <Package className="h-4 w-4 text-teal-500" />
                     <span className="text-sm text-gray-700 dark:text-gray-300">Items Listed</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{userData.itemsListed}</span>
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{userInfo.itemsListed}</span>
                 </div>
                 <Separator className="bg-gray-200 dark:bg-gray-700" />
                 <div className="flex items-center justify-between">
@@ -149,7 +150,7 @@ export default function ProfilePage() {
                     <Repeat className="h-4 w-4 text-teal-500" />
                     <span className="text-sm text-gray-700 dark:text-gray-300">Successful Swaps</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{userData.successfulSwaps}</span>
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{userInfo.successfulSwaps}</span>
                 </div>
               </CardContent>
             </Card>
@@ -279,7 +280,7 @@ export default function ProfilePage() {
                         </Label>
                         <Input
                           id="name"
-                          defaultValue={userData.name}
+                          defaultValue={userInfo.firstName + " " + userInfo.lastName}
                           className="border-gray-300 focus:border-teal-500 focus:ring-teal-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                         />
                       </div>
@@ -289,7 +290,7 @@ export default function ProfilePage() {
                         </Label>
                         <Input
                           id="username"
-                          defaultValue={userData.username}
+                          defaultValue={userInfo.username}
                           className="border-gray-300 focus:border-teal-500 focus:ring-teal-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                         />
                       </div>
@@ -300,7 +301,7 @@ export default function ProfilePage() {
                         <Input
                           id="email"
                           type="email"
-                          defaultValue={userData.email}
+                          defaultValue={userInfo.email}
                           className="border-gray-300 focus:border-teal-500 focus:ring-teal-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                         />
                       </div>
@@ -310,7 +311,7 @@ export default function ProfilePage() {
                         </Label>
                         <Input
                           id="phone"
-                          defaultValue={userData.phone}
+                          defaultValue={userInfo.phone}
                           className="border-gray-300 focus:border-teal-500 focus:ring-teal-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                         />
                       </div>
@@ -322,7 +323,7 @@ export default function ProfilePage() {
                       </Label>
                       <Textarea
                         id="bio"
-                        defaultValue={userData.bio}
+                        defaultValue={userInfo.bio}
                         rows={4}
                         className="border-gray-300 focus:border-teal-500 focus:ring-teal-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                       />
@@ -334,7 +335,7 @@ export default function ProfilePage() {
                       </Label>
                       <Input
                         id="location"
-                        defaultValue={userData.location}
+                        defaultValue={userInfo.location}
                         className="border-gray-300 focus:border-teal-500 focus:ring-teal-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                       />
                     </div>
@@ -478,6 +479,9 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+     ):(
+      <div className="">not login yet</div>
+     )}
     </div>
   )
 }

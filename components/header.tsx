@@ -9,6 +9,8 @@ import { useRouter } from "next/navigation"
 import { AnimatePresence, motion } from "framer-motion"
 import { Search, HelpCircle, Bell, ShoppingCart, Sun, Moon } from "lucide-react"
 import { CategoryNav } from "./category-nav"
+import Cookies from 'js-cookie';
+
 
 interface SearchResult {
   id: string
@@ -52,6 +54,19 @@ export function Header() {
     { id: "1", title: "Vintage Camera", image: "/placeholder.svg", price: "1,500 ETB" },
     { id: "2", title: "Wireless Headphones", image: "/placeholder.svg", price: "2,200 ETB" },
   ]
+
+
+  const userInfoStr = Cookies.get('authToken');
+  
+      let userInfo = null;
+  
+      if (userInfoStr) {
+          try {
+              userInfo = JSON.parse(userInfoStr); // Parse the string back to an object
+          } catch (error) {
+              console.error("Failed to parse user info:", error);
+          }
+      }
 
   // Handle click outside to close dropdowns
   useEffect(() => {
@@ -210,7 +225,8 @@ export function Header() {
             </motion.button>
 
             {/* Notifications */}
-            <div className="relative" ref={notificationRef}>
+            {userInfo? (
+              <div className="relative" ref={notificationRef}>
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
@@ -260,9 +276,14 @@ export function Header() {
                 )}
               </AnimatePresence>
             </div>
+            ):(
+              <div className=""></div>
+            )}
+            
 
             {/* Cart */}
-            <div className="relative" ref={cartRef}>
+            {userInfo ?(
+              <div className="relative" ref={cartRef}>
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
@@ -272,8 +293,8 @@ export function Header() {
               >
                 <ShoppingCart className="h-6 w-6" />
               </motion.button>
-
-              <AnimatePresence>
+              
+                <AnimatePresence>
                 {showCartPreview && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
@@ -319,10 +340,20 @@ export function Header() {
                   </motion.div>
                 )}
               </AnimatePresence>
+                
+              
+              
             </div>
+            ):(
+              <div className=""></div>
+            )}
 
             {/* Login/Profile Button */}
-            <div className="relative" ref={profileRef}>
+            {userInfo ?(
+              <div className=''></div>
+            )
+            :(
+              <div className="relative" ref={profileRef}>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -375,16 +406,22 @@ export function Header() {
               </AnimatePresence>
             </div>
 
+            )}
+            
             {/* Post Button */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={navigateToPost}
-              className="bg-teal-600 text-white px-4 py-1 rounded-md font-medium hover:bg-teal-500 transition-colors"
-            >
-              Post
-            </motion.button>
+           {userInfo? (
+             <motion.button
+             whileHover={{ scale: 1.05 }}
+             whileTap={{ scale: 0.95 }}
+             onClick={navigateToPost}
+             className="bg-teal-600 text-white px-4 py-1 rounded-md font-medium hover:bg-teal-500 transition-colors"
+           >
+             Post
+           </motion.button>
 
+           ):(
+            <div className=""></div>
+           )}
             {/* Dark Mode Toggle */}
             {mounted && (
               <motion.button

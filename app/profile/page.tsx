@@ -15,12 +15,13 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Camera, Edit, LogOut, Mail, MapPin, Phone, User, Calendar, Package, Repeat } from "lucide-react"
 import Cookies from 'js-cookie';
+import { cookies } from "next/headers"
 export default function ProfilePage() {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
 
   // Mock user data
-  const userInfoStr = Cookies.get('userData');
+  const userInfoStr = Cookies.get('authToken');
 
     let userInfo = null;
 
@@ -34,16 +35,19 @@ export default function ProfilePage() {
 
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn")
+    Cookies.remove('authToken')
     router.push("/login")
   }
 
   return (
     <div className="min-h-screen bg-[#f9fafb] dark:bg-[#1f2937] py-8"> 
+    
      {userInfo ? (
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Cover Image and Profile Section */}
         <div className="relative mb-8">
-          <div className="h-48 md:h-64 w-full rounded-xl overflow-hidden bg-gradient-to-r bg-gray-200"></div>
+          <div className="h-48 md:h-64 w-full rounded-xl overflow-hidden bg-gradient-to-r bg-gray-200">
+          </div>
 
           <div className="flex flex-col md:flex-row items-start md:items-end gap-4 -mt-16 md:-mt-12 px-4">
             <div>

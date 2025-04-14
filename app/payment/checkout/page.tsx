@@ -1,121 +1,101 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { ArrowLeft } from "lucide-react"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { processPayment } from "@/lib/actions"
-import { toast } from "sonner"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { processPayment } from "@/lib/actions";
+import { toast } from "sonner";
+import Cookies from "js-cookie";
 
 interface Plan {
-  id: string
-  name: string
-  price: number
-  description: string
-  features: string[]
-  posts: number
-  isPopular?: boolean
+  name: string;
+  posts: number;
+  price: number;
 }
 
 export default function CheckoutPage() {
-  const [plan, setPlan] = useState<Plan | null>(null)
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [phone, setPhone] = useState("")
-  const [isProcessing, setIsProcessing] = useState(false)
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const [plan, setPlan] = useState<Plan | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    // Get plan data from session storage
-    const planData = sessionStorage.getItem("selectedPlan")
+    const planData = sessionStorage.getItem("selectedPlan");
     if (planData) {
-      setPlan(JSON.parse(planData))
+      setPlan(JSON.parse(planData));
     } else {
-      // If no plan data, redirect back to plan selection
-      router.push("/")
+      router.push("/");
     }
-  }, [router])
+  }, [router]);
 
   const handlePayment = async () => {
     if (!plan) {
-      toast.error("Plan information not found. Please select a plan again.")
-      router.push("/")
-      return
+      toast.error("Plan information not found. Please select a plan again.");
+      router.push("/");
+      return;
     }
 
-    // Validate form
-    if (!name.trim()) {
-      toast.error("Please provide your name to continue.")
-      return
-    }
+    setIsProcessing(true);
 
-    if (!email.trim()) {
-      toast.error("Please provide your email to continue.")
-      return
-    }
+    // Retrieve and trim the customer email from cookies.
+    const rawEmail = Cookies.get("customerEmail") || "";
+    const customerEmail = rawEmail.trim() || "anonymous@example.com";
+    console.log("Customer email from cookies:", customerEmail);
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      toast.error("Please provide a valid email address.")
-      return
-    }
-
-    setIsProcessing(true)
     try {
-      // Store customer info for receipt before payment processing
+      // Save the customer transaction info in sessionStorage.
       sessionStorage.setItem(
         "customerInfo",
         JSON.stringify({
-          name,
-          email,
-          phone,
           plan: plan.name,
           price: plan.price,
           postsCount: plan.posts,
           date: new Date().toISOString(),
-          transactionId: "pending", // Will be updated after payment
-        }),
-      )
+          transactionId: "pending",
+        })
+      );
 
       const result = await processPayment({
         amount: plan.price,
         planName: plan.name,
         currency: "ETB",
-        customerName: name,
-        customerEmail: email,
+        customerName: "Anonymous", // Placeholder (update if you have customer name info)
+        customerEmail: customerEmail, // Use trimmed email from cookies
         numberOfPosts: plan.posts,
-      })
+      });
 
       if (result.success) {
-        // Update transaction ID in session storage
-        const customerInfo = JSON.parse(sessionStorage.getItem("customerInfo") || "{}")
-        customerInfo.transactionId = result.transactionId || "TX-" + Date.now()
-        sessionStorage.setItem("customerInfo", JSON.stringify(customerInfo))
-
-        // Redirect to Chapa payment page
-        window.location.href = result.redirectUrl || "/payment/success"
+        const updatedCustomerInfo = JSON.parse(
+          sessionStorage.getItem("customerInfo") || "{}"
+        );
+        updatedCustomerInfo.transactionId = result.transactionId || "TX-" + Date.now();
+        sessionStorage.setItem("customerInfo", JSON.stringify(updatedCustomerInfo));
+        window.location.href = result.redirectUrl || "/payment/success";
       } else {
-        toast.error(result.message || "There was an error processing your payment. Please try again.")
+        toast.error(result.message || "There was an error processing your payment. Please try again.");
       }
     } catch (error) {
-      console.error("Payment error:", error)
-      toast.error("There was an error processing your payment. Please try again.")
+      console.error("Payment error:", error);
+      toast.error("There was an error processing your payment. Please try again.");
     } finally {
-      setIsProcessing(false)
+      setIsProcessing(false);
     }
-  }
+  };
 
   if (!plan) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <p>Loading...</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -129,38 +109,13 @@ export default function CheckoutPage() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Plans
         </Button>
-<Card>
+        <Card>
           <CardHeader>
             <CardTitle>Complete Your Purchase</CardTitle>
-            <CardDescription>Enter your details to continue with the {plan.name} plan</CardDescription>
+            <CardDescription>Confirm and pay for the {plan.name} plan</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="john@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number (Optional)</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="09XXXXXXXX"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-              </div>
-
               <div className="pt-2">
                 <div className="flex justify-between font-medium">
                   <span>Plan:</span>
@@ -178,12 +133,16 @@ export default function CheckoutPage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full bg-teal-500 hover:bg-teal-600" onClick={handlePayment} disabled={isProcessing}>
+            <Button
+              className="w-full bg-teal-500 hover:bg-teal-600"
+              onClick={handlePayment}
+              disabled={isProcessing}
+            >
               {isProcessing ? "Processing..." : "Pay Now"}
             </Button>
           </CardFooter>
         </Card>
       </div>
     </div>
-  )
+  );
 }

@@ -14,7 +14,8 @@ import SuccessScreen from "@/components/post/success-screen"
 import { PostCounter } from "@/components/post-counter"
 import { checkPostsStatus, createPost } from "@/lib/actions"
 
-export default function CreatePostDemo() {
+export default function CreatePostDemo({ onUpgradeClick }: { onUpgradeClick: () => void }) {
+
   const router = useRouter()
   const [postType, setPostType] = useState<"item" | "service">("item")
   const [currentStep, setCurrentStep] = useState(1)
@@ -2185,7 +2186,11 @@ export default function CreatePostDemo() {
 
           {/* Post Counter */}
           <div className="bg-white px-6 pt-4">
-            <PostCounter />
+            {/* Post Counter */}
+<div className="bg-white px-6 pt-4">
+  <PostCounter onUpgradeClick={onUpgradeClick} />
+</div>
+
           </div>
 
           {/* Progress Steps */}

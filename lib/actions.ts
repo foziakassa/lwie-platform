@@ -28,22 +28,15 @@ interface PostsStatusResult {
 
 // This function checks how many posts the user has remaining (both free and paid)
 export async function checkPostsStatus(): Promise<PostsStatusResult> {
-  // In a real application, you would:
-  // 1. Get the current user ID from the session
-  // 2. Query your database to check how many posts they've used and purchased
-
-  // For demonstration purposes, we'll use cookies to simulate this
   const cookieStore = cookies()
 
-  // Free posts tracking
-  const usedFreePostsStr = (await cookieStore).get("used_free_posts")?.value||"0"
+  const usedFreePostsStr = (await cookieStore).get("used_free_posts")?.value || "0"
   const usedFreePosts = Number.parseInt(usedFreePostsStr, 10)
   const totalFreePosts = 3
   const remainingFreePosts = Math.max(0, totalFreePosts - usedFreePosts)
 
-  // Paid posts tracking
-  const totalPaidPostsStr = (await cookieStore).get("total_paid_posts")?.value||"0"
-  const usedPaidPostsStr = (await cookieStore).get("used_paid_posts")?.value ||"0"
+  const totalPaidPostsStr = (await cookieStore).get("total_paid_posts")?.value || "0"
+  const usedPaidPostsStr = (await cookieStore).get("used_paid_posts")?.value || "0"
 
   const totalPaidPosts = Number.parseInt(totalPaidPostsStr, 10)
   const usedPaidPosts = Number.parseInt(usedPaidPostsStr, 10)
@@ -58,94 +51,95 @@ export async function checkPostsStatus(): Promise<PostsStatusResult> {
   }
 }
 
-// This function would update the post count when a user creates a post
 export async function createPost(data: { category: string; subcategory: string; title: string; description: string; condition: "new" | "like-new" | "good" | "fair" | "poor"; location: string; images: string[]; preferredSwaps?: string | undefined }): Promise<PostsStatusResult> {
   const cookieStore = cookies()
-
-  // First check current status
   const status = await checkPostsStatus()
 
-  // If user has paid posts, use those first
   if (status.remainingPaidPosts > 0) {
     const newUsedPaidPosts = status.usedPaidPosts + 1
     ;(await cookieStore).set("used_paid_posts", newUsedPaidPosts.toString(), {
-      maxAge: 60 * 60 * 24 * 365, // 1 year
+      maxAge: 60 * 60 * 24 * 365,
       path: "/",
     })
-
-    // Return updated status
     return {
       ...status,
       remainingPaidPosts: status.remainingPaidPosts - 1,
       usedPaidPosts: newUsedPaidPosts,
     }
-  }
-  // Otherwise use free posts if available
-  else if (status.remainingFreePosts > 0) {
-    const usedFreePostsStr = (await cookieStore).get("used_free_posts")?.value||"0"
+  } else if (status.remainingFreePosts > 0) {
+    const usedFreePostsStr = (await cookieStore).get("used_free_posts")?.value || "0"
     const usedFreePosts = Number.parseInt(usedFreePostsStr, 10)
     const newUsedFreePosts = usedFreePosts + 1
 
     ;(await cookieStore).set("used_free_posts", newUsedFreePosts.toString(), {
-      maxAge: 60 * 60 * 24 * 365, // 1 year
+      maxAge: 60 * 60 * 24 * 365,
       path: "/",
     })
 
-    // Return updated status
     return {
       ...status,
       remainingFreePosts: status.remainingFreePosts - 1,
     }
   }
-
-  // If no posts available, return current status
   return status
 }
 
-// Add purchased posts to user's account
 export async function addPurchasedPosts(numberOfPosts: number): Promise<PostsStatusResult> {
   const cookieStore = cookies()
-
-// Get current total
-  const totalPaidPostsStr = (await cookieStore).get("total_paid_posts")?.value||"0"
+  const totalPaidPostsStr = (await cookieStore).get("total_paid_posts")?.value || "0"
   const totalPaidPosts = Number.parseInt(totalPaidPostsStr, 10)
-
-  // Add new posts
   const newTotalPaidPosts = totalPaidPosts + numberOfPosts
 
-  // Update cookie
-  ;(await
-    // Update cookie
-    cookieStore).set("total_paid_posts", newTotalPaidPosts.toString(), {
-    maxAge: 60 * 60 * 24 * 365, // 1 year
+  ;(await cookieStore).set("total_paid_posts", newTotalPaidPosts.toString(), {
+    maxAge: 60 * 60 * 24 * 365,
     path: "/",
   })
 
-  // Return updated status
   const status = await checkPostsStatus()
   return status
 }
 
-// Update the payment processing to handle fixed packages
+// Payment processing function
 export async function processPayment(params: PaymentParams): Promise<PaymentResult> {
   try {
-    // For fixed packages, we use the total amount directly
+    const cookieStore = cookies()
+    const userCookie = (await cookieStore).get("user")?.value
+    let customerName = params.customerName
+    let customerEmail = params.customerEmail
+    let phone = "0900000000"
+
+    if (userCookie) {
+      try {
+        const userData = JSON.parse(userCookie)
+        if (!customerName && userData.firstName) {
+          customerName = userData.firstName
+        }
+        if (!customerEmail && userData.email) {
+          customerEmail = userData.email
+        }
+        if (userData.phone) {
+          phone = userData.phone
+        }
+      } catch (err) {
+        console.warn("Failed to parse user cookie:", err)
+      }
+    }
+
+    // Validate the email format before proceeding
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(customerEmail || "")) {
+      throw new Error("Invalid email format");
+    }
+
     const totalAmount = params.amount
-
-    // Hardcoded Chapa API key for testing
-    // In production, you should use environment variables
     const chapaSecretKey = "CHASECK_TEST-VZgrmu0vKJKLqdlI1o98q4RFoR4a4mCr"
-
-    console.log("Using Chapa key:", chapaSecretKey ? "Key is set" : "Key is not set")
 
     if (!chapaSecretKey) {
       throw new Error("Chapa API key not configured")
     }
 
-    // Generate a unique transaction reference
     const tx_ref = `tx-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
 
-    // Prepare the request to Chapa API
     const response = await fetch("https://api.chapa.co/v1/transaction/initialize", {
       method: "POST",
       headers: {
@@ -153,30 +147,34 @@ export async function processPayment(params: PaymentParams): Promise<PaymentResu
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        amount: totalAmount.toString(), // Chapa expects amount as string
+        amount: totalAmount.toString(),
         currency: params.currency,
         tx_ref: tx_ref,
         callback_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/payment/callback`,
         return_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/payment/success`,
-        first_name: params.customerName?.split(" ")[0] || "Customer",
-        last_name: params.customerName?.split(" ").slice(1).join(" ") || "",
-        email: params.customerEmail || "customer@example.com",
+        first_name: customerName?.split(" ")[0] || "Customer",
+        last_name: customerName?.split(" ").slice(1).join(" ") || "",
+        email: customerEmail || "customer@example.com",
         title: `Payment for ${params.planName} Plan (${params.numberOfPosts} Posts)`,
         description: `Purchase of ${params.planName} Plan with ${params.numberOfPosts} posts for ${totalAmount} ETB`,
-        // Add phone number field if available
-        phone_number: "0900000000", // Default phone number (you can make this dynamic if needed)
+        phone_number: phone,
       }),
     })
 
     if (!response.ok) {
       const errorData = await response.json()
       console.error("Chapa API error:", errorData)
-      throw new Error(errorData.message || "Failed to initialize payment")
+
+      if (errorData?.message?.email) {
+        throw new Error(`Email validation failed: ${errorData.message.email.join(", ")}`)
+      }
+
+      const errorMessage = errorData?.message || "Failed to initialize payment"
+      throw new Error(errorMessage)
     }
 
     const data = await response.json()
 
-    // Return the checkout URL from Chapa
     return {
       success: true,
       redirectUrl: data.data.checkout_url,
@@ -191,7 +189,8 @@ export async function processPayment(params: PaymentParams): Promise<PaymentResu
   }
 }
 
-// For backward compatibility
+
+
 export async function checkRemainingPosts(): Promise<{ remainingPosts: number; totalUsed: number }> {
   const status = await checkPostsStatus()
   return {

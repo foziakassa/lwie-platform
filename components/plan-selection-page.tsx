@@ -20,7 +20,7 @@ interface Plan {
   isPopular?: boolean
 }
 
-export default function PlanSelectionPage() {
+export default function PlanSelectionPage({ onUpgradeClick }: { onUpgradeClick: () => void }) {
   const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const router = useRouter()
@@ -79,7 +79,9 @@ export default function PlanSelectionPage() {
           </p>
 
           {/* Post counter component */}
-          <PostCounter />
+          <div className="bg-white px-6 pt-4">
+  <PostCounter onUpgradeClick={onUpgradeClick} />
+</div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 mb-10">

@@ -87,7 +87,7 @@ const featuredItems = [
     },
   ]
 
-export default function Active() {
+export default function Activate() {
   const searchParams = useSearchParams(); // Get the search params
   const [token, setToken] = useState<string | null>(null);
   const [message, setMessage] = useState("");

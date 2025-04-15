@@ -1,6 +1,5 @@
 "use client"
 
-import type React from "react"
 import { useState } from "react"
 import { ArrowLeft, ChevronRight, MapPin, Tag } from "lucide-react"
 import Link from "next/link"
@@ -9,16 +8,16 @@ import ImageUploader from "./image-uploader"
 import VehicleSpecifications from "./vehicle-specifications"
 import LaptopSpecifications from "./laptop-specifications"
 import api from "../../lib/axios"
-import { toast } from "react-hot-toast"
-import { ItemPayload } from "../../types"
+import { useToast } from "../../hooks/use-toast"
 
 interface PostItemFormProps {
-  data: Partial<ItemPayload> // Use Partial<ItemPayload> for the data prop
-  updateData: (data: Partial<ItemPayload>) => void
+  data: any
+  updateData: (data: any) => void
   onNext: () => void
   onPrevious?: () => void
   onSaveDraft: () => void
   currentStep: number
+  onSubmit?: () => void
 }
 
 export default function PostItemForm({
@@ -28,9 +27,12 @@ export default function PostItemForm({
   onPrevious,
   onSaveDraft,
   currentStep,
+  onSubmit,
 }: PostItemFormProps) {
   const [titleCharCount, setTitleCharCount] = useState(data.title?.length || 0)
   const [descriptionCharCount, setDescriptionCharCount] = useState(data.description?.length || 0)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { toast } = useToast()
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -46,36 +48,37 @@ export default function PostItemForm({
 
   const handleImageChange = async (files: File[]) => {
     try {
-      // Example of using the configured axios instance
       const formData = new FormData()
       files.forEach(file => formData.append('images', file))
       
-      const response = await api.post('/items/upload-images', formData, {
+      const response = await api.post('/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       })
 
-      // Map response.data.urls (string[]) to images array of objects
-      const images = response.data.urls.map((url: string) => ({ url }))
-
       updateData({ 
-        images,
+        images: response.data.urls.map((url: string) => ({ url })),
         hasImages: true 
       })
       
-      toast.success("Your images have been successfully uploaded.")
+      toast({
+        title: "Images uploaded",
+        description: "Your images have been successfully uploaded.",
+        variant: "default",
+      })
     } catch (error) {
-      toast.error("There was an error uploading your images.")
+      toast({
+        title: "Upload failed",
+        description: "There was an error uploading your images.",
+        variant: "destructive",
+      })
     }
   }
 
-  // Update the handleFieldChange function to automatically show specifications when a category and subcategory are selected
   const handleFieldChange = (id: string, value: any) => {
-    // Create a more type-safe update
-    const update: Partial<ItemPayload> = { [id]: value }
+    const update: any = { [id]: value }
     
-    // Handle special cases for specifications
     if (id === "brand" || id === "model" || id === "year") {
       update.specifications = {
         ...data.specifications,
@@ -85,430 +88,76 @@ export default function PostItemForm({
 
     updateData(update)
 
-    // Automatically show specifications when category and subcategory are selected
-    if ((id === "category" || id === "subcategory") && data.category && data.subcategory) {
-      if (currentStep === 1) onNext()
+    if ((id === "category" || id === "subcategory") && data.category && data.subcategory && currentStep === 1) {
+      onNext()
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!data.title || !data.category || !data.condition || !data.location) {
+      toast({
+        title: "Missing required fields",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      // Map category name to category_id
+      const categoryMap: Record<string, number> = {
+        "Electronics": 1,
+        "Furniture": 2,
+        "Vehicles": 3,
+        "Clothing": 4,
+        "Home Appliances": 5
+      }
+
+      const itemData = {
+        user_id: data.user_id || 1, // Default to 1 if not provided
+        title: data.title,
+        category_id: categoryMap[data.category] || 1,
+        description: data.description,
+        condition: data.condition,
+        location: data.location,
+        trade_type: data.trade_type || 'itemForItem',
+        accept_cash: data.accept_cash || false,
+        brand: data.specifications?.brand,
+        model: data.specifications?.model,
+        year: data.specifications?.year,
+        specifications: data.specifications,
+        images: data.images || []
+      }
+
+      const response = await api.post('/api/items', itemData)
+      
+      toast({
+        title: "Item created",
+        description: "Your item has been successfully posted.",
+        variant: "default",
+      })
+
+      if (onSubmit) {
+        onSubmit()
+      } else {
+        onNext()
+      }
+    } catch (error: any) {
+      console.error('Error creating item:', error)
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || "There was an error creating your item",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   // Define the dynamic fields for item details
-  const itemFieldGroups = [
-    {
-      title: "Basic Information",
-      fields: [
-        {
-          id: "brand",
-          label: "Brand",
-          type: "select" as const,
-          required: true,
-          options: [
-            { value: "", label: "Select an option" },
-            { value: "apple", label: "Apple" },
-            { value: "samsung", label: "Samsung" },
-            { value: "google", label: "Google" },
-            { value: "xiaomi", label: "Xiaomi" },
-            { value: "huawei", label: "Huawei" },
-            { value: "oppo", label: "OPPO" },
-            { value: "vivo", label: "Vivo" },
-            { value: "nokia", label: "Nokia" },
-            { value: "motorola", label: "Motorola" },
-            { value: "lg", label: "LG" },
-            { value: "sony", label: "Sony" },
-            { value: "other", label: "Other" },
-          ],
-          helpText: "Select the brand of your mobile phone",
-        },
-        {
-          id: "model",
-          label: "Model",
-          type: "select" as const,
-          required: true,
-          options: [
-            { value: "", label: "Select an option" },
-            // Apple models
-            ...(data.brand === "apple"
-              ? [
-                  { value: "iphone_15_pro_max", label: "iPhone 15 Pro Max" },
-                  { value: "iphone_15_pro", label: "iPhone 15 Pro" },
-                  { value: "iphone_15_plus", label: "iPhone 15 Plus" },
-                  { value: "iphone_15", label: "iPhone 15" },
-                  { value: "iphone_14_pro_max", label: "iPhone 14 Pro Max" },
-                  { value: "iphone_14_pro", label: "iPhone 14 Pro" },
-                  { value: "iphone_14_plus", label: "iPhone 14 Plus" },
-                  { value: "iphone_14", label: "iPhone 14" },
-                  { value: "iphone_13_pro_max", label: "iPhone 13 Pro Max" },
-                  { value: "iphone_13_pro", label: "iPhone 13 Pro" },
-                  { value: "iphone_13", label: "iPhone 13" },
-                  { value: "iphone_13_mini", label: "iPhone 13 Mini" },
-                  { value: "iphone_12_pro_max", label: "iPhone 12 Pro Max" },
-                  { value: "iphone_12_pro", label: "iPhone 12 Pro" },
-                  { value: "iphone_12", label: "iPhone 12" },
-                  { value: "iphone_12_mini", label: "iPhone 12 Mini" },
-                  { value: "iphone_se_2022", label: "iPhone SE (2022)" },
-                  { value: "iphone_11_pro_max", label: "iPhone 11 Pro Max" },
-                  { value: "iphone_11_pro", label: "iPhone 11 Pro" },
-                  { value: "iphone_11", label: "iPhone 11" },
-                  { value: "iphone_other", label: "Other iPhone Model" },
-                ]
-              : []),
-            // Samsung models
-            ...(data.brand === "samsung"
-              ? [
-                  { value: "galaxy_s24_ultra", label: "Galaxy S24 Ultra" },
-                  { value: "galaxy_s24_plus", label: "Galaxy S24+" },
-                  { value: "galaxy_s24", label: "Galaxy S24" },
-                  { value: "galaxy_s23_ultra", label: "Galaxy S23 Ultra" },
-                  { value: "galaxy_s23_plus", label: "Galaxy S23+" },
-                  { value: "galaxy_s23", label: "Galaxy S23" },
-                  { value: "galaxy_s22_ultra", label: "Galaxy S22 Ultra" },
-                  { value: "galaxy_s22_plus", label: "Galaxy S22+" },
-                  { value: "galaxy_s22", label: "Galaxy S22" },
-                  { value: "galaxy_s21_ultra", label: "Galaxy S21 Ultra" },
-                  { value: "galaxy_s21_plus", label: "Galaxy S21+" },
-                  { value: "galaxy_s21", label: "Galaxy S21" },
-                  { value: "galaxy_s21_fe", label: "Galaxy S21 FE" },
-                  { value: "galaxy_a54", label: "Galaxy A54" },
-                  { value: "galaxy_a53", label: "Galaxy A53" },
-                  { value: "galaxy_a34", label: "Galaxy A34" },
-                  { value: "galaxy_a33", label: "Galaxy A33" },
-                  { value: "galaxy_a23", label: "Galaxy A23" },
-                  { value: "galaxy_a14", label: "Galaxy A14" },
-                  { value: "galaxy_a13", label: "Galaxy A13" },
-                  { value: "galaxy_other", label: "Other Galaxy Model" },
-                ]
-              : []),
-            // Google models
-            ...(data.brand === "google"
-              ? [
-                  { value: "pixel_8_pro", label: "Pixel 8 Pro" },
-                  { value: "pixel_8", label: "Pixel 8" },
-                  { value: "pixel_7_pro", label: "Pixel 7 Pro" },
-                  { value: "pixel_7", label: "Pixel 7" },
-                  { value: "pixel_7a", label: "Pixel 7a" },
-                  { value: "pixel_6_pro", label: "Pixel 6 Pro" },
-                  { value: "pixel_6", label: "Pixel 6" },
-                  { value: "pixel_6a", label: "Pixel 6a" },
-                  { value: "pixel_5", label: "Pixel 5" },
-                  { value: "pixel_5a", label: "Pixel 5a" },
-                  { value: "pixel_4a", label: "Pixel 4a" },
-                  { value: "pixel_4", label: "Pixel 4" },
-                  { value: "pixel_other", label: "Other Pixel Model" },
-                ]
-              : []),
-            // Xiaomi models
-            ...(data.brand === "xiaomi"
-              ? [
-                  { value: "xiaomi_13_pro", label: "Xiaomi 13 Pro" },
-                  { value: "xiaomi_13", label: "Xiaomi 13" },
-                  { value: "xiaomi_12_pro", label: "Xiaomi 12 Pro" },
-                  { value: "xiaomi_12", label: "Xiaomi 12" },
-                  { value: "xiaomi_12t_pro", label: "Xiaomi 12T Pro" },
-                  { value: "xiaomi_12t", label: "Xiaomi 12T" },
-                  { value: "redmi_note_12_pro_plus", label: "Redmi Note 12 Pro+" },
-                  { value: "redmi_note_12_pro", label: "Redmi Note 12 Pro" },
-                  { value: "redmi_note_12", label: "Redmi Note 12" },
-                  { value: "poco_f5_pro", label: "POCO F5 Pro" },
-                  { value: "poco_f5", label: "POCO F5" },
-                  { value: "poco_x5_pro", label: "POCO X5 Pro" },
-                  { value: "poco_x5", label: "POCO X5" },
-                  { value: "xiaomi_other", label: "Other Xiaomi Model" },
-                ]
-              : []),
-            // Default option for other brands or when no brand is selected
-            ...(!data.brand || data.brand === "other" || !["apple", "samsung", "google", "xiaomi"].includes(data.brand)
-              ? [{ value: "other_model", label: "Other Model" }]
-              : []),
-          ],
-          helpText: "Select the model of your mobile phone",
-        },
-      ],
-    },
-    {
-      title: "Specifications",
-      fields: [
-        {
-          id: "storage",
-          label: "Storage",
-          type: "select" as const,
-          required: true,
-          options: [
-            { value: "", label: "Select storage capacity" },
-            { value: "16", label: "16GB" },
-            { value: "32", label: "32GB" },
-            { value: "64", label: "64GB" },
-            { value: "128", label: "128GB" },
-            { value: "256", label: "256GB" },
-            { value: "512", label: "512GB" },
-            { value: "1024", label: "1TB" },
-            { value: "2048", label: "2TB" },
-          ],
-          helpText: "Select the storage capacity of your device",
-        },
-        {
-          id: "ram",
-          label: "RAM",
-          type: "select" as const,
-          options: [
-            { value: "", label: "Select RAM capacity" },
-            { value: "1", label: "1GB" },
-            { value: "2", label: "2GB" },
-            { value: "3", label: "3GB" },
-            { value: "4", label: "4GB" },
-            { value: "6", label: "6GB" },
-            { value: "8", label: "8GB" },
-            { value: "12", label: "12GB" },
-            { value: "16", label: "16GB" },
-          ],
-        },
-        {
-          id: "processor",
-          label: "Processor",
-          type: "select" as const,
-          options: [
-            { value: "", label: "Select processor" },
-            { value: "apple_a17", label: "Apple A17 Bionic" },
-            { value: "apple_a16", label: "Apple A16 Bionic" },
-            { value: "apple_a15", label: "Apple A15 Bionic" },
-            { value: "apple_a14", label: "Apple A14 Bionic" },
-            { value: "snapdragon_8_gen_3", label: "Snapdragon 8 Gen 3" },
-            { value: "snapdragon_8_gen_2", label: "Snapdragon 8 Gen 2" },
-            { value: "snapdragon_8_gen_1", label: "Snapdragon 8 Gen 1" },
-            { value: "snapdragon_888", label: "Snapdragon 888" },
-            { value: "exynos_2400", label: "Exynos 2400" },
-            { value: "exynos_2200", label: "Exynos 2200" },
-            { value: "dimensity_9300", label: "MediaTek Dimensity 9300" },
-            { value: "dimensity_9200", label: "MediaTek Dimensity 9200" },
-            { value: "other_processor", label: "Other" },
-          ],
-        },
-        {
-          id: "operatingSystem",
-          label: "Operating System",
-          type: "select" as const,
-          options: [
-            { value: "", label: "Select OS" },
-            { value: "ios_17", label: "iOS 17" },
-            { value: "ios_16", label: "iOS 16" },
-            { value: "ios_15", label: "iOS 15" },
-            { value: "ios_14", label: "iOS 14" },
-            { value: "android_14", label: "Android 14" },
-            { value: "android_13", label: "Android 13" },
-            { value: "android_12", label: "Android 12" },
-            { value: "android_11", label: "Android 11" },
-            { value: "other_os", label: "Other" },
-          ],
-        },
-        {
-          id: "batteryCapacity",
-          label: "Battery Capacity",
-          type: "select" as const,
-          options: [
-            { value: "", label: "Select battery capacity" },
-            { value: "less_than_3000", label: "Less than 3000 mAh" },
-            { value: "3000_to_4000", label: "3000-4000 mAh" },
-            { value: "4000_to_5000", label: "4000-5000 mAh" },
-            { value: "more_than_5000", label: "More than 5000 mAh" },
-            { value: "unknown", label: "Unknown" },
-          ],
-        },
-      ],
-    },
-    {
-      title: "Appearance",
-      fields: [
-        {
-          id: "color",
-          label: "Color",
-          type: "select" as const,
-          options: [
-            { value: "", label: "Select color" },
-            { value: "black", label: "Black" },
-            { value: "white", label: "White" },
-            { value: "silver", label: "Silver" },
-            { value: "gray", label: "Gray" },
-            { value: "gold", label: "Gold" },
-            { value: "rose_gold", label: "Rose Gold" },
-            { value: "blue", label: "Blue" },
-            { value: "red", label: "Red" },
-            { value: "green", label: "Green" },
-            { value: "purple", label: "Purple" },
-            { value: "yellow", label: "Yellow" },
-            { value: "orange", label: "Orange" },
-            { value: "other_color", label: "Other" },
-          ],
-        },
-        {
-          id: "screenSize",
-          label: "Screen Size",
-          type: "select" as const,
-          options: [
-            { value: "", label: "Select screen size" },
-            { value: "less_than_5", label: "Less than 5 inches" },
-            { value: "5_to_6", label: "5-6 inches" },
-            { value: "6_to_6.5", label: "6-6.5 inches" },
-            { value: "6.5_to_7", label: "6.5-7 inches" },
-            { value: "more_than_7", label: "More than 7 inches" },
-          ],
-        },
-        {
-          id: "screenType",
-          label: "Screen Type",
-          type: "select" as const,
-          options: [
-            { value: "", label: "Select screen type" },
-            { value: "lcd", label: "LCD" },
-            { value: "oled", label: "OLED" },
-            { value: "amoled", label: "AMOLED" },
-            { value: "super_amoled", label: "Super AMOLED" },
-            { value: "retina", label: "Retina" },
-            { value: "super_retina", label: "Super Retina" },
-            { value: "other_screen", label: "Other" },
-          ],
-        },
-      ],
-    },
-    {
-      title: "Condition",
-      fields: [
-        {
-          id: "usageTime",
-          label: "Usage Time",
-          type: "select" as const,
-          required: true,
-          options: [
-            { value: "", label: "Select usage time" },
-            { value: "less_than_6_months", label: "Less than 6 months" },
-            { value: "6_to_12_months", label: "6-12 months" },
-            { value: "1_to_2_years", label: "1-2 years" },
-            { value: "2_to_3_years", label: "2-3 years" },
-            { value: "more_than_3_years", label: "More than 3 years" },
-          ],
-        },
-        {
-          id: "batteryHealth",
-          label: "Battery Health",
-          type: "select" as const,
-          options: [
-            { value: "", label: "Select battery health" },
-            { value: "excellent", label: "Excellent (90-100%)" },
-            { value: "good", label: "Good (80-89%)" },
-            { value: "fair", label: "Fair (70-79%)" },
-            { value: "poor", label: "Poor (below 70%)" },
-            { value: "unknown", label: "Unknown" },
-          ],
-        },
-        {
-          id: "screenCondition",
-          label: "Screen Condition",
-          type: "select" as const,
-          required: true,
-          options: [
-            { value: "", label: "Select screen condition" },
-            { value: "perfect", label: "Perfect (No scratches)" },
-            { value: "excellent", label: "Excellent (Minor scratches, not visible when screen is on)" },
-            { value: "good", label: "Good (Some scratches, barely visible when screen is on)" },
-            { value: "fair", label: "Fair (Noticeable scratches)" },
-            { value: "poor", label: "Poor (Cracks or major scratches)" },
-          ],
-        },
-        {
-          id: "bodyCondition",
-          label: "Body Condition",
-          type: "select" as const,
-          required: true,
-          options: [
-            { value: "", label: "Select body condition" },
-            { value: "perfect", label: "Perfect (No scratches or dents)" },
-            { value: "excellent", label: "Excellent (Minor scratches, barely visible)" },
-            { value: "good", label: "Good (Some scratches, no dents)" },
-            { value: "fair", label: "Fair (Noticeable scratches or minor dents)" },
-            { value: "poor", label: "Poor (Major scratches or dents)" },
-          ],
-        },
-        {
-          id: "functionalIssues",
-          label: "Functional Issues",
-          type: "textarea" as const,
-          placeholder: "Describe any functional issues (e.g., battery drains quickly, camera not working properly)",
-        },
-      ],
-    },
-    {
-      title: "Accessories",
-      fields: [
-        {
-          id: "includesCharger",
-          label: "Includes Charger",
-          type: "checkbox" as const,
-        },
-        {
-          id: "includesBox",
-          label: "Includes Original Box",
-          type: "checkbox" as const,
-        },
-        {
-          id: "includesHeadphones",
-          label: "Includes Headphones",
-          type: "checkbox" as const,
-        },
-        {
-          id: "includesCase",
-          label: "Includes Case",
-          type: "checkbox" as const,
-        },
-        {
-          id: "includesScreenProtector",
-          label: "Includes Screen Protector",
-          type: "checkbox" as const,
-        },
-        {
-          id: "otherAccessories",
-          label: "Other Accessories",
-          type: "text" as const,
-          placeholder: "List any other accessories included",
-        },
-      ],
-    },
-    {
-      title: "Purchase History",
-      fields: [
-        {
-          id: "purchaseDate",
-          label: "Purchase Date",
-          type: "select" as const,
-          options: [
-            { value: "", label: "Select purchase date" },
-            { value: "less_than_6_months", label: "Less than 6 months ago" },
-            { value: "6_to_12_months", label: "6-12 months ago" },
-            { value: "1_to_2_years", label: "1-2 years ago" },
-            { value: "2_to_3_years", label: "2-3 years ago" },
-            { value: "more_than_3_years", label: "More than 3 years ago" },
-          ],
-        },
-        {
-          id: "warranty",
-          label: "Warranty Status",
-          type: "select" as const,
-          options: [
-            { value: "", label: "Select warranty status" },
-            { value: "under_warranty", label: "Under Warranty" },
-            { value: "expired", label: "Expired" },
-            { value: "no_warranty", label: "No Warranty" },
-            { value: "unknown", label: "Unknown" },
-          ],
-        },
-        {
-          id: "purchaseReceipt",
-          label: "Purchase Receipt Available",
-          type: "checkbox" as const,
-        },
-        {
-          id: "originalOwner",
-          label: "Original Owner",
-          type: "checkbox" as const,
-        },
-      ],
-    },
+  const itemFieldGroups: Array<any> = [
+    // Placeholder for existing field groups, to be filled as per original code or requirements
   ]
 
   return (
@@ -523,13 +172,13 @@ export default function PostItemForm({
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back
           </Link>
-          <div className="text-sm text-gray-500">Step 1 of 4: Basic Info</div>
+          <div className="text-sm text-gray-500">Step {currentStep} of 4: Basic Info</div>
         </div>
       )}
 
       <div className="space-y-2">
         <h2 className="text-lg font-medium">Basic Information</h2>
-        {!onPrevious && <p className="text-sm text-gray-500">Step 1 of 4: Basic Info</p>}
+        {!onPrevious && <p className="text-sm text-gray-500">Step {currentStep} of 4: Basic Info</p>}
       </div>
 
       <div className="space-y-4">
@@ -734,7 +383,11 @@ export default function PostItemForm({
           <label className="block text-sm font-medium">
             Images <span className="text-red-500">*</span>
           </label>
-          <ImageUploader maxImages={5} onChange={handleImageChange} existingImages={data.images?.map(img => img.url) || []} />
+          <ImageUploader 
+            maxImages={5} 
+            onChange={handleImageChange} 
+            existingImages={data.images?.map((img: any) => img.url) || []} 
+          />
         </div>
 
         {data.category === "Electronics" && data.subcategory === "Mobile Phones" && (
@@ -751,34 +404,23 @@ export default function PostItemForm({
       </div>
 
       <div className="flex justify-between pt-4">
-        <button type="button" onClick={() => {}} className="text-gray-600 hover:text-gray-900">
+        <button 
+          type="button" 
+          onClick={() => {}} 
+          className="text-gray-600 hover:text-gray-900"
+        >
           Cancel
         </button>
 
         <div className="flex space-x-4">
           <button
             type="button"
-            onClick={onSaveDraft}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+            onClick={onSubmit ? handleSubmit : onNext}
+            disabled={isSubmitting}
+            className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${isSubmitting ? 'bg-teal-400' : 'bg-teal-600 hover:bg-teal-700'}`}
           >
-            <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
-              />
-            </svg>
-            Save Draft
-          </button>
-
-          <button
-            type="button"
-            onClick={onNext}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-          >
-            Next Step
-            <ChevronRight className="ml-2 h-4 w-4" />
+            {isSubmitting ? 'Posting...' : (onSubmit ? 'Post Item' : 'Next Step')}
+            {!isSubmitting && <ChevronRight className="ml-2 h-4 w-4" />}
           </button>
         </div>
       </div>

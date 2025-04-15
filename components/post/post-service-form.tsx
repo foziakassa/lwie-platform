@@ -8,9 +8,21 @@ import Link from "next/link"
 import DynamicServiceFields from "./dynamic-service-fields"
 import ImageUploader from "./image-uploader"
 
+import type { ServicePayload } from "../../types"
+
 interface PostServiceFormProps {
-  data: any
-  updateData: (data: any) => void
+  data: Partial<ServicePayload> & {
+    category?: string
+    subcategory?: string
+    serviceLocationType?: string
+    images?: { url: string; is_main?: boolean }[]
+  }
+  updateData: (data: Partial<ServicePayload> & {
+    category?: string
+    subcategory?: string
+    serviceLocationType?: string
+    images?: { url: string; is_main?: boolean }[]
+  }) => void
   onNext: () => void
   onPrevious?: () => void
   onSaveDraft: () => void
@@ -41,9 +53,13 @@ export default function PostServiceForm({
   }
 
   const handleImageChange = (files: File[]) => {
-    // In a real implementation, you would handle file uploads here
-    console.log("Image files:", files)
-    updateData({ hasImages: true })
+    // Map File[] to array of objects with url property
+    const mappedImages = files.map((file) => ({
+      url: URL.createObjectURL(file),
+      is_main: false,
+    }))
+    console.log("Mapped image files:", mappedImages)
+    updateData({ images: mappedImages })
   }
 
   // Update the handleFieldChange function to automatically show specifications when a category and subcategory are selected
@@ -580,14 +596,14 @@ export default function PostServiceForm({
 
         <div className="space-y-2">
           <label className="block text-sm font-medium">Service Images (Optional)</label>
-          <ImageUploader maxImages={5} onChange={handleImageChange} existingImages={data.images || []} />
+          <ImageUploader maxImages={5} onChange={handleImageChange} existingImages={data.images?.map((img: any) => img.url) || []} />
         </div>
 
         <DynamicServiceFields fieldGroups={serviceFieldGroups} values={data} onChange={handleFieldChange} />
       </div>
 
       <div className="flex justify-between pt-4">
-        <button type="button" onClick={() => {}} className="text-gray-600 hover:text-gray-900">
+        <button type="button" onClick={() => { }} className="text-gray-600 hover:text-gray-900">
           Cancel
         </button>
 

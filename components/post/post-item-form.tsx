@@ -1,20 +1,20 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { ArrowLeft, ChevronRight, MapPin, Tag } from "lucide-react"
 import Link from "next/link"
 import DynamicFields from "./dynamic-fields"
 import ImageUploader from "./image-uploader"
-
-// Add the import statements for the specification components
 import VehicleSpecifications from "./vehicle-specifications"
 import LaptopSpecifications from "./laptop-specifications"
+import api from "../../lib/axios"
+import { toast } from "react-hot-toast"
+import { ItemPayload } from "../../types"
 
 interface PostItemFormProps {
-  data: any
-  updateData: (data: any) => void
+  data: Partial<ItemPayload> // Use Partial<ItemPayload> for the data prop
+  updateData: (data: Partial<ItemPayload>) => void
   onNext: () => void
   onPrevious?: () => void
   onSaveDraft: () => void
@@ -44,24 +44,50 @@ export default function PostItemForm({
     setDescriptionCharCount(value.length)
   }
 
-  const handleImageChange = (files: File[]) => {
-    // In a real implementation, you would handle file uploads here
-    console.log("Image files:", files)
-    updateData({ hasImages: true })
+  const handleImageChange = async (files: File[]) => {
+    try {
+      // Example of using the configured axios instance
+      const formData = new FormData()
+      files.forEach(file => formData.append('images', file))
+      
+      const response = await api.post('/items/upload-images', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+
+      // Map response.data.urls (string[]) to images array of objects
+      const images = response.data.urls.map((url: string) => ({ url }))
+
+      updateData({ 
+        images,
+        hasImages: true 
+      })
+      
+      toast.success("Your images have been successfully uploaded.")
+    } catch (error) {
+      toast.error("There was an error uploading your images.")
+    }
   }
 
   // Update the handleFieldChange function to automatically show specifications when a category and subcategory are selected
   const handleFieldChange = (id: string, value: any) => {
-    updateData({ [id]: value })
+    // Create a more type-safe update
+    const update: Partial<ItemPayload> = { [id]: value }
+    
+    // Handle special cases for specifications
+    if (id === "brand" || id === "model" || id === "year") {
+      update.specifications = {
+        ...data.specifications,
+        [id]: value
+      }
+    }
+
+    updateData(update)
 
     // Automatically show specifications when category and subcategory are selected
-    if (id === "category" || id === "subcategory") {
-      if (data.category && data.subcategory) {
-        // Set currentStep to 2 to show specifications automatically
-        if (currentStep === 1) {
-          onNext()
-        }
-      }
+    if ((id === "category" || id === "subcategory") && data.category && data.subcategory) {
+      if (currentStep === 1) onNext()
     }
   }
 
@@ -708,7 +734,7 @@ export default function PostItemForm({
           <label className="block text-sm font-medium">
             Images <span className="text-red-500">*</span>
           </label>
-          <ImageUploader maxImages={5} onChange={handleImageChange} existingImages={data.images || []} />
+          <ImageUploader maxImages={5} onChange={handleImageChange} existingImages={data.images?.map(img => img.url) || []} />
         </div>
 
         {data.category === "Electronics" && data.subcategory === "Mobile Phones" && (
@@ -759,4 +785,3 @@ export default function PostItemForm({
     </div>
   )
 }
-

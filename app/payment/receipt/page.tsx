@@ -45,15 +45,23 @@ export default function ReceiptPage() {
 
     // Now, explicitly override or set the email using the cookie.
     const cookieEmail = Cookies.get("customerEmail");
+    const cookiename = Cookies.get("customerName");
 
     if (cookieEmail) {
       if (info) {
         // Override the email from sessionStorage with the cookie value.
         info.email = cookieEmail.trim();
+        if(cookiename){
+        info.name = cookiename.trim();
+
+
+        }
+
+
       } else {
         // If no info was found in sessionStorage, create a minimal info object.
         info = {
-          name: "", // You can update this if you have a default name.
+          name: '', // You can update this if you have a default name.
           email: cookieEmail.trim(),
           plan: "N/A",
           price: 0,

@@ -40,7 +40,6 @@
     "@radix-ui/react-toggle-group": "^1.1.1",
     "@radix-ui/react-tooltip": "^1.1.6",
     "@tensorflow/tfjs": "^4.22.0",
-    "@types/react": "latest",
     "@vercel/postgres": "latest",
     "autoprefixer": "^10.4.20",
     "axios": "^1.8.4",
@@ -55,6 +54,7 @@
     "framer-motion": "latest",
     "input-otp": "1.4.1",
     "jose": "latest",
+    "js-cookie": "^3.0.5",
     "lucide-react": "^0.454.0",
     "next": "15.1.0",
     "next-auth": "latest",
@@ -66,7 +66,9 @@
     "react-day-picker": "8.10.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "latest",
+    "react-hot-toast": "^2.5.2",
     "react-resizable-panels": "^2.1.7",
+    "react-router-dom": "^7.5.0",
     "react-webcam": "^7.2.0",
     "recharts": "2.15.0",
     "sonner": "^1.7.1",
@@ -79,11 +81,12 @@
     "zod": "latest"
   },
   "devDependencies": {
-    "@types/node": "^22",
-    "@types/react": "^19",
+    "@types/js-cookie": "^3.0.6",
+    "@types/node": "22.14.1",
+    "@types/react": "19.1.2",
     "@types/react-dom": "^19",
     "postcss": "^8",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5"
+    "typescript": "5.8.3"
   }
 }

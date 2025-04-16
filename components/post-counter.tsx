@@ -1,10 +1,11 @@
+// components/PostCounter.tsx
 "use client"
 
 import { useEffect, useState } from "react"
 import { AlertCircle, CheckCircle } from "lucide-react"
 import { checkPostsStatus } from "@/lib/actions"
 
-export function PostCounter() {
+export function PostCounter({ onUpgradeClick }: { onUpgradeClick: () => void }) {
   const [postsStatus, setPostsStatus] = useState({
     remainingFreePosts: 0,
     remainingPaidPosts: 0,
@@ -46,19 +47,26 @@ export function PostCounter() {
           totalRemaining > 0 ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"
         }`}
       >
-        {totalRemaining > 0 ? <CheckCircle className="h-4 w-4 mr-2" /> : <AlertCircle className="h-4 w-4 mr-2" />}
-        <span>
-          {totalRemaining > 0
-            ? `You have ${totalRemaining} post${totalRemaining !== 1 ? "s" : ""} remaining`
-            : "You've used all your posts"}
-        </span>
+        {totalRemaining > 0 ? (
+          <>
+            <CheckCircle className="h-4 w-4 mr-2" />
+            <span>You have {totalRemaining} post{totalRemaining !== 1 ? "s" : ""} remaining</span>
+          </>
+        ) : (
+          <>
+            <AlertCircle className="h-4 w-4 mr-2" />
+            <span>You’ve used all your free posts</span>
+          </>
+        )}
       </div>
 
-      {postsStatus.totalPaidPosts > 0 && (
-        <div className="text-sm text-gray-600">
-          <span className="font-medium">{postsStatus.remainingPaidPosts}</span> paid posts and
-          <span className="font-medium"> {postsStatus.remainingFreePosts}</span> free posts remaining
-        </div>
+      {postsStatus.remainingFreePosts === 0 && (
+        <button
+          className="mt-2 text-sm text-white bg-blue-600 hover:bg-blue-700 px-4 py-1.5 rounded-full"
+          onClick={onUpgradeClick}
+        >
+          Upgrade Plan
+        </button>
       )}
     </div>
   )

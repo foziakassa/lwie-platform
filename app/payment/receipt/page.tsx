@@ -1,99 +1,136 @@
+"use client";
 
-"use client"
-
-import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
-import { Download, Printer, Home, AlertCircle } from "lucide-react"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { toast } from "sonner"
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { Download, Printer, Home, AlertCircle } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import Cookies from "js-cookie";
 
 interface CustomerInfo {
-  name: string
-  email: string
-  plan: string
-  price: number
-  postsCount: number
-  date: string
-  transactionId: string
+  name: string;
+  email: string;
+  plan: string;
+  price: number;
+  postsCount: number;
+  date: string;
+  transactionId: string;
 }
 
 export default function ReceiptPage() {
-  const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
-  const receiptRef = useRef<HTMLDivElement>(null)
-  const router = useRouter()
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    // Get customer info from session storage
+    let info: CustomerInfo | null = null;
+    // First, try to retrieve receipt info from sessionStorage.
     try {
-      const storedInfo = sessionStorage.getItem("customerInfo")
+      const storedInfo = sessionStorage.getItem("customerInfo");
       if (storedInfo) {
-        setCustomerInfo(JSON.parse(storedInfo))
-      } else {
-        // No data found
-        setError(true)
+        info = JSON.parse(storedInfo);
       }
     } catch (err) {
-      console.error("Error retrieving customer info:", err)
-      setError(true)
-    } finally {
-      setLoading(false)
+      console.error("Error retrieving customer info from sessionStorage:", err);
     }
-  }, [])
+
+    // Now, explicitly override or set the email using the cookie.
+    const cookieEmail = Cookies.get("customerEmail");
+    const cookiename = Cookies.get("customerName");
+
+    if (cookieEmail) {
+      if (info) {
+        // Override the email from sessionStorage with the cookie value.
+        info.email = cookieEmail.trim();
+        if(cookiename){
+        info.name = cookiename.trim();
+
+
+        }
+
+
+      } else {
+        // If no info was found in sessionStorage, create a minimal info object.
+        info = {
+          name: '', // You can update this if you have a default name.
+          email: cookieEmail.trim(),
+          plan: "N/A",
+          price: 0,
+          postsCount: 0,
+          date: new Date().toISOString(),
+          transactionId: "N/A",
+        };
+      }
+    }
+
+    if (info) {
+      setCustomerInfo(info);
+    } else {
+      setError(true);
+    }
+    setLoading(false);
+  }, []);
 
   const handlePrint = () => {
-    window.print()
-  }
+    window.print();
+  };
 
   const handleDownload = () => {
-    if (!receiptRef.current) return
+    if (!receiptRef.current) return;
 
     try {
-      const receiptContent = receiptRef.current.outerHTML
+      const receiptContent = receiptRef.current.outerHTML;
       const blob = new Blob(
         [
           `
-        <html>
-          <head>
-            <title>Payment Receipt</title>
-            <style>
-              body { font-family: Arial, sans-serif; padding: 20px; }
-              .receipt { border: 1px solid #ddd; padding: 20px; max-width: 500px; margin: 0 auto; }
-              .header { text-align: center; margin-bottom: 20px; }
-              .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
-              .footer { margin-top: 30px; text-align: center; font-size: 14px; color: #666; }
-            </style>
-          </head>
-          <body>
-            ${receiptContent}
-          </body>
-        </html>
-      `,
+          <html>
+            <head>
+              <title>Payment Receipt</title>
+              <style>
+                body { font-family: Arial, sans-serif; padding: 20px; }
+                .receipt { border: 1px solid #ddd; padding: 20px; max-width: 500px; margin: 0 auto; }
+                .header { text-align: center; margin-bottom: 20px; }
+                .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+                .footer { margin-top: 30px; text-align: center; font-size: 14px; color: #666; }
+              </style>
+            </head>
+            <body>
+              ${receiptContent}
+            </body>
+          </html>
+          `,
         ],
         { type: "text/html" },
-      )
+      );
 
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.href = url
-      link.download = `receipt-${Date.now()}.html`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `receipt-${Date.now()}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (error) {
-      toast.error("There was an error downloading your receipt. Please try again.")
+      toast.error("There was an error downloading your receipt. Please try again.");
     }
-  }
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <p>Loading receipt information...</p>
       </div>
-    )
+    );
   }
 
   if (error || !customerInfo) {
@@ -122,10 +159,10 @@ export default function ReceiptPage() {
           </CardFooter>
         </Card>
       </div>
-    )
+    );
   }
 
-return (
+  return (
     <div className="min-h-screen bg-white py-10 px-4">
       <div className="max-w-md mx-auto">
         <div className="mb-6 flex justify-between">
@@ -168,7 +205,9 @@ return (
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Date</p>
-                    <p className="font-medium">{new Date(customerInfo.date).toLocaleDateString()}</p>
+                    <p className="font-medium">
+                      {new Date(customerInfo.date).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
 
@@ -209,11 +248,13 @@ return (
             </CardContent>
             <CardFooter className="flex-col items-center text-center text-sm text-gray-500 border-t pt-6">
               <p>Thank you for your payment!</p>
-              <p className="mt-1">If you have any questions, please contact our support team.</p>
+              <p className="mt-1">
+                If you have any questions, please contact our support team.
+              </p>
             </CardFooter>
           </Card>
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const categories = [
+  "All",
   "Electronics",
   "Home Appliances",
   "Toys and Games",

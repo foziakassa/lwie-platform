@@ -161,7 +161,7 @@ export default function RegisterPage() {
         // If we have a face box, we can crop the image to just the face
         if (faceBox && canvasRef.current) {
           const canvas = document.createElement("canvas")
-          const img = new Image()
+          const img = new window.Image()
 
           img.onload = () => {
             // Add some padding around the face
@@ -235,7 +235,7 @@ export default function RegisterPage() {
       // Redirect after a short delay
       setTimeout(() => {
         router.push("/") // Navigate to home after successful registration
-      }, 2000)
+      }, 2000000)
     } catch (err: any) {
       console.error("Error saving to database:", err)
       setError(err.message || "Failed to save biometric data")
@@ -561,9 +561,9 @@ export default function RegisterPage() {
                 {registrationComplete ? (
                   <div className="text-center space-y-4">
                     <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto" />
-                    <p className="text-lg font-medium text-gray-900 dark:text-white">Registration Successful!</p>
+                    <p className="text-lg font-medium text-gray-900 dark:text-white">Registration Successful! <span className="text-teal-600">ckeck your email!</span> </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">Your biometric data has been saved.</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Redirecting you to the homepage...</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">please check you email for acount activation</p>
                   </div>
                 ) : (
                   <>

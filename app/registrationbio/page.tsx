@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Webcam from "react-webcam"
 import * as faceapi from "face-api.js"
+import fetch from "@/shared/fetch"
 
-export default function RegisterPage() {
+export default  function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
@@ -36,7 +37,26 @@ export default function RegisterPage() {
 
   const webcamRef = useRef<Webcam>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [isActive , setIsActive]= useState(false)
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const responsedata = await fetch('/users');
+        const data = await responsedata.json(); // Ensure to parse JSON
+        if (data.activated === "true") {
+          setIsActive(true); // Correct usage
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    };
 
+    fetchUserData();
+  }, []);
+
+  
+  // Call the function where appropriate, e.g., in useEffect
+  
   // Load face-api models - using only the essential models
   useEffect(() => {
     const loadModels = async () => {
@@ -233,9 +253,12 @@ export default function RegisterPage() {
       setStatusMessage("Biometric data saved successfully!")
 
       // Redirect after a short delay
-      setTimeout(() => {
-        router.push("/") // Navigate to home after successful registration
-      }, 2000000)
+      if(isActive){
+        router.push("/")
+      }
+      // setTimeout(() => {
+      //   router.push("/") // Navigate to home after successful registration
+      // }, 2000000)
     } catch (err: any) {
       console.error("Error saving to database:", err)
       setError(err.message || "Failed to save biometric data")

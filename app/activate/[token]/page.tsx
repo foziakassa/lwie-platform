@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation"; // Import useSearchParams
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
+import { useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion"
 import { Filter, MapPin, ArrowRight, Heart, Share2, Gift } from "lucide-react"
 
@@ -91,6 +92,7 @@ export default function Activate() {
   const searchParams = useSearchParams(); // Get the search params
   const [token, setToken] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [status , setStatus] = useState("loading")
   const [isLoading, setIsLoading] = useState(true);
   
 
@@ -99,8 +101,40 @@ export default function Activate() {
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [likedItems, setLikedItems] = useState<number[]>([])
   const router = useRouter()
-
+const params= useParams()
   // Simulating data loading
+  useEffect(() => {
+    const activateAccount = async () => {
+      try {
+        const token = params.token
+        const url = params.url
+        console.log("url" , url)
+        console.log("Token from URL:", token) // Debug log
+        
+        // Call your API with the token
+        const response = await fetch(`https://liwedoc.vercel.app/activate/${token}`, {
+          method: 'GET',
+          credentials: 'include'
+        })
+        
+        const data = await response.json()
+        
+        if (response.ok) {
+          setStatus('success')
+          setMessage(data.message)
+        } else {
+          setStatus('error')
+          setMessage(data.error || 'Activation failed')
+        }
+      } catch (error) {
+        console.error("Activation error:", error)
+        setStatus('error')
+        setMessage('An error occurred during activation')
+      }
+    }
+    
+    activateAccount()
+  }, [params.token])
 
   useEffect(() => {
     // Simulate data loading

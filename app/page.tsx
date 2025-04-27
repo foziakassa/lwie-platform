@@ -6,49 +6,89 @@ import Image from "next/image"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { Filter, MapPin, ArrowRight, Heart, Share2, Gift } from "lucide-react"
-import useSWR from "swr"
 
-// Fetcher function for SWR
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+// Mock data for featured items
+const featuredItems = [
+  {
+    id: 1,
+    title: "Comfortable Leather Sofa",
+    price: "20,500 ETB",
+    location: "Addis Ababa",
+    condition: "Used",
+    image: "/sofa1.jpg",
+    likes: 23,
+  },
+  {
+    id: 2,
+    title: "V40 Toyota",
+    price: "2,300,000 ETB",
+    location: "Addis Ababa",
+    condition: "Used",
+    image: "/v40 toyota.jpg",
+    likes: 45,
+  },
+  {
+    id: 3,
+    title: "iPhone 13 Pro",
+    price: "55,000 ETB",
+    location: "Dire Dawa",
+    condition: "Like New",
+    image: "/iphone 13.jpg",
+    likes: 18,
+  },
+  {
+    id: 4,
+    title: "Mountain Bike",
+    price: "14,000 ETB",
+    location: "Hawassa",
+    condition: "Used",
+    image: "/bike.jpg",
+    likes: 12,
+  },
+]
 
-// Interface for Item and Service data
-interface Item {
-  id: number
-  user_id: number
-  title: string
-  price: number
-  location: string
-  condition: "New" | "Like New" | "Used" | "Fair" | "Poor"
-  images: string[]
-  likes: number
-  created_at: string
-}
 
-interface Service {
-  id: number
-  user_id: number
-  title: string
-  hourly_rate: number
-  location: string
-  time_estimation: number
-  time_unit: string
-  images: string[]
-  likes: number
-  created_at: string
-}
 
-// Combined type for display
-interface DisplayPost {
-  id: number
-  type: "item" | "service"
-  title: string
-  price: string
-  location: string
-  condition?: string
-  image: string
-  likes: number
-  postedTime?: string
-}
+
+// Mock data for latest posts
+const latestPosts = [
+  {
+    id: 9,
+    title: "MacBook Air M1",
+    price: "75,000 ETB",
+    location: "Addis Ababa",
+    condition: "Like New",
+    image: "/mac.jpg",
+    postedTime: "5 minutes ago",
+  },
+  {
+    id: 10,
+    title: "Vintage Record Player",
+    price: "7,800 ETB",
+    location: "Mekelle",
+    condition: "Good",
+    image: "/vintage record player.jpg",
+    postedTime: "2 hours ago",
+  },
+  {
+    id: 11,
+    title: "Fitness Equipment Set",
+    price: "13,500 ETB",
+    location: "Addis Ababa",
+    condition: "Used",
+    image: "/Ab Roller Wheel Set.jpg",
+    postedTime: "4 hours ago",
+  },
+  {
+    id: 12,
+    title: "Coffee Table",
+    price: "5,000 ETB",
+    location: "Hawassa",
+    condition: "Used",
+    image: "/coffee table.jpg",
+    postedTime: "6 hours ago",
+  },
+]
 
 export default function Home() {
   const [visibleSection, setVisibleSection] = useState("featured")
@@ -56,105 +96,40 @@ export default function Home() {
   const [likedItems, setLikedItems] = useState<number[]>([])
   const router = useRouter()
 
-  // SWR for fetching items and services
-  const { data: itemsData, mutate: mutateItems } = useSWR("/api/items", fetcher, {
-    revalidateOnFocus: false,
-  })
-  const { data: servicesData, mutate: mutateServices } = useSWR("/api/services", fetcher, {
-    revalidateOnFocus: false,
-  })
+  // Simulating data loading
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Revalidate when URL hash changes (new post submitted)
   useEffect(() => {
-    const handleHashChange = () => {
-      if (window.location.hash.includes("newPost")) {
-        mutateItems()
-        mutateServices()
-      }
-    }
+    // Simulate data loading
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+    }, 1000)
 
-    window.addEventListener("hashchange", handleHashChange)
-    handleHashChange() // Check on initial load
-
-    return () => window.removeEventListener("hashchange", handleHashChange)
-  }, [mutateItems, mutateServices])
-
-  // Load liked items from localStorage
-  useEffect(() => {
+    // Load liked items from localStorage
     const savedLikedItems = localStorage.getItem("likedItems")
     if (savedLikedItems) {
       setLikedItems(JSON.parse(savedLikedItems))
     }
+
+    return () => clearTimeout(timer)
   }, [])
-
-  // Combine and transform items and services for display
-  const transformPosts = (items: Item[], services: Service[]): DisplayPost[] => {
-    const itemPosts: DisplayPost[] = (items || []).map((item) => ({
-      id: item.id,
-      type: "item" as const,
-      title: item.title,
-      price: `${item.price.toLocaleString()} ETB`,
-      location: item.location,
-      condition: item.condition,
-      image: item.images?.[0] || "/placeholder.svg",
-      likes: item.likes || 0,
-      postedTime: formatPostedTime(item.created_at),
-    }))
-
-    const servicePosts: DisplayPost[] = (services || []).map((service) => ({
-      id: service.id,
-      type: "service" as const,
-      title: service.title,
-      price: `${service.hourly_rate.toLocaleString()} ETB/${service.time_unit}`,
-      location: service.location,
-      image: service.images?.[0] || "/placeholder.svg",
-      likes: service.likes || 0,
-      postedTime: formatPostedTime(service.created_at),
-    }))
-
-    return [...itemPosts, ...servicePosts]
-  }
-
-  // Format posted time (e.g., "5 minutes ago")
-  const formatPostedTime = (createdAt: string): string => {
-    const now = new Date()
-    const posted = new Date(createdAt)
-    const diffMs = now.getTime() - posted.getTime()
-    const diffSeconds = Math.floor(diffMs / 1000)
-    const diffMinutes = Math.floor(diffSeconds / 60)
-    const diffHours = Math.floor(diffMinutes / 60)
-
-    if (diffMinutes < 1) return `${diffSeconds} seconds ago`
-    if (diffHours < 1) return `${diffMinutes} minutes ago`
-    return `${diffHours} hours ago`
-  }
-
-  // Prepare featured and latest posts
-  const allPosts: DisplayPost[] = transformPosts(itemsData?.items || [], servicesData?.services || [])
-
-  // Featured: Sort by likes (descending), take top 4
-  const featuredPosts = [...allPosts]
-    .sort((a, b) => b.likes - a.likes)
-    .slice(0, 4)
-
-  // Latest: Sort by created_at (descending), take top 4
-  const latestPosts = [...allPosts]
-    .sort((a, b) => new Date(b.postedTime || "").getTime() - new Date(a.postedTime || "").getTime())
-    .slice(0, 4)
 
   const toggleLike = (itemId: number) => {
     setLikedItems((prev) => {
       const newLikedItems = prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
+
+      // Save to localStorage
       localStorage.setItem("likedItems", JSON.stringify(newLikedItems))
       return newLikedItems
     })
   }
 
-  const navigateToItemDetail = (post: DisplayPost) => {
-    if (post.id === 1 && post.type === "item" && post.title === "Comfortable Leather Sofa") {
+  const navigateToItemDetail = (itemId: number) => {
+    // Navigate to the product detail page for the leather sofa (id: 1)
+    if (itemId === 1) {
       router.push(`/products/comfortable-leather-sofa`)
     } else {
-      router.push(`/${post.type}/${post.id}`)
+      router.push(`/item/${itemId}`)
     }
   }
 
@@ -184,11 +159,20 @@ export default function Home() {
     },
   }
 
-  const isLoading = !itemsData || !servicesData
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="container mx-auto px-4 py-8">
+        {/* Welcome Section */}
+        {/* <section className="text-center mb-12">
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            <h1 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">Welcome to LWIE</h1>
+            <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+              Join our community of swappers and trade items you no longer need for things you want. It's sustainable,
+              economical, and fun!
+            </p>
+          </motion.div>
+        </section> */}
+
         {/* Section Navigation */}
         <div className="flex justify-center mb-8">
           <div className="flex space-x-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
@@ -208,7 +192,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Featured Listings */}
+        {/* Featured Items */}
         <AnimatePresence mode="wait">
           {visibleSection === "featured" && (
             <motion.section
@@ -252,31 +236,31 @@ export default function Home() {
                   initial="hidden"
                   animate="visible"
                 >
-                  {featuredPosts.map((post) => (
+                  {featuredItems.map((item) => (
                     <motion.div
-                      key={`${post.type}-${post.id}`}
+                      key={item.id}
                       variants={itemVariants}
                       whileHover={{ y: -5 }}
                       className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden group cursor-pointer"
-                      onClick={() => navigateToItemDetail(post)}
+                      onClick={() => navigateToItemDetail(item.id)}
                     >
                       <div className="relative h-48">
-                        <Image src={post.image} alt={post.title} fill className="object-cover" />
+                        <Image src={item.image || "/placeholder.svg"} alt={item.title} fill className="object-cover" />
                         <div className="absolute top-2 right-2 flex space-x-2">
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={(e) => {
                               e.stopPropagation()
-                              toggleLike(post.id)
+                              toggleLike(item.id)
                             }}
                             className={`p-2 rounded-full ${
-                              likedItems.includes(post.id)
+                              likedItems.includes(item.id)
                                 ? "bg-rose-500 text-white"
                                 : "bg-white/80 text-gray-700 hover:bg-white"
                             }`}
                           >
-                            <Heart className="h-4 w-4" fill={likedItems.includes(post.id) ? "currentColor" : "none"} />
+                            <Heart className="h-4 w-4" fill={likedItems.includes(item.id) ? "currentColor" : "none"} />
                           </motion.button>
                           <motion.button
                             whileHover={{ scale: 1.1 }}
@@ -294,17 +278,15 @@ export default function Home() {
                       <div className="p-4">
                         <div className="flex justify-between items-start mb-2">
                           <div>
-                            <p className="font-bold text-xl text-gray-900 dark:text-white">{post.price}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">{post.title}</p>
+                            <p className="font-bold text-xl text-gray-900 dark:text-white">{item.price}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">{item.title}</p>
                           </div>
-                          {post.condition && (
-                            <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                              {post.condition}
-                            </span>
-                          )}
+                          <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                            {item.condition}
+                          </span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{post.location}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{item.location}</p>
                           <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded-full text-sm font-medium">
                             View
                           </span>
@@ -317,6 +299,7 @@ export default function Home() {
             </motion.section>
           )}
 
+          
           {/* Latest Posts */}
           {visibleSection === "latest" && (
             <motion.section
@@ -353,34 +336,32 @@ export default function Home() {
                   initial="hidden"
                   animate="visible"
                 >
-                  {latestPosts.map((post) => (
+                  {latestPosts.map((item) => (
                     <motion.div
-                      key={`${post.type}-${post.id}`}
+                      key={item.id}
                       variants={itemVariants}
                       whileHover={{ y: -5 }}
                       className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden group cursor-pointer"
-                      onClick={() => navigateToItemDetail(post)}
+                      onClick={() => navigateToItemDetail(item.id)}
                     >
                       <div className="relative h-48">
-                        <Image src={post.image} alt={post.title} fill className="object-cover" />
+                        <Image src={item.image || "/placeholder.svg"} alt={item.title} fill className="object-cover" />
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                          <span className="text-xs text-white">{post.postedTime}</span>
+                          <span className="text-xs text-white">{item.postedTime}</span>
                         </div>
                       </div>
                       <div className="p-4">
                         <div className="flex justify-between items-start mb-2">
                           <div>
-                            <p className="font-bold text-xl text-gray-900 dark:text-white">{post.price}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">{post.title}</p>
+                            <p className="font-bold text-xl text-gray-900 dark:text-white">{item.price}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">{item.title}</p>
                           </div>
-                          {post.condition && (
-                            <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                              {post.condition}
-                            </span>
-                          )}
+                          <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                            {item.condition}
+                          </span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{post.location}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{item.location}</p>
                           <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded-full text-sm font-medium">
                             View
                           </span>
@@ -443,7 +424,7 @@ export default function Home() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push("/advertise")}
+                onClick={() => router.push("/advertise")} // Change the route as needed
                 className="px-6 py-3 bg-teal-600 text-white rounded-full font-medium hover:bg-teal-700 transition-colors"
               >
                 Click Here
@@ -455,3 +436,4 @@ export default function Home() {
     </div>
   )
 }
+

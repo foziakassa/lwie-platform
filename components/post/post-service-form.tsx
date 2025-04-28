@@ -15,6 +15,7 @@ interface PostServiceFormProps {
   onPrevious?: () => void
   onSaveDraft: () => void
   currentStep: number
+  onSubmit?: (postData: any) => void // Added for newPost passing
 }
 
 export default function PostServiceForm({
@@ -24,6 +25,7 @@ export default function PostServiceForm({
   onPrevious,
   onSaveDraft,
   currentStep,
+  onSubmit,
 }: PostServiceFormProps) {
   const [titleCharCount, setTitleCharCount] = useState(data.title?.length || 0)
   const [descriptionCharCount, setDescriptionCharCount] = useState(data.description?.length || 0)
@@ -95,7 +97,7 @@ export default function PostServiceForm({
     setIsSubmitting(true)
     try {
       const serviceData = {
-        user_id: data.user_id || 1, // Default to 1 if not provided
+        user_id: data.user_id || 1,
         title: data.title,
         category_id: data.category_id,
         description: data.description,
@@ -109,19 +111,35 @@ export default function PostServiceForm({
       }
 
       const response = await api.post('/api/services', serviceData)
-      
+
+      // Create newPost object for immediate display
+      const newPost = {
+        id: response.data.service?.id || Date.now(), // Fallback to timestamp if id not returned
+        title: serviceData.title,
+        price: data.hourly_rate ? `${data.hourly_rate} ETB/hr` : "Negotiable", // Use hourly_rate as price
+        location: serviceData.location,
+        condition: "Service", // Fixed value for services
+        image: serviceData.images[0]?.url || "/placeholder.svg", // Use first image or placeholder
+        likes: 0,
+        createdAt: new Date().toISOString(),
+      }
+
       toast({
         title: "Service created",
         description: "Your service has been successfully posted.",
         variant: "default",
       })
 
-      onNext()
-    } catch (error) {
+      if (onSubmit) {
+        onSubmit(newPost) // Pass newPost to parent
+      } else {
+        onNext()
+      }
+    } catch (error: any) {
       console.error('Error creating service:', error)
       toast({
         title: "Error",
-        description: "There was an error creating your service.",
+        description: error.response?.data?.error || "There was an error creating your service",
         variant: "destructive",
       })
     } finally {
@@ -441,11 +459,14 @@ export default function PostServiceForm({
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back
           </Link>
-          <div className="text-sm text-gray-500">Step 1 of 4: Basic Info</div>
+          <div className="text-sm text-gray-500">Step {currentStep} of 4: Basic Info</div>
         </div>
       )}
 
-      <h2 className="text-lg font-medium">Basic Information</h2>
+      <div className="space-y-2">
+        <h2 className="text-lg font-medium">Basic Information</h2>
+        {!onPrevious && <p className="text-sm text-gray-500">Step {currentStep} of 4: Basic Info</p>}
+      </div>
 
       <div className="space-y-4">
         {/* Title Input */}
@@ -465,6 +486,7 @@ export default function PostServiceForm({
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500"
             maxLength={100}
           />
+          <p className="text-xs text-gray-500">Be specific and include key details</p>
         </div>
 
         {/* Category and Subcategory */}
@@ -489,7 +511,6 @@ export default function PostServiceForm({
                 <option value="Tutoring" data-id="5">Tutoring</option>
                 <option value="Home Services" data-id="4">Home Services</option>
                 <option value="Professional Services" data-id="6">Professional Services</option>
-                {/* Add other categories with their IDs */}
               </select>
               <ChevronRight className="absolute right-3 top-1/2 transform -translate-y-1/2 rotate-90 h-4 w-4 text-gray-500" />
             </div>
@@ -511,10 +532,29 @@ export default function PostServiceForm({
                   <>
                     <option value="Music">Music</option>
                     <option value="Math">Math</option>
-                    {/* Other tutoring subcategories */}
+                    <option value="Science">Science</option>
+                    <option value="Language">Language</option>
+                    <option value="Art">Art</option>
                   </>
                 )}
-                {/* Other category subcategories */}
+                {data.category === "Home Services" && (
+                  <>
+                    <option value="Cleaning">Cleaning</option>
+                    <option value="Plumbing">Plumbing</option>
+                    <option value="Electrical">Electrical</option>
+                    <option value="Gardening">Gardening</option>
+                    <option value="Painting">Painting</option>
+                  </>
+                )}
+                {data.category === "Professional Services" && (
+                  <>
+                    <option value="Legal">Legal</option>
+                    <option value="Accounting">Accounting</option>
+                    <option value="Consulting">Consulting</option>
+                    <option value="Graphic Design">Graphic Design</option>
+                    <option value="Writing">Writing</option>
+                  </>
+                )}
               </select>
               <ChevronRight className="absolute right-3 top-1/2 transform -translate-y-1/2 rotate-90 h-4 w-4 text-gray-500" />
             </div>
@@ -537,6 +577,7 @@ export default function PostServiceForm({
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500 min-h-[120px]"
             maxLength={2000}
           />
+          <p className="text-xs text-gray-500">Include details about what clients can expect</p>
         </div>
 
         {/* Location */}
@@ -570,6 +611,7 @@ export default function PostServiceForm({
             placeholder="Enter your hourly rate"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500"
           />
+          <p className="text-xs text-gray-500">Optional: Specify your hourly rate in Ethiopian Birr</p>
         </div>
 
         {/* Images */}
@@ -580,6 +622,7 @@ export default function PostServiceForm({
             onChange={handleImageChange} 
             existingImages={data.images?.map((img: any) => img.url) || []} 
           />
+          <p className="text-xs text-gray-500">Add up to 5 images to showcase your service</p>
         </div>
 
         {/* Dynamic Fields */}
@@ -610,11 +653,11 @@ export default function PostServiceForm({
 
           <button
             type="button"
-            onClick={handleSubmit}
+            onClick={onSubmit ? handleSubmit : onNext}
             disabled={isSubmitting}
             className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${isSubmitting ? 'bg-teal-400' : 'bg-teal-600 hover:bg-teal-700'}`}
           >
-            {isSubmitting ? 'Posting...' : 'Post Service'}
+            {isSubmitting ? 'Posting...' : (onSubmit ? 'Post Service' : 'Next Step')}
             {!isSubmitting && <ChevronRight className="ml-2 h-4 w-4" />}
           </button>
         </div>

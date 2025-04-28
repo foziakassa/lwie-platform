@@ -21,13 +21,12 @@ export default function ProgressSteps({ steps, currentStep, onStepClick }: Progr
               onClick={() => onStepClick && isCompleted && onStepClick(stepNumber)}
             >
               <div
-                className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                  isActive
+                className={`h-8 w-8 rounded-full flex items-center justify-center ${isActive
                     ? "bg-teal-600 text-white"
                     : isCompleted
                       ? "bg-teal-100 text-teal-600"
                       : "bg-gray-200 text-gray-500"
-                }`}
+                  }`}
               >
                 {stepNumber}
               </div>
@@ -47,4 +46,3 @@ export default function ProgressSteps({ steps, currentStep, onStepClick }: Progr
     </div>
   )
 }
-

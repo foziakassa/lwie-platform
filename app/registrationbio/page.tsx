@@ -45,6 +45,7 @@ export default  function RegisterPage() {
         const data = await responsedata.json(); // Ensure to parse JSON
         if (data.activated === "true") {
           setIsActive(true); // Correct usage
+          console.log(isActive)
         }
       } catch (err) {
         console.log(err);

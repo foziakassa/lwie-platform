@@ -50,6 +50,7 @@ export default function LoginPage() {
         bio: responseData.Bio,
         phone: responseData.Phone,
         image: responseData.Image,
+        activated:responseData.activated
       };
 
       if (responseData) {

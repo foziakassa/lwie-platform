@@ -13,6 +13,7 @@ export default function SuccessScreen({ postType, newPost }: SuccessScreenProps)
   const router = useRouter()
   const [countdown, setCountdown] = useState(5)
 
+  // Handle countdown timer and localStorage
   useEffect(() => {
     // Store newPost in localStorage if provided
     if (newPost) {
@@ -27,19 +28,19 @@ export default function SuccessScreen({ postType, newPost }: SuccessScreenProps)
 
     // Set up countdown timer
     const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          router.push("/")
-          return 0
-        }
-        return prev - 1
-      })
+      setCountdown((prev) => (prev > 0 ? prev - 1 : 0))
     }, 1000)
 
     // Cleanup timer on unmount
     return () => clearInterval(timer)
-  }, [router, newPost])
+  }, [newPost])
+
+  // Handle navigation when countdown reaches 0
+  useEffect(() => {
+    if (countdown === 0) {
+      router.push("/")
+    }
+  }, [countdown, router])
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 py-12">

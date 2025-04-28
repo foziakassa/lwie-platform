@@ -719,6 +719,7 @@ export default  function RegisterPage() {
                             <div className="absolute inset-0 flex items-center justify-center z-10">
                               <Camera className="w-16 h-16 text-gray-400" />
                             </div>
+                            ///
                           ) : (
                             // Show webcam when camera is active
                             <div className="absolute inset-0 w-full h-full">

@@ -2,7 +2,7 @@
 import { useState, useRef, useCallback, useEffect } from "react"
 import { Camera, Loader2, CheckCircle2, Eye, MoveHorizontal, AlertCircle, Database } from "lucide-react"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
+import NextImage from "next/image" // Renamed to avoid conflict with browser's Image
 import Webcam from "react-webcam"
 import * as faceapi from "face-api.js"
 
@@ -161,7 +161,8 @@ export default function RegisterPage() {
         // If we have a face box, we can crop the image to just the face
         if (faceBox && canvasRef.current) {
           const canvas = document.createElement("canvas")
-          const img = new Image()
+          // Use the browser's native Image constructor, not the Next.js component
+          const img = new window.Image() // Fixed: Use window.Image instead of Image
 
           img.onload = () => {
             // Add some padding around the face
@@ -681,7 +682,7 @@ export default function RegisterPage() {
                     >
                       {capturedImage ? (
                         // Show captured image if available
-                        <Image
+                        <NextImage
                           src={capturedImage || "/placeholder.svg"}
                           alt="Captured face"
                           width={192}

@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation"
 import NextImage from "next/image" // Renamed to avoid conflict with browser's Image
 import Webcam from "react-webcam"
 import * as faceapi from "face-api.js"
+import fetch from "@/shared/fetch"
 
-export default function RegisterPage() {
+export default  function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
@@ -36,7 +37,27 @@ export default function RegisterPage() {
 
   const webcamRef = useRef<Webcam>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [isActive , setIsActive]= useState(false)
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const responsedata = await fetch('/users');
+        const data = await responsedata.json(); // Ensure to parse JSON
+        if (data.activated === "true") {
+          setIsActive(true); // Correct usage
+          console.log(isActive)
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    };
 
+    fetchUserData();
+  }, []);
+
+  
+  // Call the function where appropriate, e.g., in useEffect
+  
   // Load face-api models - using only the essential models
   useEffect(() => {
     const loadModels = async () => {
@@ -161,8 +182,7 @@ export default function RegisterPage() {
         // If we have a face box, we can crop the image to just the face
         if (faceBox && canvasRef.current) {
           const canvas = document.createElement("canvas")
-          // Use the browser's native Image constructor, not the Next.js component
-          const img = new window.Image() // Fixed: Use window.Image instead of Image
+          const img = new Image()
 
           img.onload = () => {
             // Add some padding around the face
@@ -234,9 +254,12 @@ export default function RegisterPage() {
       setStatusMessage("Biometric data saved successfully!")
 
       // Redirect after a short delay
-      setTimeout(() => {
-        router.push("/") // Navigate to home after successful registration
-      }, 2000)
+      if(isActive){
+        router.push("/")
+      }
+      // setTimeout(() => {
+      //   router.push("/") // Navigate to home after successful registration
+      // }, 2000000)
     } catch (err: any) {
       console.error("Error saving to database:", err)
       setError(err.message || "Failed to save biometric data")
@@ -562,9 +585,9 @@ export default function RegisterPage() {
                 {registrationComplete ? (
                   <div className="text-center space-y-4">
                     <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto" />
-                    <p className="text-lg font-medium text-gray-900 dark:text-white">Registration Successful!</p>
+                    <p className="text-lg font-medium text-gray-900 dark:text-white">Registration Successful! <span className="text-teal-600">ckeck your email!</span> </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">Your biometric data has been saved.</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Redirecting you to the homepage...</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">please check you email for acount activation</p>
                   </div>
                 ) : (
                   <>

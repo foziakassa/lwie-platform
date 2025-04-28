@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
+import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from "framer-motion"
 import { Filter, MapPin, ArrowRight, Heart, Share2, Gift } from "lucide-react"
 
@@ -95,6 +96,7 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [likedItems, setLikedItems] = useState<number[]>([])
   const router = useRouter()
+  const params = useParams();
 
   // Simulating data loading
   const [isLoading, setIsLoading] = useState(true)
@@ -113,6 +115,8 @@ export default function Home() {
 
     return () => clearTimeout(timer)
   }, [])
+  // In your frontend at /activate/[token]
+ 
 
   const toggleLike = (itemId: number) => {
     setLikedItems((prev) => {

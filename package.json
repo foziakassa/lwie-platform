@@ -60,6 +60,7 @@
     "next-auth": "latest",
     "next-themes": "latest",
     "nodemailer": "^6.10.0",
+    "path-browserify": "^1.0.1",
     "pusher": "latest",
     "pusher-js": "latest",
     "react": "^18.3.1",

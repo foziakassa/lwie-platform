@@ -180,7 +180,7 @@ export default function Home() {
 
         {/* Section Navigation */}
         <ApprovedAdvertisement/>
-        <div className="flex justify-center mb-8">
+        {/* <div className="flex justify-center mb-8">
           <div className="flex space-x-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
             {["featured", "latest"].map((section) => (
               <button
@@ -196,7 +196,7 @@ export default function Home() {
               </button>
             ))}
           </div>
-        </div>
+        </div> */}
 
         {/* Featured Items */}
         <AnimatePresence mode="wait">
@@ -210,7 +210,7 @@ export default function Home() {
               className="mb-12"
             >
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Featured Listings</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white"> Listings</h2>
                 <div className="flex items-center space-x-4">
                   <button className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-md shadow hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     <Filter className="h-4 w-4" />
@@ -307,78 +307,7 @@ export default function Home() {
 
           
           {/* Latest Posts */}
-          {visibleSection === "latest" && (
-            <motion.section
-              key="latest"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="mb-12"
-            >
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Latest Posts</h2>
-                <Link href="/latest" className="text-teal-600 dark:text-teal-400 hover:underline flex items-center">
-                  View all <ArrowRight className="ml-1 h-4 w-4" />
-                </Link>
-              </div>
-
-              {isLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {[1, 2, 3, 4].map((item) => (
-                    <div key={item} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-                      <div className="h-48 bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
-                      <div className="p-4">
-                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2"></div>
-                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-2/3"></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <motion.div
-                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                >
-                  {latestPosts.map((item) => (
-                    <motion.div
-                      key={item.id}
-                      variants={itemVariants}
-                      whileHover={{ y: -5 }}
-                      className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden group cursor-pointer"
-                      onClick={() => navigateToItemDetail(item.id)}
-                    >
-                      <div className="relative h-48">
-                        <Image src={item.image || "/placeholder.svg"} alt={item.title} fill className="object-cover" />
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                          <span className="text-xs text-white">{item.postedTime}</span>
-                        </div>
-                      </div>
-                      <div className="p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <p className="font-bold text-xl text-gray-900 dark:text-white">{item.price}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">{item.title}</p>
-                          </div>
-                          <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                            {item.condition}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{item.location}</p>
-                          <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded-full text-sm font-medium">
-                            View
-                          </span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              )}
-            </motion.section>
-          )}
+          
         </AnimatePresence>
 
         {/* Charity Section */}

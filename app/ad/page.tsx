@@ -142,10 +142,10 @@ export default function ApprovedAdvertisement() {
               <img
                 src={advertisement.product_image || "/placeholder.svg"}
                 alt={advertisement.company_name}
-                className="w-full h-64 object-cover rounded-md"
+                className="w-full h-48 object-cover rounded-md"
               />
             ) : (
-              <div className="w-full h-64 bg-gray-100 dark:bg-gray-700 flex items-center justify-center rounded-md">
+              <div className="w-full h-48 bg-gray-100 dark:bg-gray-700 flex items-center justify-center rounded-md">
                 <span className="text-sm text-gray-400">No image available</span>
               </div>
             )}

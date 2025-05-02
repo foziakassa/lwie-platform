@@ -2,12 +2,12 @@
 import { useState, useRef, useCallback, useEffect } from "react"
 import { Camera, Loader2, CheckCircle2, Eye, MoveHorizontal, AlertCircle, Database } from "lucide-react"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
+import NextImage from "next/image" // Renamed to avoid conflict with browser's Image
 import Webcam from "react-webcam"
 import * as faceapi from "face-api.js"
-import fetch from "@/shared/fetch"
 
-export default  function RegisterPage() {
+
+export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
@@ -28,35 +28,25 @@ export default  function RegisterPage() {
   const [instructionText, setInstructionText] = useState("")
   const [isSavingToDatabase, setIsSavingToDatabase] = useState(false)
   const [faceBox, setFaceBox] = useState<{ x: number; y: number; width: number; height: number } | null>(null)
+  const [isActive, setIsActive] = useState(false)
 
-  // For blink detection
+  // For blink detection - enhanced
   const eyeOpenessHistory = useRef<number[]>([])
-  const MAX_HISTORY = 10
+  const eyeBrightnessHistory = useRef<number[]>([])
+  const eyeEdgeDensityHistory = useRef<number[]>([])
+  const MAX_HISTORY = 15 // Increased history for better pattern detection
   const blinkCountRef = useRef(0)
   const lastBlinkTime = useRef(0)
 
+  // For movement detection - enhanced
+  const facePositionHistory = useRef<Array<{ x: number; y: number }>>([])
+  const MAX_POSITION_HISTORY = 10
+  const movementScoreRef = useRef(0)
+
   const webcamRef = useRef<Webcam>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [isActive , setIsActive]= useState(false)
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const responsedata = await fetch('/users');
-        const data = await responsedata.json(); // Ensure to parse JSON
-        if (data.activated === "true") {
-          setIsActive(true); // Correct usage
-        }
-      } catch (err) {
-        console.log(err);
-      }
-    };
+  const debugCanvasRef = useRef<HTMLCanvasElement>(null)
 
-    fetchUserData();
-  }, []);
-
-  
-  // Call the function where appropriate, e.g., in useEffect
-  
   // Load face-api models - using only the essential models
   useEffect(() => {
     const loadModels = async () => {
@@ -144,6 +134,14 @@ export default  function RegisterPage() {
         throw new Error("Face detection models are not loaded yet. Please wait.")
       }
 
+      // Reset detection histories
+      eyeOpenessHistory.current = []
+      eyeBrightnessHistory.current = []
+      eyeEdgeDensityHistory.current = []
+      facePositionHistory.current = []
+      blinkCountRef.current = 0
+      movementScoreRef.current = 0
+
       // Set camera as active
       setIsCameraActive(true)
       setCurrentStep("face")
@@ -181,7 +179,8 @@ export default  function RegisterPage() {
         // If we have a face box, we can crop the image to just the face
         if (faceBox && canvasRef.current) {
           const canvas = document.createElement("canvas")
-          const img = new window.Image()
+          const img = new Image()
+          img.crossOrigin = "anonymous" // Add this to avoid CORS issues
 
           img.onload = () => {
             // Add some padding around the face
@@ -191,6 +190,7 @@ export default  function RegisterPage() {
             const width = Math.min(img.width - x, faceBox.width + padding * 2)
             const height = Math.min(img.height - y, faceBox.height + padding * 2)
 
+            // Set canvas size to match the cropped area
             canvas.width = width
             canvas.height = height
             const ctx = canvas.getContext("2d")
@@ -253,12 +253,11 @@ export default  function RegisterPage() {
       setStatusMessage("Biometric data saved successfully!")
 
       // Redirect after a short delay
-      if(isActive){
-        router.push("/")
-      }
-      // setTimeout(() => {
-      //   router.push("/") // Navigate to home after successful registration
-      // }, 2000000)
+      setTimeout(() => {
+        if (isActive) {
+          router.push("/")
+        }
+      }, 2000)
     } catch (err: any) {
       console.error("Error saving to database:", err)
       setError(err.message || "Failed to save biometric data")
@@ -267,76 +266,376 @@ export default  function RegisterPage() {
     }
   }
 
-  // Simplified blink detection based on pixel intensity changes
-  const detectBlink = useCallback((video: HTMLVideoElement) => {
-    if (!canvasRef.current) return false
+  // Enhanced blink detection with multiple detection methods
+  const detectBlink = useCallback(
+    (video: HTMLVideoElement) => {
+      if (!canvasRef.current) return false
 
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext("2d", { willReadFrequently: true })
-    if (!ctx) return false
+      const canvas = canvasRef.current
+      const ctx = canvas.getContext("2d", { willReadFrequently: true })
+      if (!ctx) return false
 
-    // Draw the video frame to the canvas
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+      // Draw the video frame to the canvas
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
 
-    // Get the image data from the eye region (approximate)
-    const centerX = canvas.width / 2
-    const centerY = canvas.height / 3
-    const eyeRegionWidth = canvas.width / 3
-    const eyeRegionHeight = canvas.height / 6
+      // Get the image data from the eye region (approximate)
+      // Use face box to better locate the eyes if available
+      let leftEyeRegion = { x: 0, y: 0, width: 0, height: 0 }
+      let rightEyeRegion = { x: 0, y: 0, width: 0, height: 0 }
 
-    try {
-      const imageData = ctx.getImageData(
-        centerX - eyeRegionWidth / 2,
-        centerY - eyeRegionHeight / 2,
-        eyeRegionWidth,
-        eyeRegionHeight,
-      )
+      if (faceBox) {
+        // If we have face detection data, use it to locate eyes more precisely
+        // Eyes are typically in the upper third of the face
+        const eyeY = faceBox.y + faceBox.height * 0.25
+        const eyeHeight = faceBox.height * 0.2
 
-      // Calculate average brightness of the eye region
-      let totalBrightness = 0
-      for (let i = 0; i < imageData.data.length; i += 4) {
-        const r = imageData.data[i]
-        const g = imageData.data[i + 1]
-        const b = imageData.data[i + 2]
-        // Calculate perceived brightness
+        // Left eye region
+        leftEyeRegion = {
+          x: faceBox.x + faceBox.width * 0.15,
+          y: eyeY,
+          width: faceBox.width * 0.3,
+          height: eyeHeight,
+        }
+
+        // Right eye region
+        rightEyeRegion = {
+          x: faceBox.x + faceBox.width * 0.55,
+          y: eyeY,
+          width: faceBox.width * 0.3,
+          height: eyeHeight,
+        }
+      } else {
+        // Fallback to approximate location
+        const centerX = canvas.width / 2
+        const centerY = canvas.height / 3
+        const eyeWidth = canvas.width / 6
+        const eyeHeight = canvas.height / 8
+
+        leftEyeRegion = {
+          x: centerX - eyeWidth - eyeWidth / 2,
+          y: centerY - eyeHeight / 2,
+          width: eyeWidth,
+          height: eyeHeight,
+        }
+
+        rightEyeRegion = {
+          x: centerX + eyeWidth / 2,
+          y: centerY - eyeHeight / 2,
+          width: eyeWidth,
+          height: eyeHeight,
+        }
+      }
+
+      try {
+        // Scale coordinates for the canvas resolution
+        const scaleFactor = canvas.width / video.videoWidth
+
+        const leftScaledX = leftEyeRegion.x * scaleFactor
+        const leftScaledY = leftEyeRegion.y * scaleFactor
+        const leftScaledWidth = leftEyeRegion.width * scaleFactor
+        const leftScaledHeight = leftEyeRegion.height * scaleFactor
+
+        const rightScaledX = rightEyeRegion.x * scaleFactor
+        const rightScaledY = rightEyeRegion.y * scaleFactor
+        const rightScaledWidth = rightEyeRegion.width * scaleFactor
+        const rightScaledHeight = rightEyeRegion.height * scaleFactor
+
+        // Get image data for both eyes
+        const leftEyeData = ctx.getImageData(leftScaledX, leftScaledY, leftScaledWidth, leftScaledHeight)
+
+        const rightEyeData = ctx.getImageData(rightScaledX, rightScaledY, rightScaledWidth, rightScaledHeight)
+
+        // Process both eyes
+        const leftEyeMetrics = processEyeRegion(leftEyeData)
+        const rightEyeMetrics = processEyeRegion(rightEyeData)
+
+        // Average the metrics from both eyes
+        const avgBrightness = (leftEyeMetrics.brightness + rightEyeMetrics.brightness) / 2
+        const avgEdgeDensity = (leftEyeMetrics.edgeDensity + rightEyeMetrics.edgeDensity) / 2
+        const avgContrast = (leftEyeMetrics.contrast + rightEyeMetrics.contrast) / 2
+
+        // Add to history
+        eyeBrightnessHistory.current.push(avgBrightness)
+        eyeEdgeDensityHistory.current.push(avgEdgeDensity)
+        eyeOpenessHistory.current.push(avgContrast)
+
+        if (eyeBrightnessHistory.current.length > MAX_HISTORY) {
+          eyeBrightnessHistory.current.shift()
+          eyeEdgeDensityHistory.current.shift()
+          eyeOpenessHistory.current.shift()
+        }
+
+        // Need enough history to detect blinks
+        if (eyeBrightnessHistory.current.length < 5) return false
+
+        // Calculate variance and rate of change in metrics
+        const brightnessVariance = calculateVariance(eyeBrightnessHistory.current)
+        const edgeDensityVariance = calculateVariance(eyeEdgeDensityHistory.current)
+        const contrastVariance = calculateVariance(eyeOpenessHistory.current)
+
+        // Calculate rate of change (derivative)
+        const brightnessDerivative = calculateDerivative(eyeBrightnessHistory.current)
+        const edgeDensityDerivative = calculateDerivative(eyeEdgeDensityHistory.current)
+
+        // Draw eye regions for debugging
+        ctx.strokeStyle = "yellow"
+        ctx.lineWidth = 1
+        ctx.strokeRect(leftScaledX, leftScaledY, leftScaledWidth, leftScaledHeight)
+        ctx.strokeRect(rightScaledX, rightScaledY, rightScaledWidth, rightScaledHeight)
+
+        // Display metrics for debugging
+        ctx.font = "10px Arial"
+        ctx.fillStyle = "yellow"
+        ctx.fillText(`Bri: ${avgBrightness.toFixed(3)}`, 10, 40)
+        ctx.fillText(`Edge: ${avgEdgeDensity.toFixed(3)}`, 10, 55)
+        ctx.fillText(`Var: ${brightnessVariance.toFixed(3)}`, 10, 70)
+
+        // Multiple blink detection methods for higher sensitivity
+        const now = Date.now()
+
+        // Method 1: Brightness variance threshold
+        const BRIGHTNESS_VARIANCE_THRESHOLD = 0.0008 // More sensitive
+        const brightnessBlinkDetected = brightnessVariance > BRIGHTNESS_VARIANCE_THRESHOLD
+
+        // Method 2: Edge density drop
+        const EDGE_DENSITY_THRESHOLD = 0.01
+        const edgeBlinkDetected = edgeDensityVariance > EDGE_DENSITY_THRESHOLD
+
+        // Method 3: Rapid brightness change (derivative)
+        const DERIVATIVE_THRESHOLD = 0.02
+        const derivativeBlinkDetected = Math.abs(brightnessDerivative) > DERIVATIVE_THRESHOLD
+
+        // Method 4: Pattern recognition - look for characteristic blink pattern
+        // (brightness drops then rises, edge density drops then rises)
+        const patternBlinkDetected = detectBlinkPattern(eyeBrightnessHistory.current, eyeEdgeDensityHistory.current)
+
+        // Combine methods - if ANY method detects a blink, count it as a blink
+        // But only count it once per second to avoid multiple detections of the same blink
+        if (
+          (brightnessBlinkDetected || edgeBlinkDetected || derivativeBlinkDetected || patternBlinkDetected) &&
+          now - lastBlinkTime.current > 1000
+        ) {
+          blinkCountRef.current++
+          lastBlinkTime.current = now
+
+          // Draw eye regions in green to indicate blink detected
+          ctx.strokeStyle = "lime"
+          ctx.lineWidth = 2
+          ctx.strokeRect(leftScaledX, leftScaledY, leftScaledWidth, leftScaledHeight)
+          ctx.strokeRect(rightScaledX, rightScaledY, rightScaledWidth, rightScaledHeight)
+
+          // Display which method detected the blink
+          ctx.fillStyle = "lime"
+          ctx.fillText("BLINK DETECTED!", 10, 85)
+
+          return true
+        }
+
+        return false
+      } catch (err) {
+        console.error("Error in blink detection:", err)
+        return false
+      }
+    },
+    [faceBox],
+  )
+
+  // Helper function to process eye region and extract metrics
+  const processEyeRegion = (imageData: ImageData) => {
+    let totalBrightness = 0
+    let edgeCount = 0
+    const pixelValues = []
+
+    // Process pixels to detect both brightness changes and edges
+    for (let y = 1; y < imageData.height - 1; y++) {
+      for (let x = 1; x < imageData.width - 1; x++) {
+        const idx = (y * imageData.width + x) * 4
+
+        // Calculate brightness
+        const r = imageData.data[idx]
+        const g = imageData.data[idx + 1]
+        const b = imageData.data[idx + 2]
         const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255
         totalBrightness += brightness
+        pixelValues.push(brightness)
+
+        // Simple edge detection - compare with neighboring pixels
+        const idxLeft = (y * imageData.width + (x - 1)) * 4
+        const idxRight = (y * imageData.width + (x + 1)) * 4
+        const idxUp = ((y - 1) * imageData.width + x) * 4
+        const idxDown = ((y + 1) * imageData.width + x) * 4
+
+        const brightLeft = (imageData.data[idxLeft] + imageData.data[idxLeft + 1] + imageData.data[idxLeft + 2]) / 3
+        const brightRight = (imageData.data[idxRight] + imageData.data[idxRight + 1] + imageData.data[idxRight + 2]) / 3
+        const brightUp = (imageData.data[idxUp] + imageData.data[idxUp + 1] + imageData.data[idxUp + 2]) / 3
+        const brightDown = (imageData.data[idxDown] + imageData.data[idxDown + 1] + imageData.data[idxDown + 2]) / 3
+
+        const horizontalDiff = Math.abs(brightLeft - brightRight)
+        const verticalDiff = Math.abs(brightUp - brightDown)
+
+        if (horizontalDiff > 20 || verticalDiff > 20) {
+          // More sensitive threshold
+          edgeCount++
+        }
       }
+    }
 
-      const avgBrightness = totalBrightness / (imageData.data.length / 4)
+    const avgBrightness = totalBrightness / (imageData.width * imageData.height)
+    const edgeDensity = edgeCount / (imageData.width * imageData.height)
 
-      // Add to history
-      eyeOpenessHistory.current.push(avgBrightness)
-      if (eyeOpenessHistory.current.length > MAX_HISTORY) {
-        eyeOpenessHistory.current.shift()
-      }
+    // Calculate contrast (standard deviation of pixel values)
+    const avgPixelValue = pixelValues.reduce((sum, val) => sum + val, 0) / pixelValues.length
+    const contrast = Math.sqrt(
+      pixelValues.reduce((sum, val) => sum + Math.pow(val - avgPixelValue, 2), 0) / pixelValues.length,
+    )
 
-      // Need enough history to detect blinks
-      if (eyeOpenessHistory.current.length < 5) return false
+    return {
+      brightness: avgBrightness,
+      edgeDensity: edgeDensity,
+      contrast: contrast,
+    }
+  }
 
-      // Calculate variance in brightness over recent frames
-      const avg = eyeOpenessHistory.current.reduce((sum, val) => sum + val, 0) / eyeOpenessHistory.current.length
-      const variance =
-        eyeOpenessHistory.current.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) /
-        eyeOpenessHistory.current.length
+  // Helper function to calculate variance of an array
+  const calculateVariance = (array: number[]) => {
+    const avg = array.reduce((sum, val) => sum + val, 0) / array.length
+    return array.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / array.length
+  }
 
-      // Significant variance indicates a blink
-      const VARIANCE_THRESHOLD = 0.0015 // Adjust this value if needed
+  // Helper function to calculate derivative (rate of change)
+  const calculateDerivative = (array: number[]) => {
+    if (array.length < 2) return 0
+    return array[array.length - 1] - array[array.length - 2]
+  }
 
-      // Only detect a new blink if it's been at least 1 second since the last one
-      const now = Date.now()
-      if (variance > VARIANCE_THRESHOLD && now - lastBlinkTime.current > 1000) {
-        blinkCountRef.current++
-        lastBlinkTime.current = now
+  // Helper function to detect characteristic blink pattern
+  const detectBlinkPattern = (brightnessHistory: number[], edgeDensityHistory: number[]) => {
+    if (brightnessHistory.length < 5 || edgeDensityHistory.length < 5) return false
+
+    // Look for a pattern where brightness drops then rises
+    const b1 = brightnessHistory[brightnessHistory.length - 5]
+    const b2 = brightnessHistory[brightnessHistory.length - 3]
+    const b3 = brightnessHistory[brightnessHistory.length - 1]
+
+    // Look for a pattern where edge density drops then rises
+    const e1 = edgeDensityHistory[edgeDensityHistory.length - 5]
+    const e2 = edgeDensityHistory[edgeDensityHistory.length - 3]
+    const e3 = edgeDensityHistory[edgeDensityHistory.length - 1]
+
+    // Check if brightness dropped then rose
+    const brightnessPattern = b2 < b1 * 0.9 && b3 > b2 * 1.05
+
+    // Check if edge density dropped then rose
+    const edgePattern = e2 < e1 * 0.9 && e3 > e2 * 1.05
+
+    return brightnessPattern || edgePattern
+  }
+
+  // Enhanced movement detection with higher sensitivity
+  const detectMovement = useCallback((currentPosition: { x: number; y: number }) => {
+    // Add current position to history
+    facePositionHistory.current.push(currentPosition)
+
+    // Keep history at maximum length
+    if (facePositionHistory.current.length > MAX_POSITION_HISTORY) {
+      facePositionHistory.current.shift()
+    }
+
+    // Need enough history to detect movement
+    if (facePositionHistory.current.length < 3) return false
+
+    // Calculate movement metrics
+    const totalMovement = calculateTotalMovement(facePositionHistory.current)
+    const maxDisplacement = calculateMaxDisplacement(facePositionHistory.current)
+    const directionChanges = calculateDirectionChanges(facePositionHistory.current)
+
+    // Multiple movement detection methods for higher sensitivity
+
+    // Method 1: Total movement exceeds threshold
+    const TOTAL_MOVEMENT_THRESHOLD = 15 // More sensitive
+    const totalMovementDetected = totalMovement > TOTAL_MOVEMENT_THRESHOLD
+
+    // Method 2: Maximum displacement exceeds threshold
+    const MAX_DISPLACEMENT_THRESHOLD = 10 // More sensitive
+    const maxDisplacementDetected = maxDisplacement > MAX_DISPLACEMENT_THRESHOLD
+
+    // Method 3: Direction changes (indicates deliberate movement)
+    const DIRECTION_CHANGES_THRESHOLD = 1
+    const directionChangeDetected = directionChanges >= DIRECTION_CHANGES_THRESHOLD
+
+    // Combine methods - if ANY method detects movement, count it
+    if (totalMovementDetected || maxDisplacementDetected || directionChangeDetected) {
+      // Increment movement score
+      movementScoreRef.current += 1
+
+      // If accumulated enough movement score, consider movement detected
+      if (movementScoreRef.current >= 3) {
         return true
       }
-
-      return false
-    } catch (err) {
-      console.error("Error in blink detection:", err)
-      return false
     }
+
+    return false
   }, [])
+
+  // Helper function to calculate total movement across history
+  const calculateTotalMovement = (positions: Array<{ x: number; y: number }>) => {
+    let totalMovement = 0
+
+    for (let i = 1; i < positions.length; i++) {
+      const xDiff = positions[i].x - positions[i - 1].x
+      const yDiff = positions[i].y - positions[i - 1].y
+      const distance = Math.sqrt(xDiff * xDiff + yDiff * yDiff)
+      totalMovement += distance
+    }
+
+    return totalMovement
+  }
+
+  // Helper function to calculate maximum displacement from starting position
+  const calculateMaxDisplacement = (positions: Array<{ x: number; y: number }>) => {
+    if (positions.length < 2) return 0
+
+    const startPos = positions[0]
+    let maxDisplacement = 0
+
+    for (let i = 1; i < positions.length; i++) {
+      const xDiff = positions[i].x - startPos.x
+      const yDiff = positions[i].y - startPos.y
+      const distance = Math.sqrt(xDiff * xDiff + yDiff * yDiff)
+
+      if (distance > maxDisplacement) {
+        maxDisplacement = distance
+      }
+    }
+
+    return maxDisplacement
+  }
+
+  // Helper function to count direction changes (indicates deliberate movement)
+  const calculateDirectionChanges = (positions: Array<{ x: number; y: number }>) => {
+    if (positions.length < 3) return 0
+
+    let directionChanges = 0
+    let lastXDirection = Math.sign(positions[1].x - positions[0].x)
+    let lastYDirection = Math.sign(positions[1].y - positions[0].y)
+
+    for (let i = 2; i < positions.length; i++) {
+      const xDirection = Math.sign(positions[i].x - positions[i - 1].x)
+      const yDirection = Math.sign(positions[i].y - positions[i - 1].y)
+
+      if (xDirection !== 0 && xDirection !== lastXDirection) {
+        directionChanges++
+        lastXDirection = xDirection
+      }
+
+      if (yDirection !== 0 && yDirection !== lastYDirection) {
+        directionChanges++
+        lastYDirection = yDirection
+      }
+    }
+
+    return directionChanges
+  }
 
   // Manual blink confirmation
   const confirmBlink = () => {
@@ -415,7 +714,7 @@ export default  function RegisterPage() {
                   y: detection.box.y,
                 }
 
-                // Check for blink using the simplified method
+                // Check for blink using the enhanced method
                 if (faceDetected && !blinkDetected && currentStep === "blink") {
                   const hasBlinkOccurred = detectBlink(video)
                   if (hasBlinkOccurred) {
@@ -426,13 +725,11 @@ export default  function RegisterPage() {
                   }
                 }
 
-                // Detect head movement
+                // Detect head movement with enhanced sensitivity
                 if (lastFacePosition && blinkDetected && !movementDetected && currentStep === "move") {
-                  const xMovement = Math.abs(currentPosition.x - lastFacePosition.x)
-                  const yMovement = Math.abs(currentPosition.y - lastFacePosition.y)
+                  const hasMovementOccurred = detectMovement(currentPosition)
 
-                  // If significant movement detected
-                  if (xMovement > 30 || yMovement > 30) {
+                  if (hasMovementOccurred) {
                     setMovementDetected(true)
                     setVerificationComplete(true)
                     setCurrentStep("complete")
@@ -494,10 +791,11 @@ export default  function RegisterPage() {
                     )
                   }
 
-                  // Display blink count
+                  // Display blink count and movement score
                   ctx.font = "12px Arial"
                   ctx.fillStyle = "yellow"
                   ctx.fillText(`Blinks: ${blinkCountRef.current}`, 10, 20)
+                  ctx.fillText(`Movement: ${movementScoreRef.current}`, 10, 35)
                 }
               } else if (faceDetected) {
                 // Face was detected but now lost
@@ -525,6 +823,7 @@ export default  function RegisterPage() {
     movementDetected,
     lastFacePosition,
     detectBlink,
+    detectMovement,
     currentStep,
   ])
 
@@ -561,7 +860,11 @@ export default  function RegisterPage() {
     setError("")
     setLastFacePosition(null)
     eyeOpenessHistory.current = []
+    eyeBrightnessHistory.current = []
+    eyeEdgeDensityHistory.current = []
+    facePositionHistory.current = []
     blinkCountRef.current = 0
+    movementScoreRef.current = 0
     setCurrentStep("idle")
     setCountdown(null)
     setFaceBox(null)
@@ -584,9 +887,13 @@ export default  function RegisterPage() {
                 {registrationComplete ? (
                   <div className="text-center space-y-4">
                     <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto" />
-                    <p className="text-lg font-medium text-gray-900 dark:text-white">Registration Successful! <span className="text-teal-600">ckeck your email!</span> </p>
+                    <p className="text-lg font-medium text-gray-900 dark:text-white">
+                      Registration Successful! <span className="text-teal-600">check your email!</span>
+                    </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">Your biometric data has been saved.</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">please check you email for acount activation</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Please check your email for account activation
+                    </p>
                   </div>
                 ) : (
                   <>
@@ -704,7 +1011,7 @@ export default  function RegisterPage() {
                     >
                       {capturedImage ? (
                         // Show captured image if available
-                        <Image
+                        <NextImage
                           src={capturedImage || "/placeholder.svg"}
                           alt="Captured face"
                           width={192}
@@ -726,8 +1033,8 @@ export default  function RegisterPage() {
                                 ref={webcamRef}
                                 screenshotFormat="image/jpeg"
                                 videoConstraints={{
-                                  width: 300,
-                                  height: 300,
+                                  width: 640,
+                                  height: 480,
                                   facingMode: "user",
                                 }}
                                 className="absolute inset-0 w-full h-full object-cover"
@@ -844,7 +1151,7 @@ export default  function RegisterPage() {
                         focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isLoading ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <Loader2 className="w-5 h-5 animate-spin mr-2" />
                         ) : (
                           "Take Photo & Complete Registration"
                         )}

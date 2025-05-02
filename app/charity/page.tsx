@@ -325,11 +325,11 @@ export default  function CharityPage() {
             </div>
 
             <button
-              className="w-full py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors flex items-center justify-center"
-              onClick={() => router.push(`/charity/${charity.id}`)}
-            >
-              Donate Now <ArrowRight className="ml-2 h-4 w-4" />
-            </button>
+      className="w-full py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors flex items-center justify-center"
+      onClick={() => router.push(`/donate`)} // Navigate to the donate page
+    >
+      Donate Now <ArrowRight className="ml-2 h-4 w-4" />
+    </button>
           </div>
         </motion.div>
       ))}
@@ -380,9 +380,12 @@ export default  function CharityPage() {
                 <p className="text-sm text-gray-500 dark:text-gray-400 italic">
                   - Ayana Tadesse, Director at Hope for Children Organization
                 </p>
-                <button className="mt-4 text-teal-600 dark:text-teal-400 font-medium flex items-center hover:underline">
-                  Read full story <ArrowRight className="ml-1 h-4 w-4" />
-                </button>
+                <button
+      className="mt-4 text-teal-600 dark:text-teal-400 font-medium flex items-center hover:underline"
+      onClick={() => router.push('/impact-story')} // Navigate to the impact-story page
+    >
+      Read full story <ArrowRight className="ml-1 h-4 w-4" />
+    </button>
               </div>
             </div>
           </div>

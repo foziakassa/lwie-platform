@@ -180,7 +180,7 @@ export default function ApprovedAdvertisement() {
         </div>
 
         {/* Actions */}
-        <div className="bg-gray-50 dark:bg-gray-700 px-4 py-2 flex justify-end">
+        <div className="bg-gray-50 dark:bg-gray-700 px-4 py- flex justify-end">
           <button
             onClick={handleViewDetails}
             className="inline-flex items-center text-sm font-medium text-teal-600 hover:text-teal-700 dark:text-teal-400 mr-4"

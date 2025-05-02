@@ -132,7 +132,7 @@ export default function ApprovedAdvertisement() {
   }
 
   return (
-    <div className="container mx-auto py-8 flex justify-center">
+    <div className="container mx-auto py-1 flex justify-center">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden relative w-full max-w-2xl">
         {/* Image and Company Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
@@ -142,10 +142,10 @@ export default function ApprovedAdvertisement() {
               <img
                 src={advertisement.product_image || "/placeholder.svg"}
                 alt={advertisement.company_name}
-                className="w-full h-48 object-cover rounded-md"
+                className="w-full h-40 object-cover rounded-md"
               />
             ) : (
-              <div className="w-full h-48 bg-gray-100 dark:bg-gray-700 flex items-center justify-center rounded-md">
+              <div className="w-full h-40 bg-gray-100 dark:bg-gray-700 flex items-center justify-center rounded-md">
                 <span className="text-sm text-gray-400">No image available</span>
               </div>
             )}
@@ -180,7 +180,7 @@ export default function ApprovedAdvertisement() {
         </div>
 
         {/* Actions */}
-        <div className="bg-gray-50 dark:bg-gray-700 p-4 flex justify-end">
+        <div className="bg-gray-50 dark:bg-gray-700 px-4 py-2 flex justify-end">
           <button
             onClick={handleViewDetails}
             className="inline-flex items-center text-sm font-medium text-teal-600 hover:text-teal-700 dark:text-teal-400 mr-4"

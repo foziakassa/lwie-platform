@@ -8,6 +8,7 @@ import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from "framer-motion"
 import { Filter, MapPin, ArrowRight, Heart, Share2, Gift } from "lucide-react"
 import ApprovedAdvertisement from "./ad/page"
+import ThreeDAdvertisement from "@/components/3d-advertisement-carousel"
 
 // Mock data for featured items
 const featuredItems = [
@@ -167,16 +168,10 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="container mx-auto px-4 py-8">
-        {/* Welcome Section */}
-        {/* <section className="text-center mb-12">
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <h1 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">Welcome to LWIE</h1>
-            <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Join our community of swappers and trade items you no longer need for things you want. It's sustainable,
-              economical, and fun!
-            </p>
-          </motion.div>
-        </section> */}
+
+      
+        <ThreeDAdvertisement />
+     
 
         {/* Section Navigation */}
         <ApprovedAdvertisement/>

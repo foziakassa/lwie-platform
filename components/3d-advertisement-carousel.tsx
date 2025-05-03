@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, Suspense } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { Text, useTexture, Environment, Float, PresentationControls } from "@react-three/drei"
 import { easing } from "maath"
-import type * as THREE from "three"
+import * as THREE from "three"
 import axiosInstance from "@/shared/axiosinstance"
 import { X, ArrowRight, Phone, Mail, Loader2 } from "lucide-react"
 
@@ -68,17 +68,27 @@ function AdCard({
       castShadow
       receiveShadow
     >
-      <boxGeometry args={[2, 1.5, 0.1]} />
+      <boxGeometry args={[6, 4.5, 0.4]} />
       <meshStandardMaterial color="#ffffff" metalness={0.1} roughness={0.5} />
 
       {/* Front face with image */}
-      <mesh position={[0, 0, 0.051]}>
-        <planeGeometry args={[1.8, 0.9]} />
-        <meshBasicMaterial map={texture} />
+      <mesh position={[0, 0.2, 0.21]}>
+        {/* Raise the image slightly */}
+        <planeGeometry args={[5.5, 3.5]} /> {/* Increased image size */}
+        <meshBasicMaterial map={texture} side={THREE.DoubleSide} />{" "}
+        {/* Ensure the image is visible from both sides */}
       </mesh>
 
       {/* Company name */}
-      <Text position={[0, -0.6, 0.06]} fontSize={0.12} color="#000000" anchorX="center" anchorY="middle" maxWidth={1.7}>
+      <Text
+        position={[0, -1.8, 0.26]}
+        fontSize={0.32}
+        color="#000000"
+        anchorX="center"
+        anchorY="middle"
+        maxWidth={5.7}
+      >
+        {/* Lower the company name */}
         {ad.company_name}
       </Text>
     </mesh>
@@ -111,10 +121,12 @@ function AdCarousel({
   }, [activeIndex, ads.length, setActiveIndex])
 
   return (
-    <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 0, 8], fov: 45 }}>
+    <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 0, 12], fov: 45 }}>
+      {" "}
+      {/* Adjust camera position */}
       <color attach="background" args={["#f8f8f8"]} />
-      <fog attach="fog" args={["#f8f8f8", 8, 15]} />
-
+      <fog attach="fog" args={["#f8f8f8", 12, 20]} />{" "}
+      {/* Adjust fog distance */}
       <PresentationControls
         global
         zoom={0.8}
@@ -125,7 +137,6 @@ function AdCarousel({
         <Float rotationIntensity={0.2} floatIntensity={0.5}>
           <ambientLight intensity={0.5} />
           <directionalLight position={[5, 5, 5]} intensity={1} castShadow shadow-mapSize={2048} />
-
           {ads.map((ad, index) => (
             <AdCard
               key={ad.id}
@@ -139,7 +150,6 @@ function AdCarousel({
               }}
             />
           ))}
-
           {/* Ground plane with shadow */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.5, 0]} receiveShadow>
             <planeGeometry args={[50, 50]} />
@@ -147,7 +157,6 @@ function AdCarousel({
           </mesh>
         </Float>
       </PresentationControls>
-
       <Environment preset="city" />
     </Canvas>
   )

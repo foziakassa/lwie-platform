@@ -203,19 +203,19 @@ const ContactSection: React.FC = () => {
       </div>
 
       <div
-        id="map"
-        className="relative h-[300px] sm:h-[400px] md:h-[480px] overflow-hidden bg-cover bg-[50%] bg-no-repeat"
-      >
-        <iframe
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d11672.945750644447!2d-122.42107853750231!3d37.7730507907087!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x80858070cc2fbd55%3A0xa71491d736f62d5c!2sGolden%20Gate%20Bridge!5e0!3m2!1sen!2sus!4v1619524992238!5m2!1sen!2sus"
-          width="100%"
-          height="100%"
-          style={{ border: 0 }}
-          allowFullScreen={true}
-          loading="lazy"
-          aria-label="Location map"
-        ></iframe>
-      </div>
+  id="map"
+  className="relative h-[200px] sm:h-[300px] md:h-[360px] overflow-hidden bg-cover bg-[50%] bg-no-repeat"
+>
+  <iframe
+    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d11672.945750644447!2d-122.42107853750231!3d37.7730507907087!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x80858070cc2fbd55%3A0xa71491d736f62d5c!2sGolden%20Gate%20Bridge!5e0!3m2!1sen!2sus!4v1619524992238!5m2!1sen!2sus"
+    width="100%"
+    height="100%"
+    style={{ border: 0 }}
+    allowFullScreen={true}
+    loading="lazy"
+    aria-label="Location map"
+  ></iframe>
+</div>
 
       <div className="container px-4 sm:px-6 md:px-12">
         <div className="block rounded-lg bg-white/80 px-4 py-8 shadow-lg sm:px-6 md:py-12 md:px-8 -mt-[60px] sm:-mt-[80px] md:-mt-[100px] backdrop-blur-[30px] border border-gray-300">

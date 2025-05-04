@@ -189,7 +189,7 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="container mx-auto px-4 py-8">
         {/* Section Navigation */}
-        <ApprovedAdvertisement/>
+        <ApprovedAdvertisement />
         {/* <div className="flex justify-center mb-8">
           <div className="flex space-x-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
             {["featured", "latest"].map((section) => (
@@ -270,8 +270,8 @@ export default function Home() {
                               toggleLike(item.id)
                             }}
                             className={`p-2 rounded-full ${likedItems.includes(item.id)
-                                ? "bg-rose-500 text-white"
-                                : "bg-white/80 text-gray-700 hover:bg-white"
+                              ? "bg-rose-500 text-white"
+                              : "bg-white/80 text-gray-700 hover:bg-white"
                               }`}
                           >
                             <Heart className="h-4 w-4" fill={likedItems.includes(item.id) ? "currentColor" : "none"} />
@@ -314,7 +314,7 @@ export default function Home() {
           )}
 
           {/* Latest Posts */}
-          
+
         </AnimatePresence>
 
         {/* Charity Section */}

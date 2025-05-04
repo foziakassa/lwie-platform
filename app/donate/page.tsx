@@ -15,19 +15,13 @@ import {
   Building,
   Package,
   AlertCircle,
-  Navigation,
-  Search,
-  ZoomIn,
-  ZoomOut,
   Check,
-  Loader2,
-  Share2,
+  Smartphone,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -221,7 +215,7 @@ export default function CharityContact() {
 
   const handleShareViaTelegram = () => {
     const text = encodeURIComponent(
-      "Check out this location: AA, kotebe\nhttps://maps.example.com/location?q=AA,kotebe",
+      "Check out this location: AA, kotebe\nhttps://maps.example.com/location?q=AA,kotebe&text=${text}",
     )
     window.open(`https://t.me/share/url?url=https://maps.example.com/location?q=AA,kotebe&text=${text}`, "_blank")
     toast({
@@ -493,136 +487,31 @@ export default function CharityContact() {
               </div>
 
               {/* Enhanced Map Section */}
+              {/* Map and Contact Section */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Our Location</h3>
-                <Card className="overflow-hidden">
-                  <CardContent className="p-0 relative">
-                    <div
-                      className="relative overflow-hidden transition-all duration-300"
-                      style={{ transform: `scale(${mapZoom})`, transformOrigin: "center" }}
-                    >
-                      <Image
-                        src="/placeholder.svg?height=285&width=412&text=Map+of+Addis+Ababa"
-                        alt="Map of Addis Ababa"
-                        width={412}
-                        height={285}
-                        className="w-full"
-                      />
-                    </div>
 
-                    {/* Map Controls */}
-                    <div className="absolute top-3 right-3 flex flex-col gap-2">
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        className="h-8 w-8 bg-white shadow-md hover:bg-gray-100"
-                        onClick={zoomIn}
-                      >
-                        <ZoomIn className="h-4 w-4" />
-                        <span className="sr-only">Zoom in</span>
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        className="h-8 w-8 bg-white shadow-md hover:bg-gray-100"
-                        onClick={zoomOut}
-                      >
-                        <ZoomOut className="h-4 w-4" />
-                        <span className="sr-only">Zoom out</span>
-                      </Button>
-                    </div>
-
-                    {/* Search Bar */}
-                    <form onSubmit={handleSearch} className="absolute bottom-3 left-3 right-12 flex items-center">
-                      <div className="relative w-full">
-                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                        <Input
-                          placeholder="Search location..."
-                          className="pl-8 pr-8 py-1 h-8 bg-white/90 backdrop-blur-sm border-gray-200"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 text-gray-500"
-                          onClick={handleMyLocation}
-                        >
-                          <Navigation className="h-3 w-3" />
-                          <span className="sr-only">My location</span>
-                        </Button>
-                      </div>
-                    </form>
-
-                    {/* Map Dimensions */}
-                    <div className="absolute bottom-3 right-3 bg-white text-gray-700 px-2 py-1 text-xs rounded shadow-sm">
-                      412 × 285
-                    </div>
-
-                    {/* Location Marker */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-teal-500">
-                      <div className="relative">
-                        <MapPin className="h-8 w-8" />
-                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rounded-full"></div>
-                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-white px-3 py-1 rounded shadow-md whitespace-nowrap">
-                          <span className="text-xs font-medium">AA, kotebe</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Loading overlay for search */}
-                    {isSearching && (
-                      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center">
-                        <div className="bg-white p-3 rounded-full">
-                          <Loader2 className="h-6 w-6 text-teal-500 animate-spin" />
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Map Features - FIXED BUTTONS */}
-                <div className="grid grid-cols-3 gap-2 mt-4">
-                  {/* Directions Button - Fixed */}
-                  <div
-                    className="cursor-pointer w-full h-8 bg-white hover:bg-gray-100 border border-gray-300 rounded-md flex items-center justify-center text-xs font-medium text-gray-700 transition-colors"
-                    onClick={handleGetDirections}
-                  >
-                    <Navigation className="h-3 w-3 mr-1" />
-                    <span>Directions</span>
-                  </div>
-
-                  {/* Save Button - Fixed */}
-                  <div
-                    className="cursor-pointer w-full h-8 bg-white hover:bg-gray-100 border border-gray-300 rounded-md flex items-center justify-center text-xs font-medium text-gray-700 transition-colors"
-                    onClick={handleSaveLocation}
-                  >
-                    <MapPin className="h-3 w-3 mr-1" />
-                    <span>Save</span>
-                  </div>
-
-                  {/* Share Button - Fixed */}
-                  <div
-                    className="cursor-pointer w-full h-8 bg-white hover:bg-gray-100 border border-gray-300 rounded-md flex items-center justify-center text-xs font-medium text-gray-700 transition-colors"
-                    onClick={handleShareLocation}
-                  >
-                    <Share2 className="h-3 w-3 mr-1" />
-                    <span>Share</span>
-                  </div>
+                <div
+                  id="map"
+                  className="relative h-[300px] sm:h-[400px] overflow-hidden bg-cover bg-[50%] bg-no-repeat"
+                >
+                  <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d11672.945750644447!2d-122.42107853750231!3d37.7730507907087!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x80858070cc2fbd55%3A0xa71491d736f62d5c!2sGolden%20Gate%20Bridge!5e0!3m2!1sen!2sus!4v1619524992238!5m2!1sen!2sus"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen={true}
+                    loading="lazy"
+                    aria-label="Location map"
+                  ></iframe>
                 </div>
 
-                {/* Nearby Places */}
-                <div className="mt-6">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Nearby Places</h4>
-                  <div className="space-y-2">
-                    {["Hospital", "School", "Market"].map((place, index) => (
-                      <div key={index} className="flex items-center gap-2 text-sm text-gray-600">
-                        <div className="w-2 h-2 rounded-full bg-teal-500"></div>
-                        <span>{place}</span>
-                        <span className="text-xs text-gray-500">{(index + 1) * 0.3} km</span>
+                <div className="block rounded-lg bg-white/80 px-4 py-6 shadow-lg -mt-[60px] backdrop-blur-[30px] border border-gray-300">
+                  <div className="flex flex-wrap">
+                    <div className="w-full shrink-0 grow-0 basis-auto lg:w-full">
+                      <div className="flex flex-wrap">
                       </div>
-                    ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -704,7 +593,7 @@ export default function CharityContact() {
         </DialogContent>
       </Dialog>
 
-      {/* Directions Dialog */}
+      Directions Dialog
       <Dialog open={showDirectionsDialog} onOpenChange={setShowDirectionsDialog}>
         <DialogContent className="bg-white border border-gray-200 shadow-lg">
           <DialogHeader className="text-gray-900">

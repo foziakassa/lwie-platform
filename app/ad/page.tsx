@@ -13,7 +13,7 @@ interface Advertisement {
   product_image: string
   created_at?: string
   approved?: boolean
-  website_url?: string // Added for the external link
+  website_url?: string
 }
 
 export default function ApprovedAdvertisement() {
@@ -22,6 +22,7 @@ export default function ApprovedAdvertisement() {
   const [loading, setLoading] = useState<boolean>(true)
   const [isVisible, setIsVisible] = useState(true)
   const [hiddenAdIds, setHiddenAdIds] = useState<string[]>([])
+  const [refreshKey, setRefreshKey] = useState(0) // Key to force re-render
 
   // Load hidden ad IDs from local storage on component mount
   useEffect(() => {
@@ -39,12 +40,15 @@ export default function ApprovedAdvertisement() {
         const response = await axiosInstance.get<Advertisement[]>("/advertisements")
 
         if (response.data && response.data.length > 0) {
-          // Filter out hidden ads
-          const visibleAds = response.data.filter((ad) => !hiddenAdIds.includes(ad.id))
+          // Filter out hidden ads and non-approved ads
+          const visibleAds = response.data.filter(
+            (ad) => !hiddenAdIds.includes(ad.id) && ad.approved === true
+          );
 
           if (visibleAds.length > 0) {
-            setAdvertisement(visibleAds[0])
-            console.log("data", visibleAds[0])
+            // Get a random ad from the list
+            const randomIndex = Math.floor(Math.random() * visibleAds.length)
+            setAdvertisement(visibleAds[randomIndex])
             setError(null)
           } else {
             setAdvertisement(null)
@@ -63,7 +67,7 @@ export default function ApprovedAdvertisement() {
     }
 
     fetchApprovedAdvertisement()
-  }, [hiddenAdIds])
+  }, [hiddenAdIds, refreshKey]) // Depend on hiddenAdIds and refreshKey
 
   // Check if current ad should be visible
   useEffect(() => {
@@ -77,22 +81,25 @@ export default function ApprovedAdvertisement() {
   const handleRemoveAd = () => {
     if (!advertisement) return
 
-    // Add the ad ID to the hiddenAdIds state
     const updatedHiddenAdIds = [...hiddenAdIds, advertisement.id]
     setHiddenAdIds(updatedHiddenAdIds)
-
-    // Store the updated hidden ad IDs in local storage
     localStorage.setItem("hiddenAdIds", JSON.stringify(updatedHiddenAdIds))
-
-    // Hide the ad immediately
     setIsVisible(false)
   }
 
   const handleViewDetails = () => {
-    // Use a placeholder URL if website_url is not provided
     const websiteUrl = advertisement?.website_url || "https://example.com"
     window.open(websiteUrl, "_blank")
   }
+
+  // Set up the interval to change the ad
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setRefreshKey((prevKey) => prevKey + 1) // Update state to trigger re-fetch
+    }, 180000) // 3 minutes
+
+    return () => clearInterval(intervalId) // Clean up on unmount
+  }, [])
 
   if (loading) {
     return (
@@ -117,18 +124,18 @@ export default function ApprovedAdvertisement() {
     )
   }
 
-  if (error) {
-    return (
-      <div className="container mx-auto py-8 flex justify-center">
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center w-full max-w-2xl">
-          <p className="text-red-600 dark:text-red-400">{error}</p>
-        </div>
-      </div>
-    )
-  }
+  // if (error) {
+  //   return (
+  //     <div className="container mx-auto py-8 flex justify-center">
+  //       <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center w-full max-w-2xl">
+  //         <p className="text-red-600 dark:text-red-400">{error}</p>
+  //       </div>
+  //     </div>
+  //   )
+  // }
 
   if (!advertisement || !isVisible) {
-    return null // Don't show anything if there's no ad or ad is hidden
+    return null
   }
 
   return (
@@ -180,7 +187,7 @@ export default function ApprovedAdvertisement() {
         </div>
 
         {/* Actions */}
-        <div className="bg-gray-50 dark:bg-gray-700 px-4 py-2 flex justify-end">
+        <div className="bg-gray-50 dark:bg-gray-700 px-4 py- flex justify-end">
           <button
             onClick={handleViewDetails}
             className="inline-flex items-center text-sm font-medium text-teal-600 hover:text-teal-700 dark:text-teal-400 mr-4"

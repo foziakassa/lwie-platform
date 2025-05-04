@@ -58,6 +58,7 @@
     "jose": "latest",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.454.0",
+    "maath": "^0.10.8",
     "next": "15.1.0",
     "next-auth": "latest",
     "next-themes": "latest",
@@ -72,6 +73,7 @@
     "react-hot-toast": "^2.5.2",
     "react-resizable-panels": "^2.1.7",
     "react-router-dom": "^7.5.0",
+    "react-three": "^0.9.7",
     "react-webcam": "^7.2.0",
     "recharts": "2.15.0",
     "sonner": "^1.7.1",
@@ -80,6 +82,7 @@
     "tailwind-merge": "^2.5.5",
     "tailwind-scrollbar-hide": "^2.0.0",
     "tailwindcss-animate": "^1.0.7",
+    "three": "^0.176.0",
     "vaul": "^0.9.6",
     "zod": "latest"
   },

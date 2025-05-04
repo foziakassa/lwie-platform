@@ -480,7 +480,9 @@ export default function CharityContact() {
                     <Building className="w-5 h-5 text-teal-500 mt-0.5" />
                     <div>
                       <p className="font-medium text-gray-700">Company Info</p>
-                      <p className="text-gray-600 text-sm">fghjjhbrf hebfef ehrfbufb rhebfufhbffbrufb3ier</p>
+                      <p className="text-gray-600 text-sm">ikrjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjef
+                        fvdnnnnnnnnnnnnnnnnnbjkrnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnf
+                        jfvnbjfbvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvfghjjhbrf hebfef ehrfbufb rhebfufhbffbrufb3ier</p>
                     </div>
                   </div>
                 </div>
@@ -593,7 +595,7 @@ export default function CharityContact() {
         </DialogContent>
       </Dialog>
 
-      Directions Dialog
+     
       <Dialog open={showDirectionsDialog} onOpenChange={setShowDirectionsDialog}>
         <DialogContent className="bg-white border border-gray-200 shadow-lg">
           <DialogHeader className="text-gray-900">

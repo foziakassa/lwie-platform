@@ -110,23 +110,14 @@ export default function LocationForm() {
   }
 
   const saveDraft = () => {
-    const values = form.getValues();
-    try {
-      localStorage.setItem("itemLocationDraft", JSON.stringify(values));
-      toast({
-        title: "Draft saved",
-        description: "Your location draft has been saved. You can continue later.",
-        duration: 3000,
-      });
-    } catch (error: any) {
-      console.error("Error saving draft:", error);
-      toast({
-        title: "Error saving draft",
-        description: "There was a problem saving your draft. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+    const values = form.getValues()
+    localStorage.setItem("itemLocationDraft", JSON.stringify(values))
+    toast({
+      title: "Draft saved",
+      description: "Your location draft has been saved. You can continue later.",
+      duration: 3000,
+    })
+  }
 
   const cities = [
     "Addis Ababa",
@@ -275,7 +266,7 @@ export default function LocationForm() {
               Previous
             </Button>
             <div className="space-x-3">
-            <Button
+              <Button
                 type="button"
                 variant="outline"
                 onClick={saveDraft}

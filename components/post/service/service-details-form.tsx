@@ -1,170 +1,77 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowRight, ArrowLeft, Save, ClipboardList } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ArrowRight, ArrowLeft, Save } from "lucide-react"
 import { motion } from "framer-motion"
-import { toast } from "@/components/ui/use-toast"
 
 const formSchema = z.object({
-  description: z.string().min(20, {
-    message: "Description must be at least 20 characters.",
-  }),
   experience: z.string({
     required_error: "Please select your experience level.",
   }),
+  availability: z.string().optional(),
+  duration: z.string().optional(),
+  qualifications: z.array(z.string()).optional(),
+  hasLicense: z.boolean().optional(),
+  hasCertification: z.boolean().optional(),
+  additionalDetails: z.string().optional(),
 })
 
-export default function ServiceDetailsForm() {
+interface ServiceDetailsFormProps {
+  initialData: any
+  onSaveDraft: (data: any) => void
+  onContinue: (data: any) => void
+  isLoading: boolean
+}
+
+export function ServiceDetailsForm({ initialData, onSaveDraft, onContinue, isLoading }: ServiceDetailsFormProps) {
   const router = useRouter()
-  const [basicInfo, setBasicInfo] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  useEffect(() => {
-    // Load basic info from local storage
-    const savedInfo = localStorage.getItem("serviceBasicInfo")
-    if (savedInfo) {
-      setBasicInfo(JSON.parse(savedInfo))
-    } else {
-      // If no basic info, redirect back to basic info page
-      router.push("/post/service/basic-info")
-      return
-    }
-
-    // Check for draft data
-    const draftData = localStorage.getItem("serviceDetailsDraft")
-    if (draftData) {
-      try {
-        const parsedData = JSON.parse(draftData)
-        setTimeout(() => {
-          form.reset(parsedData)
-        }, 100)
-      } catch (error) {
-        console.error("Error loading draft data:", error)
-      }
-    }
-
-    setLoading(false)
-  }, [router])
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      description: "",
-      experience: "",
+      experience: initialData?.experience || "",
+      availability: initialData?.availability || "",
+      duration: initialData?.duration || "",
+      qualifications: initialData?.qualifications || [],
+      hasLicense: initialData?.hasLicense || false,
+      hasCertification: initialData?.hasCertification || false,
+      additionalDetails: initialData?.additionalDetails || "",
     },
   })
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsSubmitting(true)
-
-    try {
-      // Save to local storage for now
-      localStorage.setItem("serviceDetails", JSON.stringify(values))
-
-      // Clear draft
-      localStorage.removeItem("serviceDetailsDraft")
-
-      // Show success toast
-      toast({
-        title: "Service details saved",
-        description: "Let's continue to the next step.",
-        duration: 3000,
-      })
-
-      router.push("/post/service/location-description")
-    } catch (error) {
-      console.error("Error saving form data:", error)
-      toast({
-        title: "Error saving details",
-        description: "There was a problem saving your details. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
+    onContinue(values)
   }
 
-  const saveDraft = () => {
+  const handleSaveDraft = () => {
     const values = form.getValues()
-    localStorage.setItem("serviceDetailsDraft", JSON.stringify(values))
-    toast({
-      title: "Draft saved",
-      description: "Your details draft has been saved. You can continue later.",
-      duration: 3000,
-    })
+    onSaveDraft(values)
   }
 
-  const experienceLevels = [
-    "Beginner (0-1 years)",
-    "Intermediate (1-3 years)",
-    "Experienced (3-5 years)",
-    "Advanced (5-10 years)",
-    "Expert (10+ years)",
+  const qualifications = [
+    { id: "degree", label: "Degree" },
+    { id: "certificate", label: "Certificate" },
+    { id: "license", label: "Professional License" },
+    { id: "training", label: "Specialized Training" },
   ]
-
-  if (!mounted) return null
-
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl shadow-lg border p-8">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#00796B]"></div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white rounded-xl shadow-lg border p-8"
+      className="bg-white rounded-xl p-6"
     >
-      <div className="mb-6">
-        <div className="flex items-center mb-2">
-          <ClipboardList className="h-6 w-6 mr-2 text-[#00796B]" />
-          <h2 className="text-3xl font-bold text-[#00796B]">Service Details</h2>
-        </div>
-        <p className="text-gray-600">Provide more information about your service</p>
-      </div>
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-base">
-                  Service Description <span className="text-red-500">*</span>
-                </FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Describe your service in detail. Include what you offer, your approach, and why clients should choose you."
-                    className="min-h-[150px] text-base"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
           <FormField
             control={form.control}
             name="experience"
@@ -180,13 +87,155 @@ export default function ServiceDetailsForm() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {experienceLevels.map((level) => (
-                      <SelectItem key={level} value={level} className="py-3">
-                        {level}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="Beginner">Beginner (0-1 years)</SelectItem>
+                    <SelectItem value="Intermediate">Intermediate (1-3 years)</SelectItem>
+                    <SelectItem value="Experienced">Experienced (3-5 years)</SelectItem>
+                    <SelectItem value="Expert">Expert (5+ years)</SelectItem>
                   </SelectContent>
                 </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="availability"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-base">Availability</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="text-base py-6">
+                        <SelectValue placeholder="Select your availability" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Weekdays">Weekdays</SelectItem>
+                      <SelectItem value="Weekends">Weekends</SelectItem>
+                      <SelectItem value="Evenings">Evenings</SelectItem>
+                      <SelectItem value="Full-time">Full-time</SelectItem>
+                      <SelectItem value="Part-time">Part-time</SelectItem>
+                      <SelectItem value="Flexible">Flexible</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="duration"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-base">Service Duration</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="text-base py-6">
+                        <SelectValue placeholder="Select service duration" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Less than 1 hour">Less than 1 hour</SelectItem>
+                      <SelectItem value="1-2 hours">1-2 hours</SelectItem>
+                      <SelectItem value="Half day">Half day</SelectItem>
+                      <SelectItem value="Full day">Full day</SelectItem>
+                      <SelectItem value="Multiple days">Multiple days</SelectItem>
+                      <SelectItem value="Ongoing">Ongoing</SelectItem>
+                      <SelectItem value="Varies">Varies by project</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="space-y-3">
+            <FormLabel className="text-base">Qualifications (Optional)</FormLabel>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {qualifications.map((qualification) => (
+                <FormField
+                  key={qualification.id}
+                  control={form.control}
+                  name="qualifications"
+                  render={({ field }) => {
+                    return (
+                      <FormItem
+                        key={qualification.id}
+                        className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3"
+                      >
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value?.includes(qualification.id)}
+                            onCheckedChange={(checked) => {
+                              const currentValues = field.value || []
+                              if (checked) {
+                                field.onChange([...currentValues, qualification.id])
+                              } else {
+                                field.onChange(currentValues.filter((value) => value !== qualification.id))
+                              }
+                            }}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">{qualification.label}</FormLabel>
+                      </FormItem>
+                    )
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="hasLicense"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Has Professional License</FormLabel>
+                    <p className="text-sm text-gray-500">I have a professional license for this service</p>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="hasCertification"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Has Certification</FormLabel>
+                    <p className="text-sm text-gray-500">I have certification for this service</p>
+                  </div>
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="additionalDetails"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-base">Additional Details (Optional)</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Add any other details about your service qualifications..."
+                    className="min-h-[120px]"
+                    {...field}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -197,27 +246,22 @@ export default function ServiceDetailsForm() {
               type="button"
               variant="outline"
               onClick={() => router.push("/post/service/basic-info")}
-              className="px-6 py-6 text-base flex items-center"
+              className="px-6 py-6 text-base"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Previous
             </Button>
             <div className="space-x-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={saveDraft}
-                className="px-6 py-6 text-base flex items-center"
-              >
+              <Button type="button" variant="outline" onClick={handleSaveDraft} className="px-6 py-6 text-base">
                 <Save className="h-4 w-4 mr-2" />
                 Save Draft
               </Button>
               <Button
                 type="submit"
-                className="bg-[#00796B] hover:bg-[#00695C] px-8 py-6 text-base shadow-md flex items-center"
-                disabled={isSubmitting}
+                className="bg-teal-600 hover:bg-teal-700 px-8 py-6 text-base shadow-md"
+                disabled={isLoading}
               >
-                {isSubmitting ? (
+                {isLoading ? (
                   <>
                     <svg
                       className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"

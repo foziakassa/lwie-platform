@@ -117,3 +117,36 @@ export const createPost = async (postData: any) => {
     throw error
   }
 }
+
+export async function saveItem(
+  itemData: {
+    user_id: number;
+    title: string;
+    category_id: string;
+    subcategory_id: string;
+    condition: string;
+    price: string;
+    images: string[];
+    specifications?: Record<string, string>;
+    location?: { city: string; subcity?: string };
+    trade_preferences?: Record<string, any>;
+    status: "draft" | "published";
+  },
+  itemId?: number
+): Promise<{ item_id: number }> {
+  const method = itemId ? "PUT" : "POST";
+  const url = itemId ? `/api/items?item_id=${itemId}` : "/api/items";
+
+  const response = await apiClient.request({
+    method,
+    url,
+    data: itemData,
+  });
+
+  return response.data;
+}
+
+export async function getDraft(userId: number): Promise<any> {
+  const response = await apiClient.get(`/api/items?user_id=${userId}&status=draft`);
+  return response.data.items[0] || null;
+}

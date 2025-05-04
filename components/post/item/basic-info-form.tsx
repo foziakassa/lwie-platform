@@ -10,180 +10,121 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ImageUploader } from "@/components/post/image-uploader"
-import { Package, ArrowRight, Save, Smartphone, Car, Armchair, Shirt, Refrigerator } from "lucide-react"
+import { Package, ArrowRight, Save } from "lucide-react"
 import { motion } from "framer-motion"
 import { toast } from "@/components/ui/use-toast"
-import { itemCategories } from "@/lib/categories"
+import { fetchCategories } from "@/lib/api-client"
 
-// Define form schema
 const formSchema = z.object({
   title: z
     .string()
-    .min(5, { message: "Title must be at least 5 characters." })
-    .max(100, { message: "Title must not exceed 100 characters." }),
-  category: z.string({ required_error: "Please select a category." }),
-  subcategory: z.string({ required_error: "Please select a subcategory." }),
-  condition: z.string({ required_error: "Please select a condition." }),
-  price: z.string().min(1, { message: "Please enter a price." }),
-  images: z.array(z.string()).optional(),
+    .min(5, {
+      message: "Title must be at least 5 characters.",
+    })
+    .max(100, {
+      message: "Title must not exceed 100 characters.",
+    }),
+  category: z.string({
+    required_error: "Please select a category.",
+  }),
+  subcategory: z.string().optional(),
+  condition: z.string({
+    required_error: "Please select a condition.",
+  }),
+  price: z.string().min(1, {
+    message: "Please enter a price.",
+  }),
+  images: z.array(z.string()).min(1, {
+    message: "Please upload at least one image.",
+  }),
 })
 
-// Explicitly define form values type
-type FormValues = z.infer<typeof formSchema>
+interface BasicInfoFormProps {
+  onSaveDraft: (data: any) => void
+  onContinue: (data: any) => void
+  isLoading: boolean
+  initialData?: any
+}
 
-export default function BasicInfoForm() {
+export function BasicInfoForm({ onSaveDraft, onContinue, isLoading, initialData }: BasicInfoFormProps) {
   const router = useRouter()
   const [images, setImages] = useState<string[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [categories, setCategories] = useState<any[]>([])
   const [subcategories, setSubcategories] = useState<any[]>([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [mounted, setMounted] = useState(false)
 
-  useEffect(() => {
-    setMounted(true)
-
-    // Load draft data
-    const draftData = localStorage.getItem("itemBasicInfoDraft")
-    const draftImages = localStorage.getItem("itemImagesDraft")
-    if (draftData) {
-      try {
-        const parsedData: FormValues = JSON.parse(draftData)
-        form.reset(parsedData)
-        if (draftImages) {
-          const parsedImages = JSON.parse(draftImages) as string[]
-          setImages(parsedImages)
-        }
-      } catch (error) {
-        console.error("Error loading draft data:", error)
-      }
-    }
-  }, [])
-
-  const form = useForm<FormValues>({
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: "",
-      category: "",
-      subcategory: "",
-      condition: "",
-      price: "",
-      images: [],
+      title: initialData?.title || "",
+      category: initialData?.category || "",
+      subcategory: initialData?.subcategory || "",
+      condition: initialData?.condition || "",
+      price: initialData?.price?.toString() || "",
+      images: initialData?.images?.map((img: any) => img.url) || [],
     },
   })
+
+  useEffect(() => {
+    // Load categories from API
+    const loadCategories = async () => {
+      try {
+        const data = await fetchCategories("item")
+        setCategories(data.categories || [])
+      } catch (error) {
+        console.error("Error loading categories:", error)
+        toast({
+          title: "Error loading categories",
+          description: "There was a problem loading categories. Please try again.",
+          variant: "destructive",
+        })
+      }
+    }
+
+    // Load initial images if available
+    if (initialData?.images && initialData.images.length > 0) {
+      setImages(initialData.images.map((img: any) => img.url))
+    }
+
+    loadCategories()
+  }, [initialData])
 
   // Update subcategories when category changes
   useEffect(() => {
     const category = form.watch("category")
     if (category) {
-      setSelectedCategory(category)
-      const foundCategory = itemCategories.find((c) => c.id === category)
-      if (foundCategory) {
-        setSubcategories(foundCategory.subcategories)
+      const selectedCategory = categories.find((c) => c.id.toString() === category)
+      if (selectedCategory && selectedCategory.subcategories) {
+        setSubcategories(selectedCategory.subcategories)
       } else {
         setSubcategories([])
       }
       form.setValue("subcategory", "")
     }
-  }, [form.watch("category")])
+  }, [form.watch("category"), categories, form])
 
-  async function onSubmit(values: FormValues) {
-    setIsSubmitting(true)
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    // Include images in the form data
+    values.images = images
 
-    // Prepare data without images to avoid quota issues
-    const { images: _, ...dataToSave } = values
-    // dataToSave.images = [] // Ensure schema compatibility
-
-    try {
-      // Save form data (without images) to localStorage
-      localStorage.setItem("itemBasicInfo", JSON.stringify(dataToSave))
-
-      // Save images separately
-      localStorage.setItem("itemImages", JSON.stringify(images.slice(0, 5)))
-
-      // Clear draft data
-      localStorage.removeItem("itemBasicInfoDraft")
-      localStorage.removeItem("itemImagesDraft")
-
-      // Show success toast
-      toast({
-        title: "Basic information saved",
-        description: "Let's continue to the next step.",
-        duration: 3000,
-      })
-
-      router.push("/post/item/specifications")
-    } catch (error: any) {
-      console.error("Error saving form data:", error)
-      toast({
-        title: "Error saving information",
-        description:
-          error.name === "QuotaExceededError"
-            ? "Storage limit exceeded. Try uploading fewer or smaller images."
-            : "There was a problem saving your information. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
+    // Call the onContinue callback with the form data
+    onContinue(values)
   }
 
-  const saveDraft = () => {
-    const values = form.getValues();
-    try {
-      // Prepare draft data without images to avoid serialization issues
-      const { images: _, ...dataToSave } = values;
-      localStorage.setItem("itemBasicInfoDraft", JSON.stringify(dataToSave));
-      localStorage.setItem("itemImagesDraft", JSON.stringify(images.slice(0, 5)));
-      toast({
-        title: "Draft saved",
-        description: "Your draft has been saved. You can continue later.",
-        duration: 3000,
-      });
-    } catch (error: any) {
-      console.error("Error saving draft:", error);
-      toast({
-        title: "Error saving draft",
-        description:
-          error.name === "QuotaExceededError"
-            ? "Storage limit exceeded. Try using fewer or smaller images."
-            : "There was a problem saving your draft. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const conditions = ["Brand New", "Refurbished", "Used"]
-
-  const getCategoryIcon = (categoryId: string) => {
-    switch (categoryId) {
-      case "electronics":
-        return <Smartphone className="h-5 w-5" />
-      case "vehicles":
-        return <Car className="h-5 w-5" />
-      case "furniture":
-        return <Armchair className="h-5 w-5" />
-      case "clothing":
-        return <Shirt className="h-5 w-5" />
-      case "home_appliances":
-        return <Refrigerator className="h-5 w-5" />
-      default:
-        return <Package className="h-5 w-5" />
-    }
+  const handleSaveDraft = () => {
+    const values = form.getValues()
+    values.images = images
+    onSaveDraft(values)
   }
 
-  if (!mounted) return null
+  const conditions = ["Brand New", "Like New", "Good", "Fair", "Poor"]
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white rounded-xl shadow-lg border p-8"
+      className="bg-white rounded-xl p-6"
     >
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-[#00796B]">Basic Information</h2>
-      </div>
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
@@ -222,11 +163,11 @@ export default function BasicInfoForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {itemCategories.map((category) => (
-                        <SelectItem key={category.id} value={category.id} className="py-3">
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id.toString()} className="py-3">
                           <div className="flex items-center">
-                            {getCategoryIcon(category.id)}
-                            <span className="ml-2">{category.name}</span>
+                            <Package className="h-5 w-5 mr-2" />
+                            <span>{category.name}</span>
                           </div>
                         </SelectItem>
                       ))}
@@ -242,20 +183,22 @@ export default function BasicInfoForm() {
               name="subcategory"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base">
-                    Subcategory <span className="text-red-500">*</span>
-                  </FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedCategory}>
+                  <FormLabel className="text-base">Subcategory</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    disabled={subcategories.length === 0}
+                  >
                     <FormControl>
                       <SelectTrigger className="text-base py-6">
                         <SelectValue
-                          placeholder={selectedCategory ? "Select a subcategory" : "Select a category first"}
+                          placeholder={subcategories.length > 0 ? "Select a subcategory" : "Select a category first"}
                         />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {subcategories.map((subcategory) => (
-                        <SelectItem key={subcategory.id} value={subcategory.id} className="py-3">
+                        <SelectItem key={subcategory.id} value={subcategory.id.toString()} className="py-3">
                           {subcategory.name}
                         </SelectItem>
                       ))}
@@ -322,8 +265,9 @@ export default function BasicInfoForm() {
                 </FormLabel>
                 <FormControl>
                   <ImageUploader
-                    images={images}
-                    setImages={(newImages) => {
+                    entityType="item"
+                    initialImages={images}
+                    onImagesUploaded={(newImages) => {
                       setImages(newImages)
                       field.onChange(newImages)
                     }}
@@ -345,22 +289,17 @@ export default function BasicInfoForm() {
               Cancel
             </Button>
             <div className="space-x-3">
-            <Button
-                type="button"
-                variant="outline"
-                onClick={saveDraft}
-                className="px-6 py-6 text-base flex items-center"
-              >
+              <Button type="button" variant="outline" onClick={handleSaveDraft} className="px-6 py-6 text-base">
                 <Save className="h-4 w-4 mr-2" />
                 Save Draft
               </Button>
               <Button
                 type="submit"
-                className="bg-[#00796B] hover:bg-[#00695C] px-8 py-6 text-base shadow-md"
-                disabled={isSubmitting}
+                className="bg-teal-600 hover:bg-teal-700 px-8 py-6 text-base shadow-md"
+                disabled={isLoading}
               >
-                {isSubmitting ? (
-                  <div className="flex items-center">
+                {isLoading ? (
+                  <>
                     <svg
                       className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
                       xmlns="http://www.w3.org/2000/svg"
@@ -374,20 +313,20 @@ export default function BasicInfoForm() {
                         r="10"
                         stroke="currentColor"
                         strokeWidth="4"
-                      />
+                      ></circle>
                       <path
                         className="opacity-75"
                         fill="currentColor"
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
+                      ></path>
                     </svg>
                     Saving...
-                  </div>
+                  </>
                 ) : (
-                  <div className="flex items-center">
+                  <>
                     Next
                     <ArrowRight className="ml-2 h-4 w-4" />
-                  </div>
+                  </>
                 )}
               </Button>
             </div>

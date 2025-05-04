@@ -1,89 +1,205 @@
-// Post storage utility for managing posts in localStorage
+// lib/post-storage.ts
+// This utility handles all post storage operations
 
-export interface PostData {
+// Types
+export interface PostImage {
+  id: string
+  url: string
+  main: boolean
+}
+
+export interface TradePreferences {
+  openToOffers: boolean
+  acceptCash: boolean
+  preferredTradeType?: "any" | "specific"
+  specificItems?: string
+  preferredCategories?: string[]
+  cashValue?: number
+}
+
+export interface ServiceDetails {
+  duration?: string
+  availability?: string
+  experience?: string
+  qualifications?: string[]
+}
+
+export interface PricingTerms {
+  pricing: string
+  priceAmount: number
+  negotiable: boolean
+  termsAndConditions?: string
+}
+
+export interface Post {
   id: string
   type: "item" | "service"
-  data: any
+  userId: string
+  title: string
+  description?: string
+  category?: string
+  subcategory?: string
+  condition?: string
+  price?: number
+  brand?: string
+  model?: string
+  processor?: string
+  ram?: string
+  storage?: string
+  screenSize?: string
+  hasCamera?: boolean
+  hasBattery?: boolean
+  additionalDetails?: string
+  city?: string
+  subcity?: string
+  location?: string
+  images: PostImage[]
+  tradePreferences?: TradePreferences
+  serviceDetails?: ServiceDetails
+  pricingTerms?: PricingTerms
+  status: "draft" | "published" | "archived"
   createdAt: string
+  updatedAt: string
 }
 
-// Save post to localStorage
-export function savePost(post: PostData): void {
-  try {
-    // Save as latest post
-    localStorage.setItem("latestPost", JSON.stringify(post))
+// Storage keys
+const ITEM_DRAFT_KEY = "item_draft"
+const SERVICE_DRAFT_KEY = "service_draft"
+const PUBLISHED_POSTS_KEY = "published_posts"
+const POSTS_KEY = "posts" // Define POSTS_KEY
 
-    // Also save to posts collection
-    const existingPostsJson = localStorage.getItem("posts")
-    let existingPosts: PostData[] = []
+// Helper functions
+const generateId = () => Math.random().toString(36).substring(2, 15)
+const getCurrentTimestamp = () => new Date().toISOString()
 
-    if (existingPostsJson) {
-      existingPosts = JSON.parse(existingPostsJson)
-    }
-
-    // Check if post already exists
-    const existingIndex = existingPosts.findIndex((p) => p.id === post.id)
-    if (existingIndex >= 0) {
-      // Update existing post
-      existingPosts[existingIndex] = post
-    } else {
-      // Add new post
-      existingPosts.unshift(post) // Add to beginning of array
-    }
-
-    // Save updated posts
-    localStorage.setItem("posts", JSON.stringify(existingPosts))
-  } catch (error) {
-    console.error("Error saving post to localStorage:", error)
+// Initialize a new post
+export function initializePost(type: "item" | "service"): Post {
+  return {
+    id: `${type}-${Date.now()}`,
+    type,
+    userId: "user-1", // This would be the actual user ID in a real app
+    title: "",
+    images: [],
+    status: "draft",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   }
 }
 
-// Get all posts from localStorage
-export function getAllPosts(): PostData[] {
-  try {
-    const postsJson = localStorage.getItem("posts")
-    if (!postsJson) return []
-    return JSON.parse(postsJson)
-  } catch (error) {
-    console.error("Error retrieving posts from localStorage:", error)
-    return []
-  }
-}
+// Get draft post
+export function getDraftPost(type: "item" | "service"): Post | null {
+  if (typeof window === "undefined") return null
 
-// Get latest post from localStorage
-export function getLatestPost(): PostData | null {
+  const key = type === "item" ? ITEM_DRAFT_KEY : SERVICE_DRAFT_KEY
+  const draftJson = localStorage.getItem(key)
+
+  if (!draftJson) return null
+
   try {
-    const savedPost = localStorage.getItem("latestPost")
-    if (!savedPost) return null
-    return JSON.parse(savedPost) as PostData
+    return JSON.parse(draftJson) as Post
   } catch (error) {
-    console.error("Error retrieving latest post from localStorage:", error)
+    console.error("Error parsing draft post:", error)
     return null
   }
 }
 
 // Save draft post
-export function saveDraft(type: "item" | "service", data: any): void {
+export function saveDraftPost(post: Post): void {
+  if (typeof window === "undefined") return
+
+  const key = post.type === "item" ? ITEM_DRAFT_KEY : SERVICE_DRAFT_KEY
+  localStorage.setItem(key, JSON.stringify(post))
+}
+
+// Delete draft post
+export function deleteDraftPost(type: "item" | "service"): void {
+  if (typeof window === "undefined") return
+
+  const key = type === "item" ? ITEM_DRAFT_KEY : SERVICE_DRAFT_KEY
+  localStorage.removeItem(key)
+}
+
+// Publish post
+export function publishPost(post: Post): Post {
+  if (typeof window === "undefined") return post
+
+  // Update post status and timestamps
+  const publishedPost: Post = {
+    ...post,
+    status: "published",
+    updatedAt: new Date().toISOString(),
+  }
+
+  // Get existing published posts
+  const publishedPostsJson = localStorage.getItem(PUBLISHED_POSTS_KEY)
+  let publishedPosts: Post[] = []
+
+  if (publishedPostsJson) {
+    try {
+      publishedPosts = JSON.parse(publishedPostsJson) as Post[]
+    } catch (error) {
+      console.error("Error parsing published posts:", error)
+    }
+  }
+
+  // Add the new post to the published posts
+  publishedPosts.push(publishedPost)
+
+  // Save the updated published posts
+  localStorage.setItem(PUBLISHED_POSTS_KEY, JSON.stringify(publishedPosts))
+
+  // Delete the draft
+  deleteDraftPost(post.type)
+
+  return publishedPost
+}
+
+// Get published posts
+export function getPublishedPosts(): Post[] {
+  if (typeof window === "undefined") return []
+
+  const publishedPostsJson = localStorage.getItem(PUBLISHED_POSTS_KEY)
+
+  if (!publishedPostsJson) return []
+
   try {
-    localStorage.setItem(`${type}Draft`, JSON.stringify(data))
+    return JSON.parse(publishedPostsJson) as Post[]
   } catch (error) {
-    console.error(`Error saving ${type} draft:`, error)
+    console.error("Error parsing published posts:", error)
+    return []
   }
 }
 
-// Get draft post
-export function getDraft(type: "item" | "service"): any {
-  try {
-    const draft = localStorage.getItem(`${type}Draft`)
-    if (!draft) return null
-    return JSON.parse(draft)
-  } catch (error) {
-    console.error(`Error retrieving ${type} draft:`, error)
-    return null
-  }
+// Get a specific post by ID
+export function getPostById(id: string): Post | null {
+  if (typeof window === "undefined") return null
+
+  // Check drafts first
+  const itemDraft = getDraftPost("item")
+  if (itemDraft && itemDraft.id === id) return itemDraft
+
+  const serviceDraft = getDraftPost("service")
+  if (serviceDraft && serviceDraft.id === id) return serviceDraft
+
+  // Check published posts
+  const publishedPosts = getPublishedPosts()
+  return publishedPosts.find((post) => post.id === id) || null
 }
 
-// Clear draft post
-export function clearDraft(type: "item" | "service"): void {
-  localStorage.removeItem(`${type}Draft`)
+// Delete a post
+export function deletePost(id: string): boolean {
+  const posts = getPublishedPosts()
+  const updatedPosts = posts.filter((post) => post.id !== id)
+  localStorage.setItem(POSTS_KEY, JSON.stringify(updatedPosts))
+  return posts.length !== updatedPosts.length
+}
+
+// Update a post
+export function updatePost(updatedPost: Post): Post {
+  const posts = getPublishedPosts()
+  const updatedPosts = posts.map((post) =>
+    post.id === updatedPost.id ? { ...updatedPost, updatedAt: getCurrentTimestamp() } : post,
+  )
+  localStorage.setItem(POSTS_KEY, JSON.stringify(updatedPosts))
+  return { ...updatedPost, updatedAt: getCurrentTimestamp() }
 }

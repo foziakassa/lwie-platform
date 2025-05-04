@@ -1,19 +1,18 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ImageUploader } from "@/components/post/image-uploader"
-import { LocationFormFields } from "@/components/post/shared/location-form"
+import { LocationForm } from "@/components/post/shared/location-form"
 import { ActionButtons } from "@/components/post/shared/action-buttons"
 import { toast } from "@/components/ui/use-toast"
 import { savePost, saveDraft, getDraft, clearDraft } from "@/lib/post-storage"
@@ -32,25 +31,6 @@ import {
   Check,
 } from "lucide-react"
 
-// Form schema for validation
-const formSchema = z.object({
-  title: z.string().min(3, "Title must be at least 3 characters"),
-  price: z.string().min(1, "Price is required"),
-  category: z.string().min(1, "Category is required"),
-  subcategory: z.string().min(1, "Subcategory is required"),
-  condition: z.string().min(1, "Condition is required"),
-  brand: z.string().optional(),
-  model: z.string().optional(),
-  storage: z.string().optional(),
-  ram: z.string().optional(),
-  camera: z.string().optional(),
-  battery: z.string().optional(),
-  color: z.string().optional(),
-  city: z.string().min(1, "City is required"),
-  subcity: z.string().min(1, "Subcity is required"),
-  tradePreference: z.string().default("any"),
-})
-
 export default function PostItemPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("basic")
@@ -58,26 +38,22 @@ export default function PostItemPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [mounted, setMounted] = useState(false)
 
-  // Initialize form with zod resolver
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      price: "",
-      category: "",
-      subcategory: "",
-      condition: "",
-      brand: "",
-      model: "",
-      storage: "",
-      ram: "",
-      camera: "",
-      battery: "",
-      color: "",
-      city: "",
-      subcity: "",
-      tradePreference: "any",
-    },
+  const [formData, setFormData] = useState({
+    title: "",
+    price: "",
+    category: "",
+    subcategory: "",
+    condition: "",
+    brand: "",
+    model: "",
+    storage: "",
+    ram: "",
+    camera: "",
+    battery: "",
+    color: "",
+    city: "",
+    subcity: "",
+    tradePreference: "any",
   })
 
   useEffect(() => {
@@ -86,20 +62,32 @@ export default function PostItemPage() {
     // Load draft data if available
     const draftData = getDraft("item")
     if (draftData) {
-      form.reset(draftData)
+      setFormData(draftData)
       if (draftData.images && draftData.images.length > 0) {
         setImages(draftData.images)
       }
     }
-  }, [form])
+  }, [])
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleRadioChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, tradePreference: value }))
+  }
 
   const handleImagesChange = (newImages: string[]) => {
     setImages(newImages)
   }
 
   const handleSaveDraft = () => {
-    const values = form.getValues()
-    saveDraft("item", { ...values, images })
+    saveDraft("item", { ...formData, images })
     toast({
       title: "Draft saved",
       description: "Your item draft has been saved. You can continue later.",
@@ -107,27 +95,51 @@ export default function PostItemPage() {
     })
   }
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
     setIsSubmitting(true)
 
-    try {
-      // Validate images
-      if (images.length === 0) {
-        toast({
-          title: "Images required",
-          description: "Please upload at least one image",
-          variant: "destructive",
-        })
-        setIsSubmitting(false)
-        return
-      }
+    // Validate form
+    if (!formData.title || !formData.category || !formData.condition || !formData.price) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields in the Basic Info section",
+        variant: "destructive",
+      })
+      setActiveTab("basic")
+      setIsSubmitting(false)
+      return
+    }
 
+    if (!formData.city || !formData.subcity) {
+      toast({
+        title: "Missing location",
+        description: "Please select both city and subcity",
+        variant: "destructive",
+      })
+      setActiveTab("location")
+      setIsSubmitting(false)
+      return
+    }
+
+    if (images.length === 0) {
+      toast({
+        title: "Images required",
+        description: "Please upload at least one image",
+        variant: "destructive",
+      })
+      setActiveTab("basic")
+      setIsSubmitting(false)
+      return
+    }
+
+    try {
       // Create post object
       const post = {
         id: `ITEM-${Date.now()}`,
         type: "item" as const,
         data: {
-          ...values,
+          ...formData,
           images,
         },
         createdAt: new Date().toISOString(),
@@ -189,11 +201,36 @@ export default function PostItemPage() {
 
   const showSpecFields = () => {
     return (
-      form.watch("category") === "electronics" ||
-      form.watch("category") === "computers" ||
-      form.watch("category") === "wearables" ||
-      form.watch("category") === "tv_audio"
+      formData.category === "electronics" ||
+      formData.category === "computers" ||
+      formData.category === "wearables" ||
+      formData.category === "tv_audio"
     )
+  }
+
+  const handleNextTab = () => {
+    if (activeTab === "basic") {
+      // Validate basic info before proceeding
+      if (!formData.title || !formData.category || !formData.condition || !formData.price) {
+        toast({
+          title: "Missing information",
+          description: "Please fill in all required fields",
+          variant: "destructive",
+        })
+        return
+      }
+      if (images.length === 0) {
+        toast({
+          title: "Images required",
+          description: "Please upload at least one image",
+          variant: "destructive",
+        })
+        return
+      }
+      setActiveTab("specs")
+    } else if (activeTab === "specs") {
+      setActiveTab("location")
+    }
   }
 
   if (!mounted) return null
@@ -205,329 +242,271 @@ export default function PostItemPage() {
           <CardTitle className="text-2xl font-bold text-center text-[#00796B]">Post an Item</CardTitle>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid grid-cols-3 mb-8">
-                  <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                  <TabsTrigger value="specs">Specifications</TabsTrigger>
-                  <TabsTrigger value="location">Location & Trade</TabsTrigger>
-                </TabsList>
+          <form onSubmit={handleSubmit}>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid grid-cols-3 mb-8">
+                <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                <TabsTrigger value="specs">Specifications</TabsTrigger>
+                <TabsTrigger value="location">Location & Trade</TabsTrigger>
+              </TabsList>
 
-                <TabsContent value="basic" className="space-y-6">
-                  <div className="space-y-4">
-                    <FormField
-                      control={form.control}
+              <TabsContent value="basic" className="space-y-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="title">
+                      Title <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="title"
                       name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base">
-                            Title <span className="text-red-500">*</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Enter item title" className="text-base py-6" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      value={formData.title}
+                      onChange={handleInputChange}
+                      placeholder="Enter item title"
+                      className="mt-1 text-base py-6"
+                      required
                     />
+                  </div>
 
-                    <FormField
-                      control={form.control}
+                  <div>
+                    <Label htmlFor="price">
+                      Price (ETB) <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="price"
                       name="price"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base">
-                            Price (ETB) <span className="text-red-500">*</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              type="number"
-                              placeholder="Enter price in ETB"
-                              className="text-base py-6"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      type="number"
+                      value={formData.price}
+                      onChange={handleInputChange}
+                      placeholder="Enter price in ETB"
+                      className="mt-1 text-base py-6"
+                      required
                     />
+                  </div>
 
-                    <FormField
-                      control={form.control}
-                      name="category"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base">
-                            Category <span className="text-red-500">*</span>
-                          </FormLabel>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
-                            {categories.map((category) => (
-                              <Button
-                                key={category.id}
-                                type="button"
-                                variant={field.value === category.id ? "default" : "outline"}
-                                className={`flex items-center justify-start gap-2 h-auto py-3 px-4 ${
-                                  field.value === category.id ? "bg-[#00796B] text-white" : ""
-                                }`}
-                                onClick={() => {
-                                  field.onChange(category.id)
-                                  form.setValue("subcategory", "")
-                                }}
-                              >
-                                {category.icon}
-                                <span>{category.name}</span>
-                                {field.value === category.id && <Check className="h-4 w-4 ml-auto" />}
-                              </Button>
-                            ))}
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <div>
+                    <Label>
+                      Category <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+                      {categories.map((category) => (
+                        <Button
+                          key={category.id}
+                          type="button"
+                          variant={formData.category === category.id ? "default" : "outline"}
+                          className={`flex items-center justify-start gap-2 h-auto py-3 px-4 ${
+                            formData.category === category.id ? "bg-[#00796B] text-white" : ""
+                          }`}
+                          onClick={() => {
+                            handleSelectChange("category", category.id)
+                            handleSelectChange("subcategory", "")
+                          }}
+                        >
+                          {category.icon}
+                          <span>{category.name}</span>
+                          {formData.category === category.id && <Check className="h-4 w-4 ml-auto" />}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
 
-                    {form.watch("category") && (
-                      <FormField
-                        control={form.control}
-                        name="subcategory"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-base">
-                              Subcategory <span className="text-red-500">*</span>
-                            </FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger className="text-base py-6">
-                                  <SelectValue placeholder="Select subcategory" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {subcategories[form.watch("category")]?.map((sub) => (
-                                  <SelectItem key={sub} value={sub} className="py-3">
-                                    {sub}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
-
-                    <FormField
-                      control={form.control}
-                      name="condition"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base">
-                            Condition <span className="text-red-500">*</span>
-                          </FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="text-base py-6">
-                                <SelectValue placeholder="Select condition" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Brand New" className="py-3">
-                                Brand New
-                              </SelectItem>
-                              <SelectItem value="Refurbished" className="py-3">
-                                Refurbished
-                              </SelectItem>
-                              <SelectItem value="Used" className="py-3">
-                                Used
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
+                  {formData.category && (
                     <div>
-                      <FormLabel className="text-base">
-                        Upload Images <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <div className="mt-2">
-                        <ImageUploader images={images} setImages={handleImagesChange} maxImages={5} />
-                      </div>
+                      <Label htmlFor="subcategory">
+                        Subcategory <span className="text-red-500">*</span>
+                      </Label>
+                      <Select
+                        value={formData.subcategory}
+                        onValueChange={(value) => handleSelectChange("subcategory", value)}
+                      >
+                        <SelectTrigger className="mt-1 text-base py-6">
+                          <SelectValue placeholder="Select subcategory" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subcategories[formData.category]?.map((sub) => (
+                            <SelectItem key={sub} value={sub} className="py-3">
+                              {sub}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  <div>
+                    <Label htmlFor="condition">
+                      Condition <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={formData.condition}
+                      onValueChange={(value) => handleSelectChange("condition", value)}
+                    >
+                      <SelectTrigger className="mt-1 text-base py-6">
+                        <SelectValue placeholder="Select condition" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Brand New" className="py-3">
+                          Brand New
+                        </SelectItem>
+                        <SelectItem value="Refurbished" className="py-3">
+                          Refurbished
+                        </SelectItem>
+                        <SelectItem value="Used" className="py-3">
+                          Used
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>
+                      Upload Images <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="mt-2">
+                      <ImageUploader images={images} setImages={handleImagesChange} maxImages={5} />
                     </div>
                   </div>
-                </TabsContent>
+                </div>
+              </TabsContent>
 
-                <TabsContent value="specs" className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
+              <TabsContent value="specs" className="space-y-6">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="brand">Brand</Label>
+                      <Input
+                        id="brand"
                         name="brand"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-base">Brand</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="e.g., Samsung, Apple" className="text-base py-6" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="model"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-base">Model</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="e.g., Galaxy S23, iPhone 14" className="text-base py-6" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                        value={formData.brand}
+                        onChange={handleInputChange}
+                        placeholder="e.g., Samsung, Apple"
+                        className="mt-1 text-base py-6"
                       />
                     </div>
+                    <div>
+                      <Label htmlFor="model">Model</Label>
+                      <Input
+                        id="model"
+                        name="model"
+                        value={formData.model}
+                        onChange={handleInputChange}
+                        placeholder="e.g., Galaxy S23, iPhone 14"
+                        className="mt-1 text-base py-6"
+                      />
+                    </div>
+                  </div>
 
-                    {showSpecFields() && (
-                      <>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <FormField
-                            control={form.control}
+                  {showSpecFields() && (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="storage">Storage</Label>
+                          <Input
+                            id="storage"
                             name="storage"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-base">Storage</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="e.g., 128GB, 256GB" className="text-base py-6" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
+                            value={formData.storage}
+                            onChange={handleInputChange}
+                            placeholder="e.g., 128GB, 256GB"
+                            className="mt-1 text-base py-6"
                           />
-                          <FormField
-                            control={form.control}
+                        </div>
+                        <div>
+                          <Label htmlFor="ram">RAM</Label>
+                          <Input
+                            id="ram"
                             name="ram"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-base">RAM</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="e.g., 8GB, 16GB" className="text-base py-6" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
+                            value={formData.ram}
+                            onChange={handleInputChange}
+                            placeholder="e.g., 8GB, 16GB"
+                            className="mt-1 text-base py-6"
                           />
                         </div>
+                      </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <FormField
-                            control={form.control}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="camera">Camera</Label>
+                          <Input
+                            id="camera"
                             name="camera"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-base">Camera</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    {...field}
-                                    placeholder="e.g., 50MP main, 12MP ultra-wide"
-                                    className="text-base py-6"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="battery"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-base">Battery</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    {...field}
-                                    placeholder="e.g., 5000mAh, 45W fast charging"
-                                    className="text-base py-6"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
+                            value={formData.camera}
+                            onChange={handleInputChange}
+                            placeholder="e.g., 50MP main, 12MP ultra-wide"
+                            className="mt-1 text-base py-6"
                           />
                         </div>
-                      </>
-                    )}
+                        <div>
+                          <Label htmlFor="battery">Battery</Label>
+                          <Input
+                            id="battery"
+                            name="battery"
+                            value={formData.battery}
+                            onChange={handleInputChange}
+                            placeholder="e.g., 5000mAh, 45W fast charging"
+                            className="mt-1 text-base py-6"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
 
-                    <FormField
-                      control={form.control}
+                  <div>
+                    <Label htmlFor="color">Color</Label>
+                    <Input
+                      id="color"
                       name="color"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-base">Color</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="e.g., Black, White, Gold" className="text-base py-6" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      value={formData.color}
+                      onChange={handleInputChange}
+                      placeholder="e.g., Black, White, Gold"
+                      className="mt-1 text-base py-6"
                     />
                   </div>
-                </TabsContent>
+                </div>
+              </TabsContent>
 
-                <TabsContent value="location" className="space-y-6">
-                  <LocationFormFields form={form} type="item" />
+              <TabsContent value="location" className="space-y-6">
+                <LocationForm formData={formData} onChange={handleSelectChange} type="item" />
 
-                  <FormField
-                    control={form.control}
-                    name="tradePreference"
-                    render={({ field }) => (
-                      <FormItem className="mt-6">
-                        <FormLabel className="text-base">Trade Preference</FormLabel>
-                        <FormControl>
-                          <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="mt-2">
-                            <div className="flex items-center space-x-2 rounded-md border p-3">
-                              <RadioGroupItem value="any" id="any" />
-                              <FormLabel htmlFor="any" className="flex-1 cursor-pointer">
-                                Open to anything
-                              </FormLabel>
-                            </div>
-                            <div className="flex items-center space-x-2 rounded-md border p-3">
-                              <RadioGroupItem value="sell" id="sell" />
-                              <FormLabel htmlFor="sell" className="flex-1 cursor-pointer">
-                                Sell only
-                              </FormLabel>
-                            </div>
-                            <div className="flex items-center space-x-2 rounded-md border p-3">
-                              <RadioGroupItem value="trade" id="trade" />
-                              <FormLabel htmlFor="trade" className="flex-1 cursor-pointer">
-                                Trade only
-                              </FormLabel>
-                            </div>
-                          </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </TabsContent>
-              </Tabs>
+                <div className="mt-6">
+                  <Label>Trade Preference</Label>
+                  <RadioGroup value={formData.tradePreference} onValueChange={handleRadioChange} className="mt-2">
+                    <div className="flex items-center space-x-2 rounded-md border p-3">
+                      <RadioGroupItem value="any" id="any" />
+                      <Label htmlFor="any" className="flex-1 cursor-pointer">
+                        Open to anything
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 rounded-md border p-3">
+                      <RadioGroupItem value="sell" id="sell" />
+                      <Label htmlFor="sell" className="flex-1 cursor-pointer">
+                        Sell only
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 rounded-md border p-3">
+                      <RadioGroupItem value="trade" id="trade" />
+                      <Label htmlFor="trade" className="flex-1 cursor-pointer">
+                        Trade only
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </TabsContent>
+            </Tabs>
 
-              <ActionButtons
-                isSubmitting={isSubmitting}
-                isLastStep={activeTab === "location"}
-                onBack={() => {
-                  if (activeTab === "basic") {
-                    router.push("/post/selection")
-                  } else if (activeTab === "specs") {
-                    setActiveTab("basic")
-                  } else {
-                    setActiveTab("specs")
-                  }
-                }}
-                onSaveDraft={handleSaveDraft}
-              />
-            </form>
-          </Form>
+            <ActionButtons
+              isSubmitting={isSubmitting}
+              isLastStep={activeTab === "location"}
+              onBack={() => {
+                if (activeTab === "basic") {
+                  router.push("/post/selection")
+                } else if (activeTab === "specs") {
+                  setActiveTab("basic")
+                } else {
+                  setActiveTab("specs")
+                }
+              }}
+              onSaveDraft={handleSaveDraft}
+            />
+          </form>
         </CardContent>
       </Card>
     </div>

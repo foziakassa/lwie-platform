@@ -10,9 +10,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ImageUploader } from "@/components/post/image-uploader"
-import { ArrowRight, Save, Briefcase } from "lucide-react"
+import { Briefcase, ArrowRight, Save } from "lucide-react"
 import { motion } from "framer-motion"
 import { toast } from "@/components/ui/use-toast"
+import { fetchCategories } from "@/lib/api-client"
 
 const formSchema = z.object({
   title: z
@@ -27,296 +28,93 @@ const formSchema = z.object({
     required_error: "Please select a category.",
   }),
   subcategory: z.string().optional(),
-  price: z.string().min(1, {
-    message: "Please enter a price.",
+  images: z.array(z.string()).min(1, {
+    message: "Please upload at least one image.",
   }),
-  images: z.array(z.string()).optional(),
 })
 
-// Service categories and subcategories
-const serviceCategories = [
-  {
-    id: "education",
-    name: "Education & Tutoring",
-    subcategories: [
-      { id: "primary", name: "Primary School" },
-      { id: "secondary", name: "Secondary School" },
-      { id: "university", name: "University & College" },
-      { id: "language", name: "Language Learning" },
-      { id: "test_prep", name: "Test Preparation" },
-      { id: "professional", name: "Professional Certification" },
-      { id: "music", name: "Music Lessons" },
-      { id: "art", name: "Art & Craft Classes" },
-      { id: "other_education", name: "Other Education Services" },
-    ],
-  },
-  {
-    id: "home_services",
-    name: "Home Services",
-    subcategories: [
-      { id: "cleaning", name: "Cleaning Services" },
-      { id: "plumbing", name: "Plumbing" },
-      { id: "electrical", name: "Electrical Work" },
-      { id: "carpentry", name: "Carpentry" },
-      { id: "painting", name: "Painting" },
-      { id: "gardening", name: "Gardening & Landscaping" },
-      { id: "moving", name: "Moving & Packing" },
-      { id: "appliance_repair", name: "Appliance Repair" },
-      { id: "home_security", name: "Home Security" },
-      { id: "other_home", name: "Other Home Services" },
-    ],
-  },
-  {
-    id: "tech_services",
-    name: "Tech Services",
-    subcategories: [
-      { id: "web_development", name: "Web Development" },
-      { id: "app_development", name: "App Development" },
-      { id: "software_development", name: "Software Development" },
-      { id: "it_support", name: "IT Support" },
-      { id: "data_analysis", name: "Data Analysis" },
-      { id: "digital_marketing", name: "Digital Marketing" },
-      { id: "seo", name: "SEO Services" },
-      { id: "computer_repair", name: "Computer Repair" },
-      { id: "cybersecurity", name: "Cybersecurity" },
-      { id: "other_tech", name: "Other Tech Services" },
-    ],
-  },
-  {
-    id: "creative_services",
-    name: "Creative Services",
-    subcategories: [
-      { id: "graphic_design", name: "Graphic Design" },
-      { id: "video_production", name: "Video Production" },
-      { id: "photography", name: "Photography" },
-      { id: "animation", name: "Animation" },
-      { id: "illustration", name: "Illustration" },
-      { id: "content_writing", name: "Content Writing" },
-      { id: "translation", name: "Translation" },
-      { id: "music_production", name: "Music Production" },
-      { id: "voice_over", name: "Voice Over" },
-      { id: "other_creative", name: "Other Creative Services" },
-    ],
-  },
-  {
-    id: "professional_services",
-    name: "Professional Services",
-    subcategories: [
-      { id: "legal", name: "Legal Services" },
-      { id: "accounting", name: "Accounting & Bookkeeping" },
-      { id: "consulting", name: "Business Consulting" },
-      { id: "hr_services", name: "HR Services" },
-      { id: "financial_planning", name: "Financial Planning" },
-      { id: "tax_preparation", name: "Tax Preparation" },
-      { id: "notary", name: "Notary Services" },
-      { id: "career_coaching", name: "Career Coaching" },
-      { id: "other_professional", name: "Other Professional Services" },
-    ],
-  },
-  {
-    id: "health_wellness",
-    name: "Health & Wellness",
-    subcategories: [
-      { id: "fitness", name: "Fitness Training" },
-      { id: "yoga", name: "Yoga Instruction" },
-      { id: "nutrition", name: "Nutrition Consulting" },
-      { id: "massage", name: "Massage Therapy" },
-      { id: "mental_health", name: "Mental Health Services" },
-      { id: "physical_therapy", name: "Physical Therapy" },
-      { id: "alternative_medicine", name: "Alternative Medicine" },
-      { id: "other_health", name: "Other Health Services" },
-    ],
-  },
-  {
-    id: "events_entertainment",
-    name: "Events & Entertainment",
-    subcategories: [
-      { id: "event_planning", name: "Event Planning" },
-      { id: "dj_services", name: "DJ Services" },
-      { id: "live_music", name: "Live Music" },
-      { id: "catering", name: "Catering" },
-      { id: "photography_events", name: "Event Photography" },
-      { id: "videography", name: "Event Videography" },
-      { id: "decoration", name: "Decoration Services" },
-      { id: "mc_hosting", name: "MC & Hosting" },
-      { id: "other_events", name: "Other Event Services" },
-    ],
-  },
-  {
-    id: "transportation",
-    name: "Transportation",
-    subcategories: [
-      { id: "rideshare", name: "Rideshare Services" },
-      { id: "delivery", name: "Delivery Services" },
-      { id: "moving_services", name: "Moving Services" },
-      { id: "airport_transfer", name: "Airport Transfers" },
-      { id: "chauffeur", name: "Chauffeur Services" },
-      { id: "other_transportation", name: "Other Transportation Services" },
-    ],
-  },
-  {
-    id: "beauty_personal",
-    name: "Beauty & Personal Care",
-    subcategories: [
-      { id: "haircut_styling", name: "Haircut & Styling" },
-      { id: "makeup", name: "Makeup Services" },
-      { id: "nail_care", name: "Nail Care" },
-      { id: "skincare", name: "Skincare Services" },
-      { id: "spa_services", name: "Spa Services" },
-      { id: "barber", name: "Barber Services" },
-      { id: "other_beauty", name: "Other Beauty Services" },
-    ],
-  },
-  {
-    id: "childcare",
-    name: "Childcare & Babysitting",
-    subcategories: [
-      { id: "babysitting", name: "Babysitting" },
-      { id: "nanny", name: "Nanny Services" },
-      { id: "daycare", name: "Daycare Services" },
-      { id: "after_school", name: "After School Care" },
-      { id: "other_childcare", name: "Other Childcare Services" },
-    ],
-  },
-  {
-    id: "pet_services",
-    name: "Pet Services",
-    subcategories: [
-      { id: "pet_sitting", name: "Pet Sitting" },
-      { id: "dog_walking", name: "Dog Walking" },
-      { id: "pet_grooming", name: "Pet Grooming" },
-      { id: "pet_training", name: "Pet Training" },
-      { id: "veterinary", name: "Veterinary Services" },
-      { id: "other_pet", name: "Other Pet Services" },
-    ],
-  },
-  {
-    id: "other_services",
-    name: "Other Services",
-    subcategories: [{ id: "general_services", name: "General Services" }],
-  },
-]
+interface ServiceBasicInfoFormProps {
+  onSaveDraft: (data: any) => void
+  onContinue: (data: any) => void
+  isLoading: boolean
+  initialData?: any
+}
 
-export default function ServiceBasicInfoForm() {
+export function ServiceBasicInfoForm({ onSaveDraft, onContinue, isLoading, initialData }: ServiceBasicInfoFormProps) {
   const router = useRouter()
   const [images, setImages] = useState<string[]>([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [mounted, setMounted] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [categories, setCategories] = useState<any[]>([])
   const [subcategories, setSubcategories] = useState<any[]>([])
-
-  useEffect(() => {
-    setMounted(true)
-
-    // Check for draft data
-    const draftData = localStorage.getItem("serviceBasicInfoDraft")
-    if (draftData) {
-      try {
-        const parsedData = JSON.parse(draftData)
-        form.reset(parsedData)
-        if (parsedData.images && parsedData.images.length > 0) {
-          setImages(parsedData.images)
-        }
-        if (parsedData.category) {
-          setSelectedCategory(parsedData.category)
-          const category = serviceCategories.find((c) => c.id === parsedData.category)
-          if (category) {
-            setSubcategories(category.subcategories)
-          }
-        }
-      } catch (error) {
-        console.error("Error loading draft data:", error)
-      }
-    }
-  }, [])
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: "",
-      category: "",
-      subcategory: "",
-      price: "",
-      images: [],
+      title: initialData?.title || "",
+      category: initialData?.category || "",
+      subcategory: initialData?.subcategory || "",
+      images: initialData?.images?.map((img: any) => img.url) || [],
     },
   })
+
+  useEffect(() => {
+    // Load categories from API
+    const loadCategories = async () => {
+      try {
+        const data = await fetchCategories("service")
+        setCategories(data.categories || [])
+      } catch (error) {
+        console.error("Error loading categories:", error)
+        toast({
+          title: "Error loading categories",
+          description: "There was a problem loading categories. Please try again.",
+          variant: "destructive",
+        })
+      }
+    }
+
+    // Load initial images if available
+    if (initialData?.images && initialData.images.length > 0) {
+      setImages(initialData.images.map((img: any) => img.url))
+    }
+
+    loadCategories()
+  }, [initialData])
 
   // Update subcategories when category changes
   useEffect(() => {
     const category = form.watch("category")
     if (category) {
-      setSelectedCategory(category)
-      const foundCategory = serviceCategories.find((c) => c.id === category)
-      if (foundCategory) {
-        setSubcategories(foundCategory.subcategories)
+      const selectedCategory = categories.find((c) => c.id.toString() === category)
+      if (selectedCategory && selectedCategory.subcategories) {
+        setSubcategories(selectedCategory.subcategories)
       } else {
         setSubcategories([])
       }
       form.setValue("subcategory", "")
     }
-  }, [form.watch("category")])
+  }, [form.watch("category"), categories, form])
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsSubmitting(true)
-
     // Include images in the form data
     values.images = images
 
-    try {
-      // Save to local storage for now
-      localStorage.setItem("serviceBasicInfo", JSON.stringify(values))
-
-      // Clear draft
-      localStorage.removeItem("serviceBasicInfoDraft")
-
-      // Show success toast
-      toast({
-        title: "Basic information saved",
-        description: "Let's continue to the next step.",
-        duration: 3000,
-      })
-
-      router.push("/post/service/details")
-    } catch (error) {
-      console.error("Error saving form data:", error)
-      toast({
-        title: "Error saving information",
-        description: "There was a problem saving your information. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
+    // Call the onContinue callback with the form data
+    onContinue(values)
   }
 
-  const saveDraft = () => {
+  const handleSaveDraft = () => {
     const values = form.getValues()
     values.images = images
-    localStorage.setItem("serviceBasicInfoDraft", JSON.stringify(values))
-    toast({
-      title: "Draft saved",
-      description: "Your draft has been saved. You can continue later.",
-      duration: 3000,
-    })
+    onSaveDraft(values)
   }
-
-  if (!mounted) return null
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white rounded-xl shadow-lg border p-8"
+      className="bg-white rounded-xl p-6"
     >
-      <div className="mb-6">
-        <div className="flex items-center mb-2">
-          <Briefcase className="h-6 w-6 mr-2 text-[#00796B]" />
-          <h2 className="text-2xl font-bold text-[#00796B]">Service Information</h2>
-        </div>
-        <p className="text-gray-600">Tell us about the service you're offering</p>
-      </div>
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
@@ -329,7 +127,7 @@ export default function ServiceBasicInfoForm() {
                 </FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="e.g., Professional Web Development Services, Math Tutoring"
+                    placeholder="e.g., Professional Web Development Services"
                     {...field}
                     className="text-base py-6"
                   />
@@ -355,9 +153,12 @@ export default function ServiceBasicInfoForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {serviceCategories.map((category) => (
-                        <SelectItem key={category.id} value={category.id} className="py-2.5">
-                          {category.name}
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id.toString()} className="py-3">
+                          <div className="flex items-center">
+                            <Briefcase className="h-5 w-5 mr-2" />
+                            <span>{category.name}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -372,20 +173,22 @@ export default function ServiceBasicInfoForm() {
               name="subcategory"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base">
-                    Subcategory <span className="text-red-500">*</span>
-                  </FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedCategory}>
+                  <FormLabel className="text-base">Subcategory</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    disabled={subcategories.length === 0}
+                  >
                     <FormControl>
                       <SelectTrigger className="text-base py-6">
                         <SelectValue
-                          placeholder={selectedCategory ? "Select a subcategory" : "Select a category first"}
+                          placeholder={subcategories.length > 0 ? "Select a subcategory" : "Select a category first"}
                         />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {subcategories.map((subcategory) => (
-                        <SelectItem key={subcategory.id} value={subcategory.id} className="py-2.5">
+                        <SelectItem key={subcategory.id} value={subcategory.id.toString()} className="py-3">
                           {subcategory.name}
                         </SelectItem>
                       ))}
@@ -399,30 +202,17 @@ export default function ServiceBasicInfoForm() {
 
           <FormField
             control={form.control}
-            name="price"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-base">
-                  Price (ETB) <span className="text-red-500">*</span>
-                </FormLabel>
-                <FormControl>
-                  <Input type="number" placeholder="Enter price in ETB" className="text-base py-6" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
             name="images"
             render={({ field }) => (
               <FormItem className="mt-6">
-                <FormLabel className="text-base">Portfolio Images (Optional)</FormLabel>
+                <FormLabel className="text-base">
+                  Images <span className="text-red-500">*</span>
+                </FormLabel>
                 <FormControl>
                   <ImageUploader
-                    images={images}
-                    setImages={(newImages) => {
+                    entityType="service"
+                    initialImages={images}
+                    onImagesUploaded={(newImages) => {
                       setImages(newImages)
                       field.onChange(newImages)
                     }}
@@ -444,16 +234,16 @@ export default function ServiceBasicInfoForm() {
               Cancel
             </Button>
             <div className="space-x-3">
-              <Button type="button" variant="outline" onClick={saveDraft} className="px-6 py-6 text-base">
+              <Button type="button" variant="outline" onClick={handleSaveDraft} className="px-6 py-6 text-base">
                 <Save className="h-4 w-4 mr-2" />
                 Save Draft
               </Button>
               <Button
                 type="submit"
-                className="bg-[#00796B] hover:bg-[#00695C] px-8 py-6 text-base shadow-md"
-                disabled={isSubmitting}
+                className="bg-teal-600 hover:bg-teal-700 px-8 py-6 text-base shadow-md"
+                disabled={isLoading}
               >
-                {isSubmitting ? (
+                {isLoading ? (
                   <>
                     <svg
                       className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"

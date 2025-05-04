@@ -1,19 +1,109 @@
-import type { Metadata } from "next"
-import LocationDescriptionForm from "@/components/post/item/location-description-form"
-import PostProgressIndicator from "@/components/post/post-progress-indicator"
+"use client"
 
-export const metadata: Metadata = {
-  title: "Location & Description - Post an Item",
-  description: "Add location and description details for your item",
-}
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { LocationDescriptionForm } from "@/components/post/item/location-description-form"
+import { PostProgressIndicator } from "@/components/post/post-progress-indicator"
+import { getDraftPost, saveDraftPost } from "@/lib/post-storage"
+import { toast } from "@/components/ui/use-toast"
 
-export default function LocationDescriptionPage() {
+export default function ItemLocationDescriptionPage() {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+  const [draftData, setDraftData] = useState<any>(null)
+
+  useEffect(() => {
+    // Get the existing draft
+    const draft = getDraftPost("item")
+    if (!draft) {
+      // Redirect to basic info if no draft exists
+      router.push("/post/item/basic-info")
+      return
+    }
+    setDraftData(draft)
+  }, [router])
+
+  const handleSaveDraft = async (formData: any) => {
+    try {
+      setIsLoading(true)
+      if (draftData) {
+        const updatedDraft = {
+          ...draftData,
+          ...formData,
+          updatedAt: new Date().toISOString(),
+        }
+        saveDraftPost(updatedDraft)
+        toast({
+          title: "Draft saved",
+          description: "Your item draft has been saved successfully.",
+        })
+        router.push("/")
+      }
+    } catch (error) {
+      console.error("Error saving draft:", error)
+      toast({
+        title: "Error saving draft",
+        description: "There was a problem saving your draft. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleContinue = async (formData: any) => {
+    try {
+      setIsLoading(true)
+      if (draftData) {
+        const updatedDraft = {
+          ...draftData,
+          ...formData,
+          updatedAt: new Date().toISOString(),
+        }
+        saveDraftPost(updatedDraft)
+        router.push("/post/item/create")
+      }
+    } catch (error) {
+      console.error("Error saving form data:", error)
+      toast({
+        title: "Error",
+        description: "There was a problem saving your information. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
-    <div className="container mx-auto py-10 px-4">
-      <div className="max-w-4xl mx-auto">
-        <PostProgressIndicator currentStep={3} totalSteps={3} />
-        <LocationDescriptionForm />
-      </div>
+    <div className="container mx-auto py-6 px-4">
+      <PostProgressIndicator
+        steps={[
+          { label: "Basic Info", completed: true },
+          { label: "Specifications", completed: true },
+          { label: "Trade Preferences", completed: true },
+          { label: "Location", completed: false },
+          { label: "Review & Submit", completed: false },
+        ]}
+        currentStep={3}
+      />
+
+      <Card className="w-full max-w-4xl mx-auto mt-6">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold text-center">Item Location</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {draftData && (
+            <LocationDescriptionForm
+              initialData={draftData}
+              onSaveDraft={handleSaveDraft}
+              onContinue={handleContinue}
+              isLoading={isLoading}
+            />
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

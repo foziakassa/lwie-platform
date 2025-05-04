@@ -2,6 +2,7 @@
 
 import type React from "react"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -31,13 +32,9 @@ import {
   Book,
   Gift,
 } from "lucide-react"
-import { toast } from "@/components/ui/use-toast"
-
-import { useEffect, useState } from "react"
 
 export function PostItemForm() {
   const router = useRouter()
-  const [isMounted, setIsMounted] = useState(false)
   const [activeTab, setActiveTab] = useState("basic-info")
   const [images, setImages] = useState<string[]>([])
   const [formData, setFormData] = useState({
@@ -69,14 +66,6 @@ export function PostItemForm() {
       // Other categories can be added as needed
     },
   })
-
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
-
-  if (!isMounted) {
-    return null
-  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -394,43 +383,28 @@ export function PostItemForm() {
   }
 
   const handleSaveDraft = () => {
-    try {
-      const post = {
-        id: Date.now().toString(),
-        type: "item" as const,
-        data: {
-          title: formData.title,
-          category: formData.category,
-          subcategory: formData.subcategory,
-          condition: formData.condition,
-          price: formData.price,
-          description: formData.description,
-          location: formData.location,
-          tradePreference: formData.tradePreference,
-          specifications: formData.specifications,
-          images: [], // Exclude images to avoid quota issues
-        },
-        createdAt: new Date().toISOString(),
-        status: "draft",
-      }
-
-      savePost(post)
-      toast({
-        title: "Draft saved successfully!",
-        description: "Your draft has been saved. You can continue later.",
-        duration: 3000,
-      })
-    } catch (error: any) {
-      console.error("Error saving draft:", error)
-      toast({
-        title: "Error saving draft",
-        description: "There was a problem saving your draft. Please try again.",
-        variant: "destructive",
-      })
+    const post = {
+      id: Date.now().toString(),
+      type: "item",
+      title: formData.title,
+      category: formData.category,
+      subcategory: formData.subcategory,
+      condition: formData.condition,
+      price: formData.price,
+      description: formData.description,
+      location: formData.location,
+      tradePreference: formData.tradePreference,
+      specifications: formData.specifications,
+      images: images,
+      createdAt: new Date().toISOString(),
+      status: "draft",
     }
+
+    savePost(post)
+    alert("Draft saved successfully!")
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
     // Validate form
@@ -446,24 +420,22 @@ export function PostItemForm() {
 
     const post = {
       id: Date.now().toString(),
-      type: "item" as const,
-      data: {
-        title: formData.title,
-        category: formData.category,
-        subcategory: formData.subcategory,
-        condition: formData.condition,
-        price: formData.price,
-        description: formData.description,
-        location: formData.location,
-        tradePreference: formData.tradePreference,
-        specifications: formData.specifications,
-        images: images,
-      },
+      type: "item",
+      title: formData.title,
+      category: formData.category,
+      subcategory: formData.subcategory,
+      condition: formData.condition,
+      price: formData.price,
+      description: formData.description,
+      location: formData.location,
+      tradePreference: formData.tradePreference,
+      specifications: formData.specifications,
+      images: images,
       createdAt: new Date().toISOString(),
       status: "published",
     }
 
-    await savePost(post)
+    savePost(post)
     router.push("/post/success")
   }
 
@@ -518,17 +490,17 @@ export function PostItemForm() {
                   <div className="grid grid-cols-2 gap-3">
                     {getSubcategories().map((subcategory) => (
                       <Button
-                        key={String(subcategory)}
+                        key={subcategory}
                         type="button"
-                        variant={formData.subcategory === String(subcategory) ? "default" : "outline"}
+                        variant={formData.subcategory === subcategory ? "default" : "outline"}
                         className="justify-start h-auto py-3"
-                        onClick={() => handleSubcategoryChange(String(subcategory))}
+                        onClick={() => handleSubcategoryChange(subcategory)}
                       >
                         <div className="flex items-center">
-                          {getSubcategoryIcon(String(subcategory))}
-                          {String(subcategory)}
+                          {getSubcategoryIcon(subcategory)}
+                          {subcategory}
                         </div>
-                        {formData.subcategory === String(subcategory) && <Check className="h-4 w-4 ml-auto" />}
+                        {formData.subcategory === subcategory && <Check className="h-4 w-4 ml-auto" />}
                       </Button>
                     ))}
                   </div>
@@ -567,7 +539,7 @@ export function PostItemForm() {
 
               <div className="space-y-2">
                 <Label>Images</Label>
-                <ImageUploader images={images} onChange={handleImagesChange} maxImages={5} setImages={setImages} />
+                <ImageUploader images={images} onChange={handleImagesChange} maxImages={5} />
               </div>
 
               <div className="space-y-2">

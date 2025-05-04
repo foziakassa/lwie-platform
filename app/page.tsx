@@ -7,6 +7,7 @@ import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { Filter, MapPin, ArrowRight, Heart, Share2, Gift } from "lucide-react"
 import ApprovedAdvertisement from "./ad/page"
+import ThreeDAdvertisement from '../components/3d-advertisement-carousel'
 
 // Mock data for featured items
 const featuredItems = [
@@ -189,6 +190,7 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="container mx-auto px-4 py-8">
         {/* Section Navigation */}
+<ThreeDAdvertisement/>
         <ApprovedAdvertisement />
         {/* <div className="flex justify-center mb-8">
           <div className="flex space-x-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">

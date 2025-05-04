@@ -37,11 +37,13 @@ export default function ApprovedAdvertisement() {
     const fetchApprovedAdvertisement = async () => {
       setLoading(true)
       try {
-        const response = await axiosInstance.get<Advertisement[]>("/advertisements/approved")
+        const response = await axiosInstance.get<Advertisement[]>("/advertisements")
 
         if (response.data && response.data.length > 0) {
-          // Filter out hidden ads
-          const visibleAds = response.data.filter((ad) => !hiddenAdIds.includes(ad.id))
+          // Filter out hidden ads and non-approved ads
+          const visibleAds = response.data.filter(
+            (ad) => !hiddenAdIds.includes(ad.id) && ad.approved === true
+          );
 
           if (visibleAds.length > 0) {
             // Get a random ad from the list

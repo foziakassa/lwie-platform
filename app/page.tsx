@@ -4,11 +4,9 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from "framer-motion"
 import { Filter, MapPin, ArrowRight, Heart, Share2, Gift } from "lucide-react"
 import ApprovedAdvertisement from "./ad/page"
-import ThreeDAdvertisement from "@/components/3d-advertisement-carousel"
 
 // Mock data for featured items
 const featuredItems = [
@@ -20,6 +18,7 @@ const featuredItems = [
     condition: "Used",
     image: "/sofa1.jpg",
     likes: 23,
+    createdAt: new Date().toISOString(),
   },
   {
     id: 2,
@@ -29,6 +28,7 @@ const featuredItems = [
     condition: "Used",
     image: "/v40 toyota.jpg",
     likes: 45,
+    createdAt: new Date().toISOString(),
   },
   {
     id: 3,
@@ -38,6 +38,7 @@ const featuredItems = [
     condition: "Like New",
     image: "/iphone 13.jpg",
     likes: 18,
+    createdAt: new Date().toISOString(),
   },
   {
     id: 4,
@@ -47,11 +48,9 @@ const featuredItems = [
     condition: "Used",
     image: "/bike.jpg",
     likes: 12,
+    createdAt: new Date().toISOString(),
   },
 ]
-
-
-
 
 // Mock data for latest posts
 const latestPosts = [
@@ -63,6 +62,7 @@ const latestPosts = [
     condition: "Like New",
     image: "/mac.jpg",
     postedTime: "5 minutes ago",
+    createdAt: new Date().toISOString(),
   },
   {
     id: 10,
@@ -72,6 +72,7 @@ const latestPosts = [
     condition: "Good",
     image: "/vintage record player.jpg",
     postedTime: "2 hours ago",
+    createdAt: new Date().toISOString(),
   },
   {
     id: 11,
@@ -81,6 +82,7 @@ const latestPosts = [
     condition: "Used",
     image: "/Ab Roller Wheel Set.jpg",
     postedTime: "4 hours ago",
+    createdAt: new Date().toISOString(),
   },
   {
     id: 12,
@@ -90,6 +92,7 @@ const latestPosts = [
     condition: "Used",
     image: "/coffee table.jpg",
     postedTime: "6 hours ago",
+    createdAt: new Date().toISOString(),
   },
 ]
 
@@ -97,8 +100,8 @@ export default function Home() {
   const [visibleSection, setVisibleSection] = useState("featured")
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [likedItems, setLikedItems] = useState<number[]>([])
+  const [pendingPosts, setPendingPosts] = useState<any[]>([])
   const router = useRouter()
-  const params = useParams();
 
   // Simulating data loading
   const [isLoading, setIsLoading] = useState(true)
@@ -115,10 +118,21 @@ export default function Home() {
       setLikedItems(JSON.parse(savedLikedItems))
     }
 
-    return () => clearTimeout(timer)
+    // Load pending posts from localStorage
+    const savedPending = JSON.parse(localStorage.getItem("pendingPosts") || "[]")
+    setPendingPosts(savedPending)
+
+    // Clear pending posts after 5 minutes
+    const clearTimer = setTimeout(() => {
+      localStorage.removeItem("pendingPosts")
+      setPendingPosts([])
+    }, 300000)
+
+    return () => {
+      clearTimeout(timer)
+      clearTimeout(clearTimer)
+    }
   }, [])
-  // In your frontend at /activate/[token]
- 
 
   const toggleLike = (itemId: number) => {
     setLikedItems((prev) => {
@@ -140,6 +154,12 @@ export default function Home() {
   }
 
   const categories = ["All", "Electronics", "Furniture", "Vehicles", "Fashion", "Books", "Sports"]
+
+  // Merge pending posts with featured items
+  const mergedFeaturedItems = [
+    ...pendingPosts,
+    ...featuredItems,
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
   // Animation variants
   const containerVariants = {
@@ -168,24 +188,18 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="container mx-auto px-4 py-8">
-
-      
-        {/* <ThreeDAdvertisement /> */}
-     
-
         {/* Section Navigation */}
-        <ApprovedAdvertisement/>
+        <ApprovedAdvertisement />
         {/* <div className="flex justify-center mb-8">
           <div className="flex space-x-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
             {["featured", "latest"].map((section) => (
               <button
                 key={section}
                 onClick={() => setVisibleSection(section)}
-                className={`px-4 py-2 rounded-md transition-colors ${
-                  visibleSection === section
+                className={`px-4 py-2 rounded-md transition-colors ${visibleSection === section
                     ? "bg-teal-600 text-white"
                     : "text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                }`}
+                  }`}
               >
                 {section.charAt(0).toUpperCase() + section.slice(1)}
               </button>
@@ -237,7 +251,7 @@ export default function Home() {
                   initial="hidden"
                   animate="visible"
                 >
-                  {featuredItems.map((item) => (
+                  {mergedFeaturedItems.map((item) => (
                     <motion.div
                       key={item.id}
                       variants={itemVariants}
@@ -255,11 +269,10 @@ export default function Home() {
                               e.stopPropagation()
                               toggleLike(item.id)
                             }}
-                            className={`p-2 rounded-full ${
-                              likedItems.includes(item.id)
-                                ? "bg-rose-500 text-white"
-                                : "bg-white/80 text-gray-700 hover:bg-white"
-                            }`}
+                            className={`p-2 rounded-full ${likedItems.includes(item.id)
+                              ? "bg-rose-500 text-white"
+                              : "bg-white/80 text-gray-700 hover:bg-white"
+                              }`}
                           >
                             <Heart className="h-4 w-4" fill={likedItems.includes(item.id) ? "currentColor" : "none"} />
                           </motion.button>
@@ -300,9 +313,8 @@ export default function Home() {
             </motion.section>
           )}
 
-          
           {/* Latest Posts */}
-          
+
         </AnimatePresence>
 
         {/* Charity Section */}
@@ -354,7 +366,7 @@ export default function Home() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push("/advertise")} // Change the route as needed
+                onClick={() => router.push("/advertise")}
                 className="px-6 py-3 bg-teal-600 text-white rounded-full font-medium hover:bg-teal-700 transition-colors"
               >
                 Click Here
@@ -366,4 +378,3 @@ export default function Home() {
     </div>
   )
 }
-

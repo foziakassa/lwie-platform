@@ -1,18 +1,20 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { processPayment } from "@/lib/actions"
 import { toast } from "sonner"
 import Cookies from "js-cookie"
+import { initializePayment } from "@/lib/api-service"
 
 interface Plan {
+  id: number
   name: string
-  posts: number
-  price: number
+  posts_count: number
+  price: string
+  description: string
 }
 
 interface UserData {
@@ -28,20 +30,28 @@ export default function CheckoutPage() {
   const [plan, setPlan] = useState<Plan | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     const planData = sessionStorage.getItem("selectedPlan")
     if (planData) {
       setPlan(JSON.parse(planData))
     } else {
-      router.push("/")
+      // Try to get plan ID from URL
+      const planId = searchParams.get("plan")
+      if (planId) {
+        // Redirect to plan selection with the ID
+        router.push(`/plan-selection?preselect=${planId}`)
+      } else {
+        router.push("/plan-selection")
+      }
     }
-  }, [router])
+  }, [router, searchParams])
 
   const handlePayment = async () => {
     if (!plan) {
       toast.error("Plan information not found. Please select a plan again.")
-      router.push("/")
+      router.push("/plan-selection")
       return
     }
 
@@ -78,8 +88,6 @@ export default function CheckoutPage() {
       customerEmail = Cookies.get("customerEmail") || "anonymous@example.com"
     }
 
-    console.log("Customer info:", { name: customerName, email: customerEmail })
-
     try {
       // Save the customer transaction info in sessionStorage with both name and email
       sessionStorage.setItem(
@@ -88,29 +96,30 @@ export default function CheckoutPage() {
           name: customerName,
           email: customerEmail,
           plan: plan.name,
-          price: plan.price,
-          postsCount: plan.posts,
+          price: Number.parseFloat(plan.price),
+          postsCount: plan.posts_count,
           date: new Date().toISOString(),
           transactionId: "pending",
         }),
       )
 
-      const result = await processPayment({
-        amount: plan.price,
-        planName: plan.name,
-        currency: "ETB",
-        customerName: customerName,
+      // Call the API to initialize payment
+      const result = await initializePayment({
         customerEmail: customerEmail,
-        numberOfPosts: plan.posts,
+        customerName: customerName,
+        planId: plan.id,
+        currency: "ETB",
       })
 
       if (result.success) {
         const updatedCustomerInfo = JSON.parse(sessionStorage.getItem("customerInfo") || "{}")
         updatedCustomerInfo.transactionId = result.transactionId || "TX-" + Date.now()
         sessionStorage.setItem("customerInfo", JSON.stringify(updatedCustomerInfo))
-        window.location.href = result.redirectUrl || "/payment/success"
+
+        // Redirect to the payment URL
+        window.location.href = result.redirectUrl
       } else {
-        toast.error(result.message || "There was an error processing your payment. Please try again.")
+        toast.error("There was an error processing your payment. Please try again.")
       }
     } catch (error) {
       console.error("Payment error:", error)
@@ -153,7 +162,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between font-medium mt-1">
                   <span>Number of posts:</span>
-                  <span>{plan.posts}</span>
+                  <span>{plan.posts_count}</span>
                 </div>
                 <div className="flex justify-between font-bold text-teal-600 pt-2 border-t mt-2">
                   <span>Total:</span>

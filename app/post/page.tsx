@@ -6,7 +6,6 @@ import { Package, Briefcase, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 import Link from "next/link"
-import PlanSelectionPage from "@/components/plan-selection-page"
 
 export default function PostPage() {
   const router = useRouter()
@@ -29,9 +28,6 @@ export default function PostPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <PlanSelectionPage onUpgradeClick={function (): void {
-        throw new Error("Function not implemented.")
-      } }/>
       <div className="container mx-auto py-8 px-4 max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

@@ -1,101 +1,131 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { processPayment } from "@/lib/actions";
-import { toast } from "sonner";
-import Cookies from "js-cookie";
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { ArrowLeft } from "lucide-react"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { processPayment } from "@/lib/actions"
+import { toast } from "sonner"
+import Cookies from "js-cookie"
 
 interface Plan {
-  name: string;
-  posts: number;
-  price: number;
+  name: string
+  posts: number
+  price: number
+}
+
+interface UserData {
+  email: string
+  firstName: string
+  bio: string | null
+  phone: string | null
+  image: string | null
+  activated: boolean
 }
 
 export default function CheckoutPage() {
-  const [plan, setPlan] = useState<Plan | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const router = useRouter();
+  const [plan, setPlan] = useState<Plan | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
-    const planData = sessionStorage.getItem("selectedPlan");
+    const planData = sessionStorage.getItem("selectedPlan")
     if (planData) {
-      setPlan(JSON.parse(planData));
+      setPlan(JSON.parse(planData))
     } else {
-      router.push("/");
+      router.push("/")
     }
-  }, [router]);
+  }, [router])
 
   const handlePayment = async () => {
     if (!plan) {
-      toast.error("Plan information not found. Please select a plan again.");
-      router.push("/");
-      return;
+      toast.error("Plan information not found. Please select a plan again.")
+      router.push("/")
+      return
     }
 
-    setIsProcessing(true);
+    setIsProcessing(true)
 
-    // Retrieve and trim the customer email from cookies.
-    const rawEmail = Cookies.get("customerEmail") || "";
-    const customerEmail = rawEmail.trim() || "anonymous@example.com";
-    console.log("Customer email from cookies:", customerEmail);
+    // Get customer info from auth token if available
+    let customerName = ""
+    let customerEmail = ""
+
+    const userCookie = Cookies.get("user")
+    if (userCookie) {
+      try {
+        const userData = JSON.parse(userCookie) as UserData
+        if (userData.firstName) {
+          customerName = userData.firstName
+          // Store in a separate cookie for easier access
+          Cookies.set("customerName", userData.firstName, { expires: 365 })
+        }
+        if (userData.email) {
+          customerEmail = userData.email
+          // Store in a separate cookie for easier access
+          Cookies.set("customerEmail", userData.email, { expires: 365 })
+        }
+      } catch (err) {
+        console.warn("Failed to parse user cookie:", err)
+      }
+    }
+
+    // Fallback to existing cookies if auth token parsing failed
+    if (!customerName) {
+      customerName = Cookies.get("customerName") || "Anonymous Customer"
+    }
+    if (!customerEmail) {
+      customerEmail = Cookies.get("customerEmail") || "anonymous@example.com"
+    }
+
+    console.log("Customer info:", { name: customerName, email: customerEmail })
 
     try {
-      // Save the customer transaction info in sessionStorage.
+      // Save the customer transaction info in sessionStorage with both name and email
       sessionStorage.setItem(
         "customerInfo",
         JSON.stringify({
+          name: customerName,
+          email: customerEmail,
           plan: plan.name,
           price: plan.price,
           postsCount: plan.posts,
           date: new Date().toISOString(),
           transactionId: "pending",
-        })
-      );
+        }),
+      )
 
       const result = await processPayment({
         amount: plan.price,
         planName: plan.name,
         currency: "ETB",
-        customerName: "Anonymous", // Placeholder (update if you have customer name info)
-        customerEmail: customerEmail, // Use trimmed email from cookies
+        customerName: customerName,
+        customerEmail: customerEmail,
         numberOfPosts: plan.posts,
-      });
+      })
 
       if (result.success) {
-        const updatedCustomerInfo = JSON.parse(
-          sessionStorage.getItem("customerInfo") || "{}"
-        );
-        updatedCustomerInfo.transactionId = result.transactionId || "TX-" + Date.now();
-        sessionStorage.setItem("customerInfo", JSON.stringify(updatedCustomerInfo));
-        window.location.href = result.redirectUrl || "/payment/success";
+        const updatedCustomerInfo = JSON.parse(sessionStorage.getItem("customerInfo") || "{}")
+        updatedCustomerInfo.transactionId = result.transactionId || "TX-" + Date.now()
+        sessionStorage.setItem("customerInfo", JSON.stringify(updatedCustomerInfo))
+        window.location.href = result.redirectUrl || "/payment/success"
       } else {
-        toast.error(result.message || "There was an error processing your payment. Please try again.");
+        toast.error(result.message || "There was an error processing your payment. Please try again.")
       }
     } catch (error) {
-      console.error("Payment error:", error);
-      toast.error("There was an error processing your payment. Please try again.");
+      console.error("Payment error:", error)
+      toast.error("There was an error processing your payment. Please try again.")
     } finally {
-      setIsProcessing(false);
+      setIsProcessing(false)
     }
-  };
+  }
 
   if (!plan) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <p>Loading...</p>
       </div>
-    );
+    )
   }
 
   return (
@@ -133,16 +163,12 @@ export default function CheckoutPage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button
-              className="w-full bg-teal-500 hover:bg-teal-600"
-              onClick={handlePayment}
-              disabled={isProcessing}
-            >
+            <Button className="w-full bg-teal-500 hover:bg-teal-600" onClick={handlePayment} disabled={isProcessing}>
               {isProcessing ? "Processing..." : "Pay Now"}
             </Button>
           </CardFooter>
         </Card>
       </div>
     </div>
-  );
+  )
 }

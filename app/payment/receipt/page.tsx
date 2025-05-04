@@ -1,94 +1,123 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { Download, Printer, Home, AlertCircle } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import Cookies from "js-cookie";
+import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
+import { Download, Printer, Home, AlertCircle } from "lucide-react"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
+import Cookies from "js-cookie"
 
 interface CustomerInfo {
-  name: string;
-  email: string;
-  plan: string;
-  price: number;
-  postsCount: number;
-  date: string;
-  transactionId: string;
+  name: string
+  email: string
+  plan: string
+  price: number
+  postsCount: number
+  date: string
+  transactionId: string
+}
+
+interface UserData {
+  email: string
+  firstName: string
+  bio: string | null
+  phone: string | null
+  image: string | null
+  activated: boolean
 }
 
 export default function ReceiptPage() {
-  const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const receiptRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+  const receiptRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
   useEffect(() => {
-    let info: CustomerInfo | null = null;
-    // First, try to retrieve receipt info from sessionStorage.
     try {
-      const storedInfo = sessionStorage.getItem("customerInfo");
+      // First, try to retrieve receipt info from sessionStorage
+      const storedInfo = sessionStorage.getItem("customerInfo")
+      let info: CustomerInfo | null = null
+
       if (storedInfo) {
-        info = JSON.parse(storedInfo);
-      }
-    } catch (err) {
-      console.error("Error retrieving customer info from sessionStorage:", err);
-    }
-
-    // Now, explicitly override or set the email using the cookie.
-    const cookieEmail = Cookies.get("customerEmail");
-    const cookiename = Cookies.get("customerName");
-
-    if (cookieEmail) {
-      if (info) {
-        // Override the email from sessionStorage with the cookie value.
-        info.email = cookieEmail.trim();
-        if(cookiename){
-        info.name = cookiename.trim();
-
-
-        }
-
-
+        info = JSON.parse(storedInfo)
       } else {
-        // If no info was found in sessionStorage, create a minimal info object.
+        // If no info in sessionStorage, create a minimal object
         info = {
-          name: '', // You can update this if you have a default name.
-          email: cookieEmail.trim(),
+          name: "",
+          email: "",
           plan: "N/A",
           price: 0,
           postsCount: 0,
           date: new Date().toISOString(),
           transactionId: "N/A",
-        };
+        }
       }
-    }
 
-    if (info) {
-      setCustomerInfo(info);
-    } else {
-      setError(true);
+      // Try to get name and email from cookies first
+      const cookieEmail = Cookies.get("customerEmail")
+      const cookieName = Cookies.get("customerName")
+
+      // If we don't have a name cookie, try to get it from the auth token
+      if (!cookieName) {
+        const userCookie = Cookies.get("user")
+        if (userCookie) {
+          try {
+            const userData = JSON.parse(userCookie) as UserData
+            if (userData.firstName) {
+              // Set the name from the auth token
+              if (info) {
+                info.name = userData.firstName
+              }
+              // Also store it in a cookie for future use
+              Cookies.set("customerName", userData.firstName, { expires: 365 })
+            }
+            if (userData.email && !cookieEmail) {
+              // Set the email from the auth token if we don't have it in cookies
+              if (info) {
+                info.email = userData.email
+              }
+              // Also store it in a cookie for future use
+              Cookies.set("customerEmail", userData.email, { expires: 365 })
+            }
+          } catch (err) {
+            console.warn("Failed to parse user cookie:", err)
+          }
+        }
+      } else if (info) {
+        // If we have a name cookie, use it
+        info.name = cookieName.trim()
+      }
+
+      // If we have an email cookie, use it
+      if (cookieEmail && info) {
+        info.email = cookieEmail.trim()
+      }
+
+      // If we have at least some basic info, show the receipt
+      if (info && (info.email || info.name)) {
+        setCustomerInfo(info)
+      } else {
+        setError(true)
+      }
+    } catch (err) {
+      console.error("Error retrieving customer info:", err)
+      setError(true)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false);
-  }, []);
+  }, [])
 
   const handlePrint = () => {
-    window.print();
-  };
+    window.print()
+  }
 
   const handleDownload = () => {
-    if (!receiptRef.current) return;
+    if (!receiptRef.current) return
 
     try {
-      const receiptContent = receiptRef.current.outerHTML;
+      const receiptContent = receiptRef.current.outerHTML
       const blob = new Blob(
         [
           `
@@ -110,27 +139,27 @@ export default function ReceiptPage() {
           `,
         ],
         { type: "text/html" },
-      );
+      )
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `receipt-${Date.now()}.html`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `receipt-${Date.now()}.html`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
     } catch (error) {
-      toast.error("There was an error downloading your receipt. Please try again.");
+      toast.error("There was an error downloading your receipt. Please try again.")
     }
-  };
+  }
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <p>Loading receipt information...</p>
       </div>
-    );
+    )
   }
 
   if (error || !customerInfo) {
@@ -159,7 +188,7 @@ export default function ReceiptPage() {
           </CardFooter>
         </Card>
       </div>
-    );
+    )
   }
 
   return (
@@ -205,17 +234,15 @@ export default function ReceiptPage() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Date</p>
-                    <p className="font-medium">
-                      {new Date(customerInfo.date).toLocaleDateString()}
-                    </p>
+                    <p className="font-medium">{new Date(customerInfo.date).toLocaleDateString()}</p>
                   </div>
                 </div>
 
                 <div className="border-t border-b py-4 my-4">
                   <div className="mb-4">
                     <p className="text-sm text-gray-500">Customer</p>
-                    <p className="font-medium">{customerInfo.name}</p>
-                    <p className="text-gray-600">{customerInfo.email}</p>
+                    <p className="font-medium">{customerInfo.name || "N/A"}</p>
+                    <p className="text-gray-600">{customerInfo.email || "N/A"}</p>
                   </div>
 
                   <div>
@@ -248,13 +275,11 @@ export default function ReceiptPage() {
             </CardContent>
             <CardFooter className="flex-col items-center text-center text-sm text-gray-500 border-t pt-6">
               <p>Thank you for your payment!</p>
-              <p className="mt-1">
-                If you have any questions, please contact our support team.
-              </p>
+              <p className="mt-1">If you have any questions, please contact our support team.</p>
             </CardFooter>
           </Card>
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -7,6 +7,16 @@ import { CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { addPurchasedPosts } from "@/lib/actions"
+import Cookies from "js-cookie"
+
+interface UserData {
+  email: string
+  firstName: string
+  bio: string | null
+  phone: string | null
+  image: string | null
+  activated: boolean
+}
 
 export default function PaymentSuccessPage() {
   const router = useRouter()
@@ -26,8 +36,44 @@ export default function PaymentSuccessPage() {
           const txRef = searchParams.get("tx_ref")
           if (txRef) {
             customerInfo.transactionId = txRef
-            sessionStorage.setItem("customerInfo", JSON.stringify(customerInfo))
           }
+
+          // Try to get customer info from auth token if not already set
+          if (!customerInfo.name || customerInfo.name === "Anonymous Customer") {
+            const userCookie = Cookies.get("user")
+            if (userCookie) {
+              try {
+                const userData = JSON.parse(userCookie) as UserData
+                if (userData.firstName) {
+                  customerInfo.name = userData.firstName
+                  // Also store in a cookie for easier access
+                  Cookies.set("customerName", userData.firstName, { expires: 365 })
+                }
+                if (userData.email && (!customerInfo.email || customerInfo.email === "anonymous@example.com")) {
+                  customerInfo.email = userData.email
+                  // Also store in a cookie for easier access
+                  Cookies.set("customerEmail", userData.email, { expires: 365 })
+                }
+              } catch (err) {
+                console.warn("Failed to parse user cookie:", err)
+              }
+            }
+          }
+
+          // Update from cookies as a fallback
+          const cookieEmail = Cookies.get("customerEmail")
+          const cookieName = Cookies.get("customerName")
+
+          if (cookieEmail) {
+            customerInfo.email = cookieEmail.trim()
+          }
+
+          if (cookieName) {
+            customerInfo.name = cookieName.trim()
+          }
+
+          // Save updated customer info back to sessionStorage
+          sessionStorage.setItem("customerInfo", JSON.stringify(customerInfo))
 
           // Add the purchased posts to the user's account
           // This ensures posts are added even if the webhook fails

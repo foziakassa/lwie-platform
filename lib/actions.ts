@@ -28,15 +28,15 @@ interface PostsStatusResult {
 
 // This function checks how many posts the user has remaining (both free and paid)
 export async function checkPostsStatus(): Promise<PostsStatusResult> {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
 
-  const usedFreePostsStr = (await cookieStore).get("used_free_posts")?.value || "0"
+  const usedFreePostsStr = cookieStore.get("used_free_posts")?.value || "0"
   const usedFreePosts = Number.parseInt(usedFreePostsStr, 10)
   const totalFreePosts = 3
   const remainingFreePosts = Math.max(0, totalFreePosts - usedFreePosts)
 
-  const totalPaidPostsStr = (await cookieStore).get("total_paid_posts")?.value || "0"
-  const usedPaidPostsStr = (await cookieStore).get("used_paid_posts")?.value || "0"
+  const totalPaidPostsStr = cookieStore.get("total_paid_posts")?.value || "0"
+  const usedPaidPostsStr = cookieStore.get("used_paid_posts")?.value || "0"
 
   const totalPaidPosts = Number.parseInt(totalPaidPostsStr, 10)
   const usedPaidPosts = Number.parseInt(usedPaidPostsStr, 10)
@@ -51,13 +51,22 @@ export async function checkPostsStatus(): Promise<PostsStatusResult> {
   }
 }
 
-export async function createPost(data: { category: string; subcategory: string; title: string; description: string; condition: "new" | "like-new" | "good" | "fair" | "poor"; location: string; images: string[]; preferredSwaps?: string | undefined }): Promise<PostsStatusResult> {
-  const cookieStore = cookies()
+export async function createPost(data: {
+  category: string
+  subcategory: string
+  title: string
+  description: string
+  condition: "new" | "like-new" | "good" | "fair" | "poor"
+  location: string
+  images: string[]
+  preferredSwaps?: string | undefined
+}): Promise<PostsStatusResult> {
+  const cookieStore = await cookies()
   const status = await checkPostsStatus()
 
   if (status.remainingPaidPosts > 0) {
     const newUsedPaidPosts = status.usedPaidPosts + 1
-    ;(await cookieStore).set("used_paid_posts", newUsedPaidPosts.toString(), {
+    cookieStore.set("used_paid_posts", newUsedPaidPosts.toString(), {
       maxAge: 60 * 60 * 24 * 365,
       path: "/",
     })
@@ -67,11 +76,11 @@ export async function createPost(data: { category: string; subcategory: string; 
       usedPaidPosts: newUsedPaidPosts,
     }
   } else if (status.remainingFreePosts > 0) {
-    const usedFreePostsStr = (await cookieStore).get("used_free_posts")?.value || "0"
+    const usedFreePostsStr = cookieStore.get("used_free_posts")?.value || "0"
     const usedFreePosts = Number.parseInt(usedFreePostsStr, 10)
     const newUsedFreePosts = usedFreePosts + 1
 
-    ;(await cookieStore).set("used_free_posts", newUsedFreePosts.toString(), {
+    cookieStore.set("used_free_posts", newUsedFreePosts.toString(), {
       maxAge: 60 * 60 * 24 * 365,
       path: "/",
     })
@@ -85,12 +94,12 @@ export async function createPost(data: { category: string; subcategory: string; 
 }
 
 export async function addPurchasedPosts(numberOfPosts: number): Promise<PostsStatusResult> {
-  const cookieStore = cookies()
-  const totalPaidPostsStr = (await cookieStore).get("total_paid_posts")?.value || "0"
+  const cookieStore = await cookies()
+  const totalPaidPostsStr = cookieStore.get("total_paid_posts")?.value || "0"
   const totalPaidPosts = Number.parseInt(totalPaidPostsStr, 10)
   const newTotalPaidPosts = totalPaidPosts + numberOfPosts
 
-  ;(await cookieStore).set("total_paid_posts", newTotalPaidPosts.toString(), {
+  cookieStore.set("total_paid_posts", newTotalPaidPosts.toString(), {
     maxAge: 60 * 60 * 24 * 365,
     path: "/",
   })
@@ -102,8 +111,8 @@ export async function addPurchasedPosts(numberOfPosts: number): Promise<PostsSta
 // Payment processing function
 export async function processPayment(params: PaymentParams): Promise<PaymentResult> {
   try {
-    const cookieStore = cookies()
-    const userCookie = (await cookieStore).get("user")?.value
+    const cookieStore = await cookies()
+    const userCookie = cookieStore.get("user")?.value
     let customerName = params.customerName
     let customerEmail = params.customerEmail
     let phone = "0900000000"
@@ -113,9 +122,21 @@ export async function processPayment(params: PaymentParams): Promise<PaymentResu
         const userData = JSON.parse(userCookie)
         if (!customerName && userData.firstName) {
           customerName = userData.firstName
+
+          // Store the firstName from auth token in customerName cookie
+          cookieStore.set("customerName", userData.firstName, {
+            maxAge: 60 * 60 * 24 * 365, // 1 year
+            path: "/",
+          })
         }
         if (!customerEmail && userData.email) {
           customerEmail = userData.email
+
+          // Store the email from auth token in customerEmail cookie
+          cookieStore.set("customerEmail", userData.email, {
+            maxAge: 60 * 60 * 24 * 365, // 1 year
+            path: "/",
+          })
         }
         if (userData.phone) {
           phone = userData.phone
@@ -126,9 +147,9 @@ export async function processPayment(params: PaymentParams): Promise<PaymentResu
     }
 
     // Validate the email format before proceeding
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
     if (!emailRegex.test(customerEmail || "")) {
-      throw new Error("Invalid email format");
+      throw new Error("Invalid email format")
     }
 
     const totalAmount = params.amount
@@ -188,8 +209,6 @@ export async function processPayment(params: PaymentParams): Promise<PaymentResu
     }
   }
 }
-
-
 
 export async function checkRemainingPosts(): Promise<{ remainingPosts: number; totalUsed: number }> {
   const status = await checkPostsStatus()

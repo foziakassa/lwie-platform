@@ -39,6 +39,8 @@
     "@radix-ui/react-toggle": "^1.1.1",
     "@radix-ui/react-toggle-group": "^1.1.1",
     "@radix-ui/react-tooltip": "^1.1.6",
+    "@react-three/drei": "^10.0.7",
+    "@react-three/fiber": "^9.1.2",
     "@supabase/supabase-js": "^2.49.4",
     "@tensorflow/tfjs": "^4.22.0",
     "@vercel/postgres": "latest",

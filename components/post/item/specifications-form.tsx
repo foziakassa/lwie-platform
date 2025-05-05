@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm, SubmitHandler } from "react-hook-form"
+import { useForm, type SubmitHandler } from "react-hook-form"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -12,7 +12,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowRight, ArrowLeft, Save, Package } from "lucide-react"
 import { motion } from "framer-motion"
-import { toast } from "@/components/ui/use-toast"
 
 // Define subcategory keys
 type Subcategory =
@@ -157,119 +156,300 @@ interface FieldConfig {
 // Define field configurations for each subcategory
 const subcategoryFields: Record<Subcategory, FieldConfig[]> = {
   Smartphones: [
-    { name: "brand", label: "Brand", type: "select", required: true, options: ["Apple", "Samsung", "Google", "Xiaomi", "Huawei", "OnePlus", "Oppo", "Tecno", "Infinix", "Itel", "Other"] },
+    {
+      name: "brand",
+      label: "Brand",
+      type: "select",
+      required: true,
+      options: [
+        "Apple",
+        "Samsung",
+        "Google",
+        "Xiaomi",
+        "Huawei",
+        "OnePlus",
+        "Oppo",
+        "Tecno",
+        "Infinix",
+        "Itel",
+        "Other",
+      ],
+    },
     { name: "model", label: "Model", type: "select", required: true, options: [] },
-    { name: "storage", label: "Storage", type: "select", options: ["16GB", "32GB", "64GB", "128GB", "256GB", "512GB", "1TB", "2TB", "Other"] },
-    { name: "ram", label: "RAM", type: "select", options: ["2GB", "3GB", "4GB", "6GB", "8GB", "12GB", "16GB", "Other"] },
+    {
+      name: "storage",
+      label: "Storage",
+      type: "select",
+      options: ["16GB", "32GB", "64GB", "128GB", "256GB", "512GB", "1TB", "2TB", "Other"],
+    },
+    {
+      name: "ram",
+      label: "RAM",
+      type: "select",
+      options: ["2GB", "3GB", "4GB", "6GB", "8GB", "12GB", "16GB", "Other"],
+    },
     { name: "camera", label: "Camera", type: "text", placeholder: "e.g., 50MP main, 12MP ultra-wide, 10MP telephoto" },
     { name: "battery", label: "Battery", type: "text", placeholder: "e.g., 5000mAh, 45W fast charging" },
-    { name: "additionalDetails", label: "Additional Details (Optional)", type: "textarea", placeholder: "Add any other specifications or details..." },
+    {
+      name: "additionalDetails",
+      label: "Additional Details (Optional)",
+      type: "textarea",
+      placeholder: "Add any other specifications or details...",
+    },
   ],
   Laptops: [
-    { name: "brand", label: "Brand", type: "select", required: true, options: ["Dell", "HP", "Lenovo", "Apple", "Asus", "Acer", "MSI", "Other"] },
+    {
+      name: "brand",
+      label: "Brand",
+      type: "select",
+      required: true,
+      options: ["Dell", "HP", "Lenovo", "Apple", "Asus", "Acer", "MSI", "Other"],
+    },
     { name: "model", label: "Model", type: "select", required: true, options: [] },
     { name: "processor", label: "Processor", type: "text", placeholder: "e.g., Intel Core i7-12700H, Apple M2" },
     { name: "ram", label: "RAM", type: "select", options: ["4GB", "8GB", "16GB", "32GB", "64GB", "Other"] },
     { name: "storage", label: "Storage", type: "select", options: ["128GB", "256GB", "512GB", "1TB", "2TB", "Other"] },
     { name: "screenSize", label: "Screen Size", type: "text", placeholder: "e.g., 15.6 inches" },
-    { name: "additionalDetails", label: "Additional Details (Optional)", type: "textarea", placeholder: "Add any other specifications or details..." },
+    {
+      name: "additionalDetails",
+      label: "Additional Details (Optional)",
+      type: "textarea",
+      placeholder: "Add any other specifications or details...",
+    },
   ],
   Tablets: [
-    { name: "brand", label: "Brand", type: "select", required: true, options: ["Apple", "Samsung", "Lenovo", "Huawei", "Microsoft", "Other"] },
+    {
+      name: "brand",
+      label: "Brand",
+      type: "select",
+      required: true,
+      options: ["Apple", "Samsung", "Lenovo", "Huawei", "Microsoft", "Other"],
+    },
     { name: "model", label: "Model", type: "select", required: true, options: [] },
-    { name: "storage", label: "Storage", type: "select", options: ["32GB", "64GB", "128GB", "256GB", "512GB", "1TB", "Other"] },
+    {
+      name: "storage",
+      label: "Storage",
+      type: "select",
+      options: ["32GB", "64GB", "128GB", "256GB", "512GB", "1TB", "Other"],
+    },
     { name: "ram", label: "RAM", type: "select", options: ["2GB", "4GB", "6GB", "8GB", "16GB", "Other"] },
     { name: "screenSize", label: "Screen Size", type: "text", placeholder: "e.g., 10.9 inches" },
     { name: "battery", label: "Battery", type: "text", placeholder: "e.g., 7600mAh" },
-    { name: "additionalDetails", label: "Additional Details (Optional)", type: "textarea", placeholder: "Add any other specifications or details..." },
+    {
+      name: "additionalDetails",
+      label: "Additional Details (Optional)",
+      type: "textarea",
+      placeholder: "Add any other specifications or details...",
+    },
   ],
   Cars: [
-    { name: "brand", label: "Brand", type: "select", required: true, options: ["Toyota", "Honda", "Ford", "BMW", "Mercedes", "Hyundai", "Other"] },
+    {
+      name: "brand",
+      label: "Brand",
+      type: "select",
+      required: true,
+      options: ["Toyota", "Honda", "Ford", "BMW", "Mercedes", "Hyundai", "Other"],
+    },
     { name: "model", label: "Model", type: "select", required: true, options: [] },
     { name: "year", label: "Year", type: "text", placeholder: "e.g., 2020" },
     { name: "mileage", label: "Mileage", type: "text", placeholder: "e.g., 50000 km" },
-    { name: "fuelType", label: "Fuel Type", type: "select", options: ["Petrol", "Diesel", "Electric", "Hybrid", "Other"] },
+    {
+      name: "fuelType",
+      label: "Fuel Type",
+      type: "select",
+      options: ["Petrol", "Diesel", "Electric", "Hybrid", "Other"],
+    },
     { name: "transmission", label: "Transmission", type: "select", options: ["Automatic", "Manual", "Other"] },
-    { name: "additionalDetails", label: "Additional Details (Optional)", type: "textarea", placeholder: "Add any other specifications or details..." },
+    {
+      name: "additionalDetails",
+      label: "Additional Details (Optional)",
+      type: "textarea",
+      placeholder: "Add any other specifications or details...",
+    },
   ],
   Motorcycles: [
-    { name: "brand", label: "Brand", type: "select", required: true, options: ["Honda", "Yamaha", "Kawasaki", "Harley-Davidson", "BMW", "Other"] },
+    {
+      name: "brand",
+      label: "Brand",
+      type: "select",
+      required: true,
+      options: ["Honda", "Yamaha", "Kawasaki", "Harley-Davidson", "BMW", "Other"],
+    },
     { name: "model", label: "Model", type: "select", required: true, options: [] },
     { name: "year", label: "Year", type: "text", placeholder: "e.g., 2021" },
     { name: "mileage", label: "Mileage", type: "text", placeholder: "e.g., 10000 km" },
     { name: "engineSize", label: "Engine Size", type: "text", placeholder: "e.g., 600cc" },
-    { name: "additionalDetails", label: "Additional Details (Optional)", type: "textarea", placeholder: "Add any other specifications or details..." },
+    {
+      name: "additionalDetails",
+      label: "Additional Details (Optional)",
+      type: "textarea",
+      placeholder: "Add any other specifications or details...",
+    },
   ],
   Sofas: [
-    { name: "type", label: "Type", type: "select", required: true, options: ["Sectional", "Loveseat", "Sleeper", "Recliner", "Other"] },
-    { name: "material", label: "Material", type: "select", required: true, options: ["Fabric", "Leather", "Microfiber", "Velvet", "Other"] },
+    {
+      name: "type",
+      label: "Type",
+      type: "select",
+      required: true,
+      options: ["Sectional", "Loveseat", "Sleeper", "Recliner", "Other"],
+    },
+    {
+      name: "material",
+      label: "Material",
+      type: "select",
+      required: true,
+      options: ["Fabric", "Leather", "Microfiber", "Velvet", "Other"],
+    },
     { name: "dimensions", label: "Dimensions", type: "text", placeholder: "e.g., 200x80x90 cm" },
     { name: "color", label: "Color", type: "text", placeholder: "e.g., Grey, Brown" },
-    { name: "additionalDetails", label: "Additional Details (Optional)", type: "textarea", placeholder: "Add any other specifications or details..." },
+    {
+      name: "additionalDetails",
+      label: "Additional Details (Optional)",
+      type: "textarea",
+      placeholder: "Add any other specifications or details...",
+    },
   ],
   Tables: [
-    { name: "type", label: "Type", type: "select", required: true, options: ["Dining", "Coffee", "Side", "Console", "Other"] },
-    { name: "material", label: "Material", type: "select", required: true, options: ["Wood", "Glass", "Metal", "Marble", "Other"] },
+    {
+      name: "type",
+      label: "Type",
+      type: "select",
+      required: true,
+      options: ["Dining", "Coffee", "Side", "Console", "Other"],
+    },
+    {
+      name: "material",
+      label: "Material",
+      type: "select",
+      required: true,
+      options: ["Wood", "Glass", "Metal", "Marble", "Other"],
+    },
     { name: "dimensions", label: "Dimensions", type: "text", placeholder: "e.g., 120x60x75 cm" },
     { name: "color", label: "Color", type: "text", placeholder: "e.g., Oak, Black" },
-    { name: "additionalDetails", label: "Additional Details (Optional)", type: "textarea", placeholder: "Add any other specifications or details..." },
+    {
+      name: "additionalDetails",
+      label: "Additional Details (Optional)",
+      type: "textarea",
+      placeholder: "Add any other specifications or details...",
+    },
   ],
   Shirts: [
     { name: "type", label: "Type", type: "select", required: true, options: ["T-Shirt", "Button-Up", "Polo", "Other"] },
-    { name: "size", label: "Size", type: "select", required: true, options: ["XS", "S", "M", "L", "XL", "XXL", "Other"] },
+    {
+      name: "size",
+      label: "Size",
+      type: "select",
+      required: true,
+      options: ["XS", "S", "M", "L", "XL", "XXL", "Other"],
+    },
     { name: "material", label: "Material", type: "text", placeholder: "e.g., Cotton, Polyester" },
     { name: "color", label: "Color", type: "text", placeholder: "e.g., Blue, White" },
     { name: "brand", label: "Brand", type: "text", placeholder: "e.g., Nike, Zara" },
-    { name: "additionalDetails", label: "Additional Details (Optional)", type: "textarea", placeholder: "Add any other specifications or details..." },
+    {
+      name: "additionalDetails",
+      label: "Additional Details (Optional)",
+      type: "textarea",
+      placeholder: "Add any other specifications or details...",
+    },
   ],
   Pants: [
-    { name: "type", label: "Type", type: "select", required: true, options: ["Jeans", "Chinos", "Sweatpants", "Other"] },
-    { name: "size", label: "Size", type: "select", required: true, options: ["XS", "S", "M", "L", "XL", "XXL", "Other"] },
+    {
+      name: "type",
+      label: "Type",
+      type: "select",
+      required: true,
+      options: ["Jeans", "Chinos", "Sweatpants", "Other"],
+    },
+    {
+      name: "size",
+      label: "Size",
+      type: "select",
+      required: true,
+      options: ["XS", "S", "M", "L", "XL", "XXL", "Other"],
+    },
     { name: "material", label: "Material", type: "text", placeholder: "e.g., Denim, Cotton" },
     { name: "color", label: "Color", type: "text", placeholder: "e.g., Black, Navy" },
     { name: "brand", label: "Brand", type: "text", placeholder: "e.g., Levi's, Uniqlo" },
-    { name: "additionalDetails", label: "Additional Details (Optional)", type: "textarea", placeholder: "Add any other specifications or details..." },
+    {
+      name: "additionalDetails",
+      label: "Additional Details (Optional)",
+      type: "textarea",
+      placeholder: "Add any other specifications or details...",
+    },
   ],
   Refrigerators: [
-    { name: "brand", label: "Brand", type: "select", required: true, options: ["LG", "Samsung", "Whirlpool", "Bosch", "Other"] },
+    {
+      name: "brand",
+      label: "Brand",
+      type: "select",
+      required: true,
+      options: ["LG", "Samsung", "Whirlpool", "Bosch", "Other"],
+    },
     { name: "model", label: "Model", type: "text", required: true, placeholder: "e.g., RF28R7351SG" },
     { name: "capacity", label: "Capacity", type: "text", placeholder: "e.g., 500L" },
     { name: "energyRating", label: "Energy Rating", type: "text", placeholder: "e.g., A++" },
-    { name: "additionalDetails", label: "Additional Details (Optional)", type: "textarea", placeholder: "Add any other specifications or details..." },
+    {
+      name: "additionalDetails",
+      label: "Additional Details (Optional)",
+      type: "textarea",
+      placeholder: "Add any other specifications or details...",
+    },
   ],
   WashingMachines: [
-    { name: "brand", label: "Brand", type: "select", required: true, options: ["LG", "Samsung", "Bosch", "Miele", "Other"] },
+    {
+      name: "brand",
+      label: "Brand",
+      type: "select",
+      required: true,
+      options: ["LG", "Samsung", "Bosch", "Miele", "Other"],
+    },
     { name: "model", label: "Model", type: "text", required: true, placeholder: "e.g., WM4000HBA" },
     { name: "capacity", label: "Capacity", type: "text", placeholder: "e.g., 7kg" },
     { name: "type", label: "Type", type: "select", options: ["Front Load", "Top Load", "Other"] },
-    { name: "additionalDetails", label: "Additional Details (Optional)", type: "textarea", placeholder: "Add any other specifications or details..." },
+    {
+      name: "additionalDetails",
+      label: "Additional Details (Optional)",
+      type: "textarea",
+      placeholder: "Add any other specifications or details...",
+    },
   ],
   Default: [
     { name: "type", label: "Type", type: "text", required: true, placeholder: "e.g., Tool, Book" },
-    { name: "description", label: "Description", type: "text", required: true, placeholder: "e.g., Cordless drill, 300-page novel" },
-    { name: "additionalDetails", label: "Additional Details (Optional)", type: "textarea", placeholder: "Add any other specifications or details..." },
+    {
+      name: "description",
+      label: "Description",
+      type: "text",
+      required: true,
+      placeholder: "e.g., Cordless drill, 300-page novel",
+    },
+    {
+      name: "additionalDetails",
+      label: "Additional Details (Optional)",
+      type: "textarea",
+      placeholder: "Add any other specifications or details...",
+    },
   ],
 }
 
 // Subcategories with brand-model relationships
-const brandModelSubcategories: Subcategory[] = [
-  "Smartphones",
-  "Laptops",
-  "Tablets",
-  "Cars",
-  "Motorcycles",
-]
+const brandModelSubcategories: Subcategory[] = ["Smartphones", "Laptops", "Tablets", "Cars", "Motorcycles"]
 
 // Define a generic form values type to avoid union type issues
 type FormValues = {
   [key: string]: string | undefined
 }
 
-export default function SpecificationsForm() {
+interface SpecificationsFormProps {
+  initialData?: any
+  onSaveDraft: (data: any) => void
+  onContinue: (data: any) => void
+  isLoading: boolean
+}
+
+export function SpecificationsForm({ initialData, onSaveDraft, onContinue, isLoading }: SpecificationsFormProps) {
   const router = useRouter()
-  const [basicInfo, setBasicInfo] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [subcategory, setSubcategory] = useState<Subcategory>("Default")
   const [selectedBrand, setSelectedBrand] = useState<string>("")
@@ -282,59 +462,34 @@ export default function SpecificationsForm() {
   // Initialize form with dynamic schema
   const form = useForm<FormValues>({
     resolver: zodResolver(currentSchema),
-    defaultValues: Object.fromEntries(
-      currentFields.map(field => [field.name, field.type === "textarea" ? "" : field.required ? "" : undefined])
-    ),
+    defaultValues:
+      initialData ||
+      Object.fromEntries(
+        currentFields.map((field) => [field.name, field.type === "textarea" ? "" : field.required ? "" : undefined]),
+      ),
   })
 
   useEffect(() => {
     setMounted(true)
-  }, [])
 
-  useEffect(() => {
-    // Load basic info from local storage
-    const savedInfo = localStorage.getItem("itemBasicInfo")
-    if (savedInfo) {
-      const parsedInfo = JSON.parse(savedInfo)
-      setBasicInfo(parsedInfo)
-      const newSubcategory = mapSubcategoryToType(parsedInfo.subcategory || "")
-      setSubcategory(newSubcategory)
+    if (initialData) {
+      // If initialData is provided, set subcategory based on it
+      if (initialData.subcategory) {
+        const newSubcategory = mapSubcategoryToType(initialData.subcategory || "")
+        setSubcategory(newSubcategory)
+      }
 
-      // Reset form when subcategory changes
-      form.reset(
-        Object.fromEntries(
-          (subcategoryFields[newSubcategory] || subcategoryFields.Default).map(field => [
-            field.name,
-            field.type === "textarea" ? "" : field.required ? "" : undefined,
-          ])
-        )
-      )
-
-      // Check for draft data
-      const draftData = localStorage.getItem("itemSpecificationsDraft")
-      if (draftData) {
-        try {
-          const parsedData = JSON.parse(draftData)
-          form.reset(parsedData)
-          if (
-            brandModelSubcategories.includes(newSubcategory) &&
-            parsedData.brand &&
-            typeof parsedData.brand === "string"
-          ) {
-            setSelectedBrand(parsedData.brand)
-            setModels(getModelsByBrand(parsedData.brand, newSubcategory))
-          }
-        } catch (error) {
-          console.error("Error loading draft data:", error)
-        }
+      // If brand is provided and it's a brand-model subcategory, set models
+      if (initialData.brand && brandModelSubcategories.includes(subcategory)) {
+        setSelectedBrand(initialData.brand)
+        setModels(getModelsByBrand(initialData.brand, subcategory))
       }
 
       setLoading(false)
     } else {
-      // If no basic info, redirect back to basic info page
-      router.push("/post/item/basic-info")
+      setLoading(false)
     }
-  }, [router, form])
+  }, [initialData, subcategory])
 
   // Update models when brand changes for relevant subcategories
   useEffect(() => {
@@ -351,60 +506,13 @@ export default function SpecificationsForm() {
   }, [form, selectedBrand, subcategory])
 
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
-    setIsSubmitting(true)
-
-    try {
-      // Save to local storage
-      localStorage.setItem("itemSpecifications", JSON.stringify(values))
-
-      // Clear draft
-      localStorage.removeItem("itemSpecificationsDraft")
-
-      // Show success toast
-      toast({
-        title: "Specifications saved",
-        description: "Let's continue to the next step.",
-        duration: 3000,
-      })
-
-      router.push("/post/item/location-description")
-    } catch (error) {
-      console.error("Error saving form data:", error)
-      toast({
-        title: "Error saving specifications",
-        description: "There was a problem saving your specifications. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
+    onContinue(values)
   }
 
-  const saveDraft = () => {
-    const values = form.getValues();
-    try {
-      // Ensure all fields are included, even if not touched
-      const draftData = Object.fromEntries(
-        currentFields.map((field) => [
-          field.name,
-          values[field.name] ?? (field.type === "textarea" ? "" : undefined),
-        ])
-      );
-      localStorage.setItem("itemSpecificationsDraft", JSON.stringify(draftData));
-      toast({
-        title: "Draft saved",
-        description: "Your specifications draft has been saved. You can continue later.",
-        duration: 3000,
-      });
-    } catch (error: any) {
-      console.error("Error saving draft:", error);
-      toast({
-        title: "Error saving draft",
-        description: "There was a problem saving your draft. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+  const handleSaveDraft = () => {
+    const values = form.getValues()
+    onSaveDraft(values)
+  }
 
   // Brand and model data for subcategories with brand-model relationships
   const getModelsByBrand = (brand: string, subcategory: Subcategory): string[] => {
@@ -708,10 +816,10 @@ export default function SpecificationsForm() {
               Previous
             </Button>
             <div className="space-x-3">
-            <Button
+              <Button
                 type="button"
                 variant="outline"
-                onClick={saveDraft}
+                onClick={handleSaveDraft}
                 className="px-6 py-6 text-base flex items-center"
               >
                 <Save className="h-4 w-4 mr-2" />
@@ -720,9 +828,9 @@ export default function SpecificationsForm() {
               <Button
                 type="submit"
                 className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 px-8 py-6 text-base shadow-md flex items-center"
-                disabled={isSubmitting}
+                disabled={isLoading}
               >
-                {isSubmitting ? (
+                {isLoading ? (
                   <>
                     <svg
                       className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
@@ -760,3 +868,5 @@ export default function SpecificationsForm() {
     </motion.div>
   )
 }
+
+export default SpecificationsForm

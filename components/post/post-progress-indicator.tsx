@@ -6,23 +6,24 @@ import { Check, ArrowLeft } from "lucide-react"
 import { motion } from "framer-motion"
 
 interface Step {
-  number: number
+  number?: number
   label: string
+  completed?: boolean
 }
 
 interface PostProgressIndicatorProps {
   currentStep: number
-  totalSteps: number
+  totalSteps?: number
   steps?: Step[]
 }
 
-export default function PostProgressIndicator({
+export function PostProgressIndicator({
   currentStep,
   totalSteps,
   steps = [
-    { number: 1, label: "Basic Info" },
-    { number: 2, label: "Specifications" },
-    { number: 3, label: "Location" },
+    { label: "Basic Info", completed: false },
+    { label: "Specifications", completed: false },
+    { label: "Location", completed: false },
   ],
 }: PostProgressIndicatorProps) {
   const [mounted, setMounted] = useState(false)
@@ -33,17 +34,23 @@ export default function PostProgressIndicator({
 
   if (!mounted) return null
 
+  // Calculate total steps if not provided
+  const calculatedTotalSteps = totalSteps || steps.length
+
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-6">
-        <Link href="/post" className="flex items-center text-[#00796B] hover:text-[#00695C] transition-colors">
+        <Link
+          href="/post/selection"
+          className="flex items-center text-[#00796B] hover:text-[#00695C] transition-colors"
+        >
           <div className="bg-[#E0F2F1] rounded-full p-1.5 mr-2 transition-all duration-300 hover:bg-[#B2DFDB]">
             <ArrowLeft className="h-4 w-4 text-[#00796B]" />
           </div>
           <span className="font-medium">Back to Post Types</span>
         </Link>
         <div className="text-sm bg-[#E0F2F1] text-[#00796B] font-medium px-3 py-1 rounded-full">
-          Step {currentStep} of {totalSteps}
+          Step {currentStep + 1} of {calculatedTotalSteps}
         </div>
       </div>
 
@@ -53,44 +60,48 @@ export default function PostProgressIndicator({
         <motion.div
           className="absolute top-[22px] left-0 h-1 bg-[#00796B] rounded-full -z-10"
           initial={{ width: "0%" }}
-          animate={{ width: `${((currentStep - 1) / (totalSteps - 1)) * 100}%` }}
+          animate={{ width: `${(currentStep / (calculatedTotalSteps - 1)) * 100}%` }}
           transition={{ duration: 0.8, ease: "easeInOut" }}
         ></motion.div>
 
         <div className="flex justify-between">
-          {steps.map((step) => (
+          {steps.map((step, index) => (
             <div
-              key={step.number}
+              key={index}
               className={`flex flex-col items-center ${
-                step.number === currentStep
+                index === currentStep
                   ? "text-[#00796B]"
-                  : step.number < currentStep
+                  : index < currentStep || step.completed
                     ? "text-[#00796B]"
                     : "text-gray-400"
               }`}
             >
               <motion.div
                 className={`flex items-center justify-center w-11 h-11 rounded-full mb-3 ${
-                  step.number === currentStep
+                  index === currentStep
                     ? "bg-[#00796B] text-white shadow-md"
-                    : step.number < currentStep
+                    : index < currentStep || step.completed
                       ? "bg-[#B2DFDB] text-[#00796B]"
                       : "bg-white border border-gray-200 text-gray-400"
                 }`}
                 initial={{ scale: 1 }}
                 animate={{
-                  scale: step.number === currentStep ? [1, 1.05, 1] : 1,
-                  y: step.number === currentStep ? [0, -3, 0] : 0,
+                  scale: index === currentStep ? [1, 1.05, 1] : 1,
+                  y: index === currentStep ? [0, -3, 0] : 0,
                 }}
                 transition={{ duration: 0.5 }}
               >
-                {step.number < currentStep ? <Check className="h-5 w-5" /> : <span>{step.number}</span>}
+                {index < currentStep || step.completed ? (
+                  <Check className="h-5 w-5" />
+                ) : (
+                  <span>{step.number || index + 1}</span>
+                )}
               </motion.div>
               <span
                 className={`text-sm font-medium transition-colors duration-300 ${
-                  step.number === currentStep
+                  index === currentStep
                     ? "text-[#00796B]"
-                    : step.number < currentStep
+                    : index < currentStep || step.completed
                       ? "text-[#00796B]"
                       : "text-gray-400"
                 }`}
@@ -105,16 +116,16 @@ export default function PostProgressIndicator({
       {/* Mobile progress indicator */}
       <div className="md:hidden mb-6">
         <div className="flex justify-between items-center mb-3">
-          <span className="text-base font-medium text-[#00796B]">{steps[currentStep - 1]?.label ?? ''}</span>
+          <span className="text-base font-medium text-[#00796B]">{steps[currentStep].label}</span>
           <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
-            {currentStep}/{totalSteps}
+            {currentStep + 1}/{calculatedTotalSteps}
           </span>
         </div>
         <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
           <motion.div
             className="h-full bg-[#00796B] rounded-full"
             initial={{ width: "0%" }}
-            animate={{ width: `${(currentStep / totalSteps) * 100}%` }}
+            animate={{ width: `${((currentStep + 1) / calculatedTotalSteps) * 100}%` }}
             transition={{ duration: 0.5 }}
           ></motion.div>
         </div>

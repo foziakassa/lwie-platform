@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -8,84 +7,52 @@ import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { MapPin, ArrowLeft, ArrowRight, Save } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { ArrowRight, ArrowLeft, Save, MapPin } from "lucide-react"
 import { motion } from "framer-motion"
-import { Card, CardContent } from "@/components/ui/card"
-import { toast } from "@/components/ui/use-toast"
+import { useEffect, useState } from "react"
 
-// Updated form schema to match the UI in the image
 const formSchema = z.object({
-  city: z.string().min(1, {
-    message: "Please select a city.",
-  }),
-  subcity: z.string().optional(),
-  serviceLocationType: z.enum(["at_my_location", "at_clients_location", "remote", "flexible"], {
-    required_error: "Please select a service location type.",
-  }),
+  city: z.string().min(1, { message: "City is required" }),
+  subcity: z.string().min(1, { message: "Sub-city/Area is required" }),
+  description: z.string().optional(),
 })
 
-export default function ServiceLocationDescriptionForm() {
+interface ServiceLocationDescriptionFormProps {
+  initialData: any
+  onSaveDraft: (data: any) => void
+  onContinue: (data: any) => void
+  isLoading: boolean
+}
+
+export function ServiceLocationDescriptionForm({
+  initialData,
+  onSaveDraft,
+  onContinue,
+  isLoading,
+}: ServiceLocationDescriptionFormProps) {
   const router = useRouter()
-  const [basicInfo, setBasicInfo] = useState<any>(null)
-  const [serviceDetails, setServiceDetails] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const [selectedCity, setSelectedCity] = useState<string | null>(null)
-  const [subcities, setSubcities] = useState<string[]>([])
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  useEffect(() => {
-    // Load previous steps from local storage
-    const savedBasicInfo = localStorage.getItem("serviceBasicInfo")
-    const savedServiceDetails = localStorage.getItem("serviceDetails")
-
-    if (savedBasicInfo) {
-      setBasicInfo(JSON.parse(savedBasicInfo))
-    } else {
-      router.push("/post/service/basic-info")
-      return
-    }
-
-    if (savedServiceDetails) {
-      setServiceDetails(JSON.parse(savedServiceDetails))
-    } else {
-      router.push("/post/service/details")
-      return
-    }
-
-    // Check for draft data
-    const draftData = localStorage.getItem("serviceLocationDescriptionDraft")
-    if (draftData) {
-      try {
-        const parsedData = JSON.parse(draftData)
-        setTimeout(() => {
-          form.reset(parsedData)
-          if (parsedData.city) {
-            setSelectedCity(parsedData.city)
-            setSubcities(getSubcitiesByCity(parsedData.city))
-          }
-        }, 100)
-      } catch (error) {
-        console.error("Error loading draft data:", error)
-      }
-    }
-
-    setLoading(false)
-  }, [router])
+  const [subcities, setSubcities] = useState<any[]>([])
+  const [mounted, setMounted] = useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      city: "",
-      subcity: "",
-      serviceLocationType: "flexible",
+      city: initialData?.city || "",
+      subcity: initialData?.subcity || "",
+      description: initialData?.description || "",
     },
   })
+
+  useEffect(() => {
+    setMounted(true)
+
+    if (initialData?.city) {
+      setSelectedCity(initialData.city)
+      setSubcities(getSubcitiesByCity(initialData.city))
+    }
+  }, [initialData])
 
   // Update subcities when city changes
   useEffect(() => {
@@ -95,137 +62,86 @@ export default function ServiceLocationDescriptionForm() {
       setSubcities(getSubcitiesByCity(city))
       form.setValue("subcity", "")
     }
-  }, [form.watch("city"), selectedCity])
+  }, [form.watch("city"), selectedCity, form])
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsSubmitting(true)
-
-    try {
-      // Save to local storage for now
-      localStorage.setItem("serviceLocationDescription", JSON.stringify(values))
-
-      // Clear draft
-      localStorage.removeItem("serviceLocationDescriptionDraft")
-
-      // Show success toast
-      toast({
-        title: "Location & description saved",
-        description: "Your post has been created successfully!",
-        duration: 3000,
-      })
-
-      router.push("/post/success")
-    } catch (error) {
-      console.error("Error saving form data:", error)
-      toast({
-        title: "Error saving information",
-        description: "There was a problem saving your information. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
+    onContinue(values)
   }
 
-  const saveDraft = () => {
+  const handleSaveDraft = () => {
     const values = form.getValues()
-    try {
-      localStorage.setItem("serviceLocationDescriptionDraft", JSON.stringify(values))
-      toast({
-        title: "Draft saved",
-        description: "Your location and description draft has been saved. You can continue later.",
-        duration: 3000,
-      })
-    } catch (error: any) {
-      console.error("Error saving draft:", error)
-      toast({
-        title: "Error saving draft",
-        description: "There was a problem saving your draft. Please try again.",
-        variant: "destructive",
-      })
-    }
+    onSaveDraft(values)
   }
 
   const cities = [
-    "Addis Ababa",
-    "Dire Dawa",
-    "Bahir Dar",
-    "Hawassa",
-    "Mekelle",
-    "Adama",
-    "Gondar",
-    "Jimma",
-    "Dessie",
-    "Bishoftu",
-    "Sodo",
-    "Jijiga",
-    "Shashemene",
-    "Arba Minch",
-    "Hosaena",
-    "Harar",
-    "Dilla",
-    "Nekemte",
-    "Debre Birhan",
-    "Asella",
+    { id: "addis_ababa", name: "Addis Ababa" },
+    { id: "dire_dawa", name: "Dire Dawa" },
+    { id: "bahir_dar", name: "Bahir Dar" },
+    { id: "hawassa", name: "Hawassa" },
+    { id: "mekelle", name: "Mekelle" },
+    { id: "adama", name: "Adama" },
+    { id: "gondar", name: "Gondar" },
+    { id: "jimma", name: "Jimma" },
+    { id: "dessie", name: "Dessie" },
+    { id: "bishoftu", name: "Bishoftu" },
   ]
 
-  const getSubcitiesByCity = (city: string): string[] => {
+  const getSubcitiesByCity = (city: string): { id: string; name: string }[] => {
     switch (city) {
-      case "Addis Ababa":
+      case "addis_ababa":
         return [
-          "Addis Ketema",
-          "Akaky Kaliti",
-          "Arada",
-          "Bole",
-          "Gullele",
-          "Kirkos",
-          "Kolfe Keranio",
-          "Lideta",
-          "Nifas Silk-Lafto",
-          "Yeka",
+          { id: "addis_ketema", name: "Addis Ketema" },
+          { id: "akaky_kaliti", name: "Akaky Kaliti" },
+          { id: "arada", name: "Arada" },
+          { id: "bole", name: "Bole" },
+          { id: "gullele", name: "Gullele" },
+          { id: "kirkos", name: "Kirkos" },
+          { id: "kolfe_keranio", name: "Kolfe Keranio" },
+          { id: "lideta", name: "Lideta" },
+          { id: "nifas_silk_lafto", name: "Nifas Silk-Lafto" },
+          { id: "yeka", name: "Yeka" },
         ]
-      case "Dire Dawa":
-        return ["Dire Dawa City", "Melka Jebdu", "Gendekore", "Legehare"]
-      case "Bahir Dar":
-        return ["Bahir Dar City", "Shimbit", "Belay Zeleke", "Sefene Selam"]
-      case "Hawassa":
-        return ["Hawassa City", "Tabor", "Menaharia", "Misrak"]
-      case "Mekelle":
-        return ["Ayder", "Hadnet", "Hawelti", "Kedamay Weyane", "Quiha"]
+      case "dire_dawa":
+        return [
+          { id: "sabian", name: "Sabian" },
+          { id: "kezira", name: "Kezira" },
+          { id: "addis_ketema", name: "Addis Ketema" },
+          { id: "gendekore", name: "Gendekore" },
+        ]
+      case "bahir_dar":
+        return [
+          { id: "belay_zeleke", name: "Belay Zeleke" },
+          { id: "fasilo", name: "Fasilo" },
+          { id: "shum_abo", name: "Shum Abo" },
+          { id: "tana", name: "Tana" },
+        ]
       default:
-        return ["Central", "North", "South", "East", "West"]
+        return [
+          { id: "central", name: "Central" },
+          { id: "north", name: "North" },
+          { id: "south", name: "South" },
+          { id: "east", name: "East" },
+          { id: "west", name: "West" },
+        ]
     }
   }
 
   if (!mounted) return null
-
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl shadow-lg border p-8">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white rounded-xl shadow-lg border p-8"
+      className="bg-white rounded-xl p-6"
     >
-      <div className="mb-8">
-        <div className="flex items-center mb-2">
-          <MapPin className="h-6 w-6 mr-2 text-[#00796B]" />
-          <h2 className="text-3xl font-bold text-[#00796B]">Location</h2>
-        </div>
-        <p className="text-gray-600">Add your location to help nearby swappers find your item</p>
+      <div className="flex items-center mb-6">
+        <MapPin className="h-6 w-6 text-teal-600 mr-2" />
+        <h2 className="text-xl font-bold">Service Location & Description</h2>
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
@@ -238,13 +154,13 @@ export default function ServiceLocationDescriptionForm() {
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger className="text-base py-6">
-                        <SelectValue placeholder="Select your city" />
+                        <SelectValue placeholder="Select city" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {cities.map((city) => (
-                        <SelectItem key={city} value={city} className="py-2.5">
-                          {city}
+                        <SelectItem key={city.id} value={city.id} className="py-3">
+                          {city.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -259,23 +175,22 @@ export default function ServiceLocationDescriptionForm() {
               name="subcity"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base">Subcity</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    disabled={!form.watch("city") || !subcities.length}
-                  >
+                  <FormLabel className="text-base">
+                    Sub-city/Area <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!form.watch("city")}>
                     <FormControl>
                       <SelectTrigger className="text-base py-6">
-                        <SelectValue placeholder="Select your subcity" />
+                        <SelectValue placeholder={form.watch("city") ? "Select sub-city/area" : "Select city first"} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {subcities.map((subcity) => (
-                        <SelectItem key={subcity} value={subcity} className="py-2.5">
-                          {subcity}
-                        </SelectItem>
-                      ))}
+                      {form.watch("city") &&
+                        subcities.map((subcity) => (
+                          <SelectItem key={subcity.id} value={subcity.id} className="py-3">
+                            {subcity.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -286,70 +201,16 @@ export default function ServiceLocationDescriptionForm() {
 
           <FormField
             control={form.control}
-            name="serviceLocationType"
+            name="description"
             render={({ field }) => (
-              <FormItem className="space-y-3">
-                <FormLabel className="text-base">
-                  Service Location Type <span className="text-red-500">*</span>
-                </FormLabel>
+              <FormItem>
+                <FormLabel className="text-base">Description (Optional)</FormLabel>
                 <FormControl>
-                  <RadioGroup
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    className="grid grid-cols-1 md:grid-cols-2 gap-4"
-                  >
-                    <Card
-                      className={`border-2 cursor-pointer transition-all ${field.value === "at_my_location" ? "border-[#00796B] bg-[#E0F2F1]/30" : "border-gray-200"}`}
-                    >
-                      <CardContent className="p-4 flex items-start space-x-3">
-                        <FormItem className="flex items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="at_my_location" />
-                          </FormControl>
-                          <FormLabel className="font-normal cursor-pointer">At my location</FormLabel>
-                        </FormItem>
-                      </CardContent>
-                    </Card>
-
-                    <Card
-                      className={`border-2 cursor-pointer transition-all ${field.value === "at_clients_location" ? "border-[#00796B] bg-[#E0F2F1]/30" : "border-gray-200"}`}
-                    >
-                      <CardContent className="p-4 flex items-start space-x-3">
-                        <FormItem className="flex items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="at_clients_location" />
-                          </FormControl>
-                          <FormLabel className="font-normal cursor-pointer">At client's location</FormLabel>
-                        </FormItem>
-                      </CardContent>
-                    </Card>
-
-                    <Card
-                      className={`border-2 cursor-pointer transition-all ${field.value === "remote" ? "border-[#00796B] bg-[#E0F2F1]/30" : "border-gray-200"}`}
-                    >
-                      <CardContent className="p-4 flex items-start space-x-3">
-                        <FormItem className="flex items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="remote" />
-                          </FormControl>
-                          <FormLabel className="font-normal cursor-pointer">Remote (online)</FormLabel>
-                        </FormItem>
-                      </CardContent>
-                    </Card>
-
-                    <Card
-                      className={`border-2 cursor-pointer transition-all ${field.value === "flexible" ? "border-[#00796B] bg-[#E0F2F1]/30" : "border-gray-200"}`}
-                    >
-                      <CardContent className="p-4 flex items-start space-x-3">
-                        <FormItem className="flex items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="flexible" />
-                          </FormControl>
-                          <FormLabel className="font-normal cursor-pointer">Flexible (can be discussed)</FormLabel>
-                        </FormItem>
-                      </CardContent>
-                    </Card>
-                  </RadioGroup>
+                  <Textarea
+                    placeholder="Provide a detailed description of your service..."
+                    className="min-h-[150px]"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -360,28 +221,23 @@ export default function ServiceLocationDescriptionForm() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push("/post/service/details")}
-              className="px-6 py-6 text-base flex items-center"
+              onClick={() => router.push("/post/service/pricing-terms")}
+              className="px-6 py-6 text-base"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Previous Step
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Previous
             </Button>
             <div className="space-x-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={saveDraft}
-                className="px-6 py-6 text-base flex items-center"
-              >
+              <Button type="button" variant="outline" onClick={handleSaveDraft} className="px-6 py-6 text-base">
                 <Save className="h-4 w-4 mr-2" />
                 Save Draft
               </Button>
               <Button
                 type="submit"
-                className="bg-[#00796B] hover:bg-[#00695C] px-8 py-6 text-base shadow-md flex items-center"
-                disabled={isSubmitting}
+                className="bg-teal-600 hover:bg-teal-700 px-8 py-6 text-base shadow-md"
+                disabled={isLoading}
               >
-                {isSubmitting ? (
+                {isLoading ? (
                   <>
                     <svg
                       className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
@@ -407,7 +263,7 @@ export default function ServiceLocationDescriptionForm() {
                   </>
                 ) : (
                   <>
-                    Submit Post
+                    Next
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </>
                 )}
@@ -419,3 +275,5 @@ export default function ServiceLocationDescriptionForm() {
     </motion.div>
   )
 }
+
+export default ServiceLocationDescriptionForm

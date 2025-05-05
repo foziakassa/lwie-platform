@@ -10,7 +10,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MapPin, ArrowLeft, ArrowRight, Save } from "lucide-react"
 import { motion } from "framer-motion"
-import { toast } from "@/components/ui/use-toast"
 
 const formSchema = z.object({
   city: z.string().min(1, {
@@ -19,66 +18,40 @@ const formSchema = z.object({
   subcity: z.string().optional(),
 })
 
-export default function LocationDescriptionForm() {
+interface LocationDescriptionFormProps {
+  initialData?: any
+  onSaveDraft: (data: any) => void
+  onContinue: (data: any) => void
+  isLoading: boolean
+}
+
+export function LocationDescriptionForm({
+  initialData,
+  onSaveDraft,
+  onContinue,
+  isLoading,
+}: LocationDescriptionFormProps) {
   const router = useRouter()
-  const [basicInfo, setBasicInfo] = useState<any>(null)
-  const [specifications, setSpecifications] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [selectedCity, setSelectedCity] = useState<string | null>(null)
   const [subcities, setSubcities] = useState<any[]>([])
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  useEffect(() => {
-    // Load previous steps from local storage
-    const savedBasicInfo = localStorage.getItem("itemBasicInfo")
-    const savedSpecifications = localStorage.getItem("itemSpecifications")
-
-    if (savedBasicInfo) {
-      setBasicInfo(JSON.parse(savedBasicInfo))
-    } else {
-      router.push("/post/item/basic-info")
-      return
-    }
-
-    if (savedSpecifications) {
-      setSpecifications(JSON.parse(savedSpecifications))
-    } else {
-      router.push("/post/item/specifications")
-      return
-    }
-
-    // Check for draft data
-    const draftData = localStorage.getItem("itemLocationDescriptionDraft")
-    if (draftData) {
-      try {
-        const parsedData = JSON.parse(draftData)
-        setTimeout(() => {
-          form.reset(parsedData)
-          if (parsedData.city) {
-            setSelectedCity(parsedData.city)
-            setSubcities(getSubcitiesByCity(parsedData.city))
-          }
-        }, 100)
-      } catch (error) {
-        console.error("Error loading draft data:", error)
-      }
-    }
-
-    setLoading(false)
-  }, [router])
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      city: "",
-      subcity: "",
+      city: initialData?.city || "",
+      subcity: initialData?.subcity || "",
     },
   })
+
+  useEffect(() => {
+    setMounted(true)
+
+    if (initialData?.city) {
+      setSelectedCity(initialData.city)
+      setSubcities(getSubcitiesByCity(initialData.city))
+    }
+  }, [initialData])
 
   // Update subcities when city changes
   useEffect(() => {
@@ -88,56 +61,16 @@ export default function LocationDescriptionForm() {
       setSubcities(getSubcitiesByCity(city))
       form.setValue("subcity", "")
     }
-  }, [form.watch("city"), selectedCity])
+  }, [form.watch("city"), selectedCity, form])
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsSubmitting(true)
-
-    try {
-      // Save to local storage for now
-      localStorage.setItem("itemLocationDescription", JSON.stringify(values))
-
-      // Clear draft
-      localStorage.removeItem("itemLocationDescriptionDraft")
-
-      // Show success toast
-      toast({
-        title: "Location saved",
-        description: "Your location has been saved. Let's continue to the next step.",
-        duration: 3000,
-      })
-
-      router.push("/post/item/trade-preferences")
-    } catch (error) {
-      console.error("Error saving form data:", error)
-      toast({
-        title: "Error saving information",
-        description: "There was a problem saving your information. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
+    onContinue(values)
   }
 
-  const saveDraft = () => {
-    const values = form.getValues();
-    try {
-      localStorage.setItem("itemLocationDescriptionDraft", JSON.stringify(values));
-      toast({
-        title: "Draft saved",
-        description: "Your location draft has been saved. You can continue later.",
-        duration: 3000,
-      });
-    } catch (error: any) {
-      console.error("Error saving draft:", error);
-      toast({
-        title: "Error saving draft",
-        description: "There was a problem saving your draft. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+  const handleSaveDraft = () => {
+    const values = form.getValues()
+    onSaveDraft(values)
+  }
 
   const cities = [
     "Addis Ababa",
@@ -191,16 +124,6 @@ export default function LocationDescriptionForm() {
   }
 
   if (!mounted) return null
-
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl shadow-lg border p-8">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-600"></div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <motion.div
@@ -281,17 +204,17 @@ export default function LocationDescriptionForm() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push("/post/item/specifications")}
+              onClick={() => router.push("/post/item/trade-preferences")}
               className="px-6 py-6 text-base flex items-center"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Previous Step
             </Button>
             <div className="space-x-3">
-            <Button
+              <Button
                 type="button"
                 variant="outline"
-                onClick={saveDraft}
+                onClick={handleSaveDraft}
                 className="px-6 py-6 text-base flex items-center"
               >
                 <Save className="h-4 w-4 mr-2" />
@@ -300,9 +223,9 @@ export default function LocationDescriptionForm() {
               <Button
                 type="submit"
                 className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 px-8 py-6 text-base shadow-md flex items-center"
-                disabled={isSubmitting}
+                disabled={isLoading}
               >
-                {isSubmitting ? (
+                {isLoading ? (
                   <>
                     <svg
                       className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
@@ -340,3 +263,5 @@ export default function LocationDescriptionForm() {
     </motion.div>
   )
 }
+
+export default LocationDescriptionForm

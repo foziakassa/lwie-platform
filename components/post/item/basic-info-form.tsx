@@ -12,7 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ImageUploader } from "@/components/post/image-uploader"
 import { Package, ArrowRight, Save, Smartphone, Car, Armchair, Shirt, Refrigerator } from "lucide-react"
 import { motion } from "framer-motion"
-import { toast } from "@/components/ui/use-toast"
 import { itemCategories } from "@/lib/categories"
 
 // Define form schema
@@ -31,43 +30,48 @@ const formSchema = z.object({
 // Explicitly define form values type
 type FormValues = z.infer<typeof formSchema>
 
-export default function BasicInfoForm() {
+interface BasicInfoFormProps {
+  initialData?: any
+  onSaveDraft: (data: any) => void
+  onContinue: (data: any) => void
+  isLoading: boolean
+}
+
+export function BasicInfoForm({ initialData, onSaveDraft, onContinue, isLoading }: BasicInfoFormProps) {
   const router = useRouter()
   const [images, setImages] = useState<string[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [subcategories, setSubcategories] = useState<any[]>([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
 
-    // Load draft data
-    const draftData = localStorage.getItem("itemBasicInfoDraft")
-    const draftImages = localStorage.getItem("itemImagesDraft")
-    if (draftData) {
-      try {
-        const parsedData: FormValues = JSON.parse(draftData)
-        form.reset(parsedData)
-        if (draftImages) {
-          const parsedImages = JSON.parse(draftImages) as string[]
-          setImages(parsedImages)
+    // Initialize with initial data if provided
+    if (initialData) {
+      if (initialData.images) {
+        setImages(initialData.images)
+      }
+
+      if (initialData.category) {
+        setSelectedCategory(initialData.category)
+        const foundCategory = itemCategories.find((c) => c.id === initialData.category)
+        if (foundCategory) {
+          setSubcategories(foundCategory.subcategories)
         }
-      } catch (error) {
-        console.error("Error loading draft data:", error)
       }
     }
-  }, [])
+  }, [initialData])
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: "",
-      category: "",
-      subcategory: "",
-      condition: "",
-      price: "",
-      images: [],
+      title: initialData?.title || "",
+      category: initialData?.category || "",
+      subcategory: initialData?.subcategory || "",
+      condition: initialData?.condition || "",
+      price: initialData?.price?.toString() || "",
+      images: initialData?.images || [],
     },
   })
 
@@ -84,73 +88,28 @@ export default function BasicInfoForm() {
       }
       form.setValue("subcategory", "")
     }
-  }, [form.watch("category")])
+  }, [form.watch("category"), form])
 
   async function onSubmit(values: FormValues) {
-    setIsSubmitting(true)
-
-    // Prepare data without images to avoid quota issues
-    const { images: _, ...dataToSave } = values
-    // dataToSave.images = [] // Ensure schema compatibility
-
-    try {
-      // Save form data (without images) to localStorage
-      localStorage.setItem("itemBasicInfo", JSON.stringify(dataToSave))
-
-      // Save images separately
-      localStorage.setItem("itemImages", JSON.stringify(images.slice(0, 5)))
-
-      // Clear draft data
-      localStorage.removeItem("itemBasicInfoDraft")
-      localStorage.removeItem("itemImagesDraft")
-
-      // Show success toast
-      toast({
-        title: "Basic information saved",
-        description: "Let's continue to the next step.",
-        duration: 3000,
-      })
-
-      router.push("/post/item/specifications")
-    } catch (error: any) {
-      console.error("Error saving form data:", error)
-      toast({
-        title: "Error saving information",
-        description:
-          error.name === "QuotaExceededError"
-            ? "Storage limit exceeded. Try uploading fewer or smaller images."
-            : "There was a problem saving your information. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
+    // Prepare data with images
+    const dataToSave = {
+      ...values,
+      images: images.slice(0, 5),
     }
+
+    onContinue(dataToSave)
   }
 
-  const saveDraft = () => {
-    const values = form.getValues();
-    try {
-      // Prepare draft data without images to avoid serialization issues
-      const { images: _, ...dataToSave } = values;
-      localStorage.setItem("itemBasicInfoDraft", JSON.stringify(dataToSave));
-      localStorage.setItem("itemImagesDraft", JSON.stringify(images.slice(0, 5)));
-      toast({
-        title: "Draft saved",
-        description: "Your draft has been saved. You can continue later.",
-        duration: 3000,
-      });
-    } catch (error: any) {
-      console.error("Error saving draft:", error);
-      toast({
-        title: "Error saving draft",
-        description:
-          error.name === "QuotaExceededError"
-            ? "Storage limit exceeded. Try using fewer or smaller images."
-            : "There was a problem saving your draft. Please try again.",
-        variant: "destructive",
-      });
+  const handleSaveDraft = () => {
+    const values = form.getValues()
+    // Prepare draft data with images
+    const dataToSave = {
+      ...values,
+      images: images.slice(0, 5),
     }
-  };
+
+    onSaveDraft(dataToSave)
+  }
 
   const conditions = ["Brand New", "Refurbished", "Used"]
 
@@ -322,8 +281,9 @@ export default function BasicInfoForm() {
                 </FormLabel>
                 <FormControl>
                   <ImageUploader
-                    images={images}
-                    setImages={(newImages) => {
+                    entityType="item"
+                    initialImages={images}
+                    onImagesUploaded={(newImages) => {
                       setImages(newImages)
                       field.onChange(newImages)
                     }}
@@ -345,10 +305,10 @@ export default function BasicInfoForm() {
               Cancel
             </Button>
             <div className="space-x-3">
-            <Button
+              <Button
                 type="button"
                 variant="outline"
-                onClick={saveDraft}
+                onClick={handleSaveDraft}
                 className="px-6 py-6 text-base flex items-center"
               >
                 <Save className="h-4 w-4 mr-2" />
@@ -357,9 +317,9 @@ export default function BasicInfoForm() {
               <Button
                 type="submit"
                 className="bg-[#00796B] hover:bg-[#00695C] px-8 py-6 text-base shadow-md"
-                disabled={isSubmitting}
+                disabled={isLoading}
               >
-                {isSubmitting ? (
+                {isLoading ? (
                   <div className="flex items-center">
                     <svg
                       className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
@@ -367,14 +327,7 @@ export default function BasicInfoForm() {
                       fill="none"
                       viewBox="0 0 24 24"
                     >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path
                         className="opacity-75"
                         fill="currentColor"
@@ -397,3 +350,5 @@ export default function BasicInfoForm() {
     </motion.div>
   )
 }
+
+export default BasicInfoForm

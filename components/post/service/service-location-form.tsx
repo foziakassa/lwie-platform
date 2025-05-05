@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowRight, ArrowLeft, Save, MapPin } from "lucide-react"
 import { motion } from "framer-motion"
 import { toast } from "@/components/ui/use-toast"
+import { savePost } from "@/lib/post-storage"
 
 const formSchema = z.object({
   city: z.string({
@@ -31,18 +32,30 @@ export default function ServiceLocationForm() {
   const [mounted, setMounted] = useState(false)
   const [selectedCity, setSelectedCity] = useState<string | null>(null)
   const [subcities, setSubcities] = useState<any[]>([])
+  const [basicInfo, setBasicInfo] = useState<any>(null)
+  const [serviceDetails, setServiceDetails] = useState<any>(null)
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
   useEffect(() => {
-    // Check if details exist
+    // Check if previous steps exist
+    const savedBasicInfo = localStorage.getItem("serviceBasicInfo")
     const savedDetails = localStorage.getItem("serviceDetails")
+
+    if (!savedBasicInfo) {
+      router.push("/post/service/basic-info")
+      return
+    }
+
     if (!savedDetails) {
       router.push("/post/service/details")
       return
     }
+
+    setBasicInfo(JSON.parse(savedBasicInfo))
+    setServiceDetails(JSON.parse(savedDetails))
 
     // Check for draft data
     const draftData = localStorage.getItem("serviceLocationDraft")
@@ -84,22 +97,54 @@ export default function ServiceLocationForm() {
   }, [form.watch("city"), selectedCity])
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!basicInfo || !serviceDetails) return
+
     setIsSubmitting(true)
 
     try {
-      // Save to local storage for now
-      localStorage.setItem("serviceLocation", JSON.stringify(values))
+      // Get images
+      const savedImages = localStorage.getItem("serviceImages")
+      const images = savedImages ? JSON.parse(savedImages) : []
 
-      // Clear draft
+      // Create post object
+      const post = {
+        id: Date.now().toString(),
+        type: "service",
+        title: basicInfo.title,
+        category: basicInfo.category,
+        subcategory: basicInfo.subcategory,
+        price: basicInfo.price,
+        description: serviceDetails.description,
+        experience: serviceDetails.experience,
+        city: values.city,
+        subcity: values.subcity,
+        serviceArea: values.serviceArea,
+        location: `${values.city}${values.subcity ? ", " + values.subcity : ""}`,
+        images: images,
+        createdAt: new Date().toISOString(),
+        status: "published",
+      }
+
+      // Save post
+      savePost(post)
+
+      // Clear localStorage
+      localStorage.removeItem("serviceBasicInfo")
+      localStorage.removeItem("serviceDetails")
+      localStorage.removeItem("serviceLocation")
+      localStorage.removeItem("serviceImages")
+      localStorage.removeItem("serviceBasicInfoDraft")
+      localStorage.removeItem("serviceDetailsDraft")
       localStorage.removeItem("serviceLocationDraft")
 
       // Show success toast
       toast({
-        title: "Location saved",
-        description: "Your service has been posted successfully!",
+        title: "Service posted successfully!",
+        description: "Your service has been posted. Redirecting to success page...",
         duration: 3000,
       })
 
+      // Redirect to success page
       router.push("/post/success")
     } catch (error) {
       console.error("Error saving form data:", error)

@@ -6,12 +6,23 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { addPurchasedPosts } from "@/lib/actions"
+import Cookies from "js-cookie"
+import { verifyPayment } from "@/lib/api-service"
+
+interface UserData {
+  email: string
+  firstName: string
+  bio: string | null
+  phone: string | null
+  image: string | null
+  activated: boolean
+}
 
 export default function PaymentSuccessPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isProcessing, setIsProcessing] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const processPaymentSuccess = async () => {
@@ -26,14 +37,65 @@ export default function PaymentSuccessPage() {
           const txRef = searchParams.get("tx_ref")
           if (txRef) {
             customerInfo.transactionId = txRef
-            sessionStorage.setItem("customerInfo", JSON.stringify(customerInfo))
+
+            // Verify the payment with the API
+            try {
+              const verificationResult = await verifyPayment(txRef)
+
+              if (verificationResult.success) {
+                // Update customer info with verification data if available
+                if (verificationResult.posts) {
+                  customerInfo.postsCount = verificationResult.posts
+                }
+
+                // Update transaction status
+                customerInfo.status = verificationResult.status || "completed"
+              } else {
+                console.warn("Payment verification returned unsuccessful:", verificationResult)
+                // Still continue as the payment might be processing
+              }
+            } catch (verifyError) {
+              console.error("Error verifying payment:", verifyError)
+              // Continue anyway as we don't want to block the user
+            }
           }
 
-          // Add the purchased posts to the user's account
-          // This ensures posts are added even if the webhook fails
-          if (customerInfo.postsCount) {
-            await addPurchasedPosts(customerInfo.postsCount)
+          // Try to get customer info from auth token if not already set
+          if (!customerInfo.name || customerInfo.name === "Anonymous Customer") {
+            const userCookie = Cookies.get("user")
+            if (userCookie) {
+              try {
+                const userData = JSON.parse(userCookie) as UserData
+                if (userData.firstName) {
+                  customerInfo.name = userData.firstName
+                  // Also store in a cookie for easier access
+                  Cookies.set("customerName", userData.firstName, { expires: 365 })
+                }
+                if (userData.email && (!customerInfo.email || customerInfo.email === "anonymous@example.com")) {
+                  customerInfo.email = userData.email
+                  // Also store in a cookie for easier access
+                  Cookies.set("customerEmail", userData.email, { expires: 365 })
+                }
+              } catch (err) {
+                console.warn("Failed to parse user cookie:", err)
+              }
+            }
           }
+
+          // Update from cookies as a fallback
+          const cookieEmail = Cookies.get("customerEmail")
+          const cookieName = Cookies.get("customerName")
+
+          if (cookieEmail) {
+            customerInfo.email = cookieEmail.trim()
+          }
+
+          if (cookieName) {
+            customerInfo.name = cookieName.trim()
+          }
+
+          // Save updated customer info back to sessionStorage
+          sessionStorage.setItem("customerInfo", JSON.stringify(customerInfo))
 
           // Short delay to ensure posts are added before redirecting
           setTimeout(() => {
@@ -46,6 +108,7 @@ export default function PaymentSuccessPage() {
         }
       } catch (error) {
         console.error("Error processing payment success:", error)
+        setError("There was an error processing your payment information. Please contact support.")
         setIsProcessing(false)
       }
     }
@@ -75,7 +138,9 @@ export default function PaymentSuccessPage() {
             <CheckCircle className="h-10 w-10 text-teal-500" />
           </div>
           <CardTitle className="text-2xl">Payment Successful!</CardTitle>
-          <CardDescription>Thank you for your payment. Your posts have been added to your account.</CardDescription>
+          <CardDescription>
+            {error ? error : "Thank you for your payment. Your posts have been added to your account."}
+          </CardDescription>
         </CardHeader>
         <CardContent className="text-center">
           <p className="text-gray-600">

@@ -1,0 +1,49 @@
+# Backend Files for Post System Integration
+
+## Core Post Management Files
+1. lib/post-storage.ts - Contains all post data structures and storage logic (replace with database operations)
+
+## API Routes to Implement
+1. app/api/posts/route.ts - GET (list posts), POST (create post)
+2. app/api/posts/[id]/route.ts - GET (single post), PUT (update post), DELETE (delete post)
+3. app/api/posts/draft/route.ts - GET, POST, DELETE (draft post operations)
+4. app/api/upload/route.ts - POST (image upload handler)
+
+## Database Schema Requirements
+- Users table
+- Posts table (with discriminator for item/service)
+- PostImages table
+- Categories table
+- Subcategories table
+- ItemDetails table (for item-specific fields)
+- ServiceDetails table (for service-specific fields)
+- TradePreferences table (for item trade preferences)
+- PricingTerms table (for service pricing)
+
+## Authentication Integration Points
+- lib/auth.ts - User authentication utilities
+- middleware.ts - Route protection middleware
+
+## Key Functions to Implement
+- createPost(postData)
+- updatePost(id, postData)
+- deletePost(id)
+- getPostById(id)
+- listPosts(filters)
+- saveDraftPost(userId, postData)
+- getDraftPost(userId, type)
+- uploadImage(file)
+
+## Webhooks/Events
+- post.created
+- post.updated
+- post.deleted
+- image.uploaded
+
+## Notes for Backend Developers
+- All client-side storage in post-storage.ts should be replaced with API calls
+- Form validation should be duplicated on the server side
+- Implement proper error handling and status codes
+- Add rate limiting for post creation and image uploads
+- Implement proper image optimization and storage
+- Add search functionality for posts

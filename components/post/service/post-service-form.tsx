@@ -4,12 +4,12 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Card } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { savePost } from "@/lib/posts-storage"
-import { serviceCategories } from "@/lib/categories"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
+import { Card } from "../../ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs"
+import { savePost } from "../../../lib/posts-storage"
+import { itemCategories } from "../../../lib/categories"
+import { Label } from "../../ui/label"
+import { Input } from "../../ui/input"
 import { Briefcase, Wrench, Scissors, Palette, Truck, Utensils, Laptop, Heart, GraduationCap, Home } from "lucide-react"
 
 export function PostServiceForm() {
@@ -63,7 +63,7 @@ export function PostServiceForm() {
   };
 
   const getSubcategories = () => {
-    const category = serviceCategories.find(cat => cat.name === formData.category);
+    const category = itemCategories.find(cat => cat.name === formData.category);
     return category?.subcategories || [];
   };
 
@@ -97,18 +97,20 @@ export function PostServiceForm() {
   const handleSaveDraft = () => {
     const post = {
       id: Date.now().toString(),
-      type: "service",
-      title: formData.title,
-      category: formData.category,
-      subcategory: formData.subcategory,
-      description: formData.description,
-      location: formData.location,
-      pricing: formData.pricing,
-      experience: formData.experience,
-      terms: formData.terms,
-      images: images,
+      type: "service" as const,
       createdAt: new Date().toISOString(),
-      status: "draft"
+      data: {
+        title: formData.title,
+        category: formData.category,
+        subcategory: formData.subcategory,
+        description: formData.description,
+        location: formData.location,
+        pricing: formData.pricing,
+        experience: formData.experience,
+        terms: formData.terms,
+        images: images,
+        status: "draft"
+      }
     };
     
     savePost(post);
@@ -131,18 +133,20 @@ export function PostServiceForm() {
     
     const post = {
       id: Date.now().toString(),
-      type: "service",
-      title: formData.title,
-      category: formData.category,
-      subcategory: formData.subcategory,
-      description: formData.description,
-      location: formData.location,
-      pricing: formData.pricing,
-      experience: formData.experience,
-      terms: formData.terms,
-      images: images,
+      type: "service" as const,
       createdAt: new Date().toISOString(),
-      status: "published"
+      data: {
+        title: formData.title,
+        category: formData.category,
+        subcategory: formData.subcategory,
+        description: formData.description,
+        location: formData.location,
+        pricing: formData.pricing,
+        experience: formData.experience,
+        terms: formData.terms,
+        images: images,
+        status: "published"
+      }
     };
     
     savePost(post);
@@ -174,5 +178,11 @@ export function PostServiceForm() {
               </div>
               
               <div className="space-y-2">
-
-\
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </Card>
+    </form>
+  )
+}

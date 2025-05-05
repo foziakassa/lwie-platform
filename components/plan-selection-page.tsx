@@ -1,58 +1,104 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { CheckCircle2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { PostCounter } from "@/components/post-counter"
+import { getPlans, type Plan as ApiPlan } from "@/lib/api-service"
 
-type PlanType = "basic" | "standard" | "premium"
-
-interface Plan {
-  id: PlanType
+interface PlanDisplayProps {
+  id: number
   name: string
-  price: number
+  price: string
   description: string
   features: string[]
-  posts: number
-  isPopular?: boolean
+  posts_count: number
+  is_popular?: boolean
 }
 
 export default function PlanSelectionPage({ onUpgradeClick }: { onUpgradeClick: () => void }) {
-  const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null)
+  const [selectedPlan, setSelectedPlan] = useState<number | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [plans, setPlans] = useState<PlanDisplayProps[]>([])
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  // All available plans - fixed packages
-  const allPlans: Plan[] = [
-    {
-      id: "basic",
-      name: "Basic",
-      price: 15,
-      description: "Perfect for occasional users",
-      features: ["5 posts", "Basic support", "Community access"],
-      posts: 5,
-    },
-    {
-      id: "standard",
-      name: "Standard",
-      price: 20,
-      description: "Great for regular users",
-      features: ["7 posts", "Priority support", "Community access", "Featured listings"],
-      posts: 7,
-      isPopular: true,
-    },
-    {
-      id: "premium",
-      name: "Premium",
-      price: 30,
-      description: "For power users and businesses",
-      features: ["15 posts", "Priority support", "Community access", "Featured listings", "Analytics dashboard"],
-      posts: 15,
-    },
-  ]
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const apiPlans = await getPlans()
+
+        // Transform API plans to display format with features
+        const displayPlans = apiPlans.map((plan: ApiPlan) => {
+          const features = []
+
+          // Create features based on plan properties
+          features.push(`${plan.posts_count} posts`)
+
+          if (plan.name === "Basic") {
+            features.push("Basic support", "Community access")
+          } else if (plan.name === "Standard") {
+            features.push("Priority support", "Community access", "Featured listings")
+          } else if (plan.name === "Premium") {
+            features.push("Priority support", "Community access", "Featured listings", "Analytics dashboard")
+          }
+
+          return {
+            id: plan.id,
+            name: plan.name,
+            price: plan.price,
+            description: plan.description,
+            features: features,
+            posts_count: plan.posts_count,
+            is_popular: plan.is_popular,
+          }
+        })
+
+        setPlans(displayPlans)
+      } catch (error) {
+        console.error("Error fetching plans:", error)
+        toast.error("Failed to load plans. Please try again later.")
+
+        // Fallback plans if API fails
+        setPlans([
+          {
+            id: 1,
+            name: "Basic",
+            price: "15.00",
+            description: "Perfect for occasional users",
+            features: ["5 posts", "Basic support", "Community access"],
+            posts_count: 5,
+            is_popular: false,
+          },
+          {
+            id: 2,
+            name: "Standard",
+            price: "20.00",
+            description: "Great for regular users",
+            features: ["7 posts", "Priority support", "Community access", "Featured listings"],
+            posts_count: 7,
+            is_popular: true,
+          },
+          {
+            id: 3,
+            name: "Premium",
+            price: "30.00",
+            description: "For power users and businesses",
+            features: ["15 posts", "Priority support", "Community access", "Featured listings", "Analytics dashboard"],
+            posts_count: 15,
+            is_popular: false,
+          },
+        ])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPlans()
+  }, [])
 
   const handleContinue = async () => {
     if (!selectedPlan) {
@@ -61,12 +107,30 @@ export default function PlanSelectionPage({ onUpgradeClick }: { onUpgradeClick: 
     }
 
     // For paid plans, redirect to payment page with plan info
-    const selectedPlanData = allPlans.find((plan) => plan.id === selectedPlan)
+    const selectedPlanData = plans.find((plan) => plan.id === selectedPlan)
     if (selectedPlanData) {
       // Store plan data in session storage
       sessionStorage.setItem("selectedPlan", JSON.stringify(selectedPlanData))
       router.push(`/payment/checkout?plan=${selectedPlan}`)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="container mx-auto py-10 px-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <h1 className="text-5xl font-bold text-gray-900 mb-3">Choose Your Plan</h1>
+            <p className="text-gray-600 max-w-2xl mx-auto">Loading available plans...</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6 mb-10">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-96 bg-gray-100 animate-pulse rounded-lg"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -80,12 +144,12 @@ export default function PlanSelectionPage({ onUpgradeClick }: { onUpgradeClick: 
 
           {/* Post counter component */}
           <div className="bg-white px-6 pt-4">
-  <PostCounter onUpgradeClick={onUpgradeClick} />
-</div>
+            <PostCounter onUpgradeClick={onUpgradeClick} />
+          </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 mb-10">
-          {allPlans.map((plan) => (
+          {plans.map((plan) => (
             <Card
               key={plan.id}
               className={`relative overflow-hidden transition-all ${
@@ -94,7 +158,7 @@ export default function PlanSelectionPage({ onUpgradeClick }: { onUpgradeClick: 
                   : "border-gray-200 hover:border-teal-300 "
               }`}
             >
-              {plan.isPopular && (
+              {plan.is_popular && (
                 <div className="absolute top-0 right-0 bg-teal-500 text-white px-3 py-1 text-xs font-semibold rounded-bl-lg">
                   Popular
                 </div>

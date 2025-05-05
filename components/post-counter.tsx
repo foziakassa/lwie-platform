@@ -1,12 +1,12 @@
-// components/PostCounter.tsx
 "use client"
 
 import { useEffect, useState } from "react"
 import { AlertCircle, CheckCircle } from "lucide-react"
-import { checkPostsStatus } from "@/lib/actions"
+import { getUserPostsStatus, type PostsStatus } from "@/lib/api-service"
+import Cookies from "js-cookie"
 
 export function PostCounter({ onUpgradeClick }: { onUpgradeClick: () => void }) {
-  const [postsStatus, setPostsStatus] = useState({
+  const [postsStatus, setPostsStatus] = useState<PostsStatus>({
     remainingFreePosts: 0,
     remainingPaidPosts: 0,
     totalPaidPosts: 0,
@@ -18,7 +18,8 @@ export function PostCounter({ onUpgradeClick }: { onUpgradeClick: () => void }) 
   useEffect(() => {
     const fetchPostsStatus = async () => {
       try {
-        const status = await checkPostsStatus()
+        const userEmail = Cookies.get("customerEmail")
+        const status = await getUserPostsStatus(userEmail)
         setPostsStatus(status)
       } catch (error) {
         console.error("Error fetching posts status:", error)
@@ -50,12 +51,14 @@ export function PostCounter({ onUpgradeClick }: { onUpgradeClick: () => void }) 
         {totalRemaining > 0 ? (
           <>
             <CheckCircle className="h-4 w-4 mr-2" />
-            <span>You have {totalRemaining} post{totalRemaining !== 1 ? "s" : ""} remaining</span>
+            <span>
+              You have {totalRemaining} post{totalRemaining !== 1 ? "s" : ""} remaining
+            </span>
           </>
         ) : (
           <>
             <AlertCircle className="h-4 w-4 mr-2" />
-            <span>You’ve used all your free posts</span>
+            <span>You've used all your free posts</span>
           </>
         )}
       </div>

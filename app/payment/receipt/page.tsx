@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Download, Printer, Home, AlertCircle } from "lucide-react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import Cookies from "js-cookie"
+import { getPaymentReceipt, type Receipt } from "@/lib/api-service"
 
 interface CustomerInfo {
   name: string
@@ -16,6 +17,7 @@ interface CustomerInfo {
   postsCount: number
   date: string
   transactionId: string
+  status?: string
 }
 
 interface UserData {
@@ -33,81 +35,116 @@ export default function ReceiptPage() {
   const [error, setError] = useState(false)
   const receiptRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
-    try {
-      // First, try to retrieve receipt info from sessionStorage
-      const storedInfo = sessionStorage.getItem("customerInfo")
-      let info: CustomerInfo | null = null
+    const fetchReceipt = async () => {
+      try {
+        // First, try to retrieve receipt info from sessionStorage
+        const storedInfo = sessionStorage.getItem("customerInfo")
+        let info: CustomerInfo | null = null
+        let receiptFromApi: Receipt | null = null
 
-      if (storedInfo) {
-        info = JSON.parse(storedInfo)
-      } else {
-        // If no info in sessionStorage, create a minimal object
-        info = {
-          name: "",
-          email: "",
-          plan: "N/A",
-          price: 0,
-          postsCount: 0,
-          date: new Date().toISOString(),
-          transactionId: "N/A",
-        }
-      }
+        // Try to get transaction reference from URL or session storage
+        const txRef = searchParams.get("tx_ref")
+        const storedTxRef = storedInfo ? JSON.parse(storedInfo).transactionId : null
+        const transactionId = txRef || storedTxRef
 
-      // Try to get name and email from cookies first
-      const cookieEmail = Cookies.get("customerEmail")
-      const cookieName = Cookies.get("customerName")
-
-      // If we don't have a name cookie, try to get it from the auth token
-      if (!cookieName) {
-        const userCookie = Cookies.get("user")
-        if (userCookie) {
+        // If we have a transaction ID, try to fetch the receipt from the API
+        if (transactionId) {
           try {
-            const userData = JSON.parse(userCookie) as UserData
-            if (userData.firstName) {
-              // Set the name from the auth token
-              if (info) {
-                info.name = userData.firstName
+            const userEmail = Cookies.get("customerEmail")
+            receiptFromApi = await getPaymentReceipt(transactionId, userEmail)
+
+            if (receiptFromApi) {
+              // Convert API receipt to our format
+              info = {
+                name: receiptFromApi.customerName,
+                email: receiptFromApi.customerEmail,
+                plan: receiptFromApi.plan,
+                price: Number.parseFloat(receiptFromApi.price),
+                postsCount: receiptFromApi.postsCount,
+                date: receiptFromApi.date,
+                transactionId: receiptFromApi.transactionId,
+                status: receiptFromApi.status,
               }
-              // Also store it in a cookie for future use
-              Cookies.set("customerName", userData.firstName, { expires: 365 })
-            }
-            if (userData.email && !cookieEmail) {
-              // Set the email from the auth token if we don't have it in cookies
-              if (info) {
-                info.email = userData.email
-              }
-              // Also store it in a cookie for future use
-              Cookies.set("customerEmail", userData.email, { expires: 365 })
             }
           } catch (err) {
-            console.warn("Failed to parse user cookie:", err)
+            console.warn("Failed to fetch receipt from API:", err)
+            // Continue with local data if API fails
           }
         }
-      } else if (info) {
-        // If we have a name cookie, use it
-        info.name = cookieName.trim()
-      }
 
-      // If we have an email cookie, use it
-      if (cookieEmail && info) {
-        info.email = cookieEmail.trim()
-      }
+        // If API fetch failed or wasn't attempted, use session storage data
+        if (!info && storedInfo) {
+          info = JSON.parse(storedInfo)
+        }
 
-      // If we have at least some basic info, show the receipt
-      if (info && (info.email || info.name)) {
-        setCustomerInfo(info)
-      } else {
+        // If we still don't have info, create a minimal object
+        if (!info) {
+          info = {
+            name: "",
+            email: "",
+            plan: "N/A",
+            price: 0,
+            postsCount: 0,
+            date: new Date().toISOString(),
+            transactionId: "N/A",
+          }
+        }
+
+        // Try to get name and email from cookies if missing
+        const cookieEmail = Cookies.get("customerEmail")
+        const cookieName = Cookies.get("customerName")
+
+        // If we don't have a name cookie, try to get it from the auth token
+        if (!info.name && !cookieName) {
+          const userCookie = Cookies.get("user")
+          if (userCookie) {
+            try {
+              const userData = JSON.parse(userCookie) as UserData
+              if (userData.firstName) {
+                // Set the name from the auth token
+                info.name = userData.firstName
+                // Also store it in a cookie for future use
+                Cookies.set("customerName", userData.firstName, { expires: 365 })
+              }
+              if (userData.email && !cookieEmail && !info.email) {
+                // Set the email from the auth token if we don't have it in cookies
+                info.email = userData.email
+                // Also store it in a cookie for future use
+                Cookies.set("customerEmail", userData.email, { expires: 365 })
+              }
+            } catch (err) {
+              console.warn("Failed to parse user cookie:", err)
+            }
+          }
+        } else if (cookieName && !info.name) {
+          // If we have a name cookie, use it
+          info.name = cookieName.trim()
+        }
+
+        // If we have an email cookie and no email in info, use it
+        if (cookieEmail && !info.email) {
+          info.email = cookieEmail.trim()
+        }
+
+        // If we have at least some basic info, show the receipt
+        if (info && (info.email || info.name)) {
+          setCustomerInfo(info)
+        } else {
+          setError(true)
+        }
+      } catch (err) {
+        console.error("Error retrieving customer info:", err)
         setError(true)
+      } finally {
+        setLoading(false)
       }
-    } catch (err) {
-      console.error("Error retrieving customer info:", err)
-      setError(true)
-    } finally {
-      setLoading(false)
     }
-  }, [])
+
+    fetchReceipt()
+  }, [searchParams])
 
   const handlePrint = () => {
     window.print()
@@ -144,7 +181,7 @@ export default function ReceiptPage() {
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
-      link.download = `receipt-${Date.now()}.html`
+      link.download = `receipt-${customerInfo?.transactionId || Date.now()}.html`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -182,7 +219,7 @@ export default function ReceiptPage() {
             </p>
           </CardContent>
           <CardFooter className="flex justify-center">
-            <Button className="bg-teal-500 hover:bg-teal-600" onClick={() => router.push("/")}>
+            <Button className="bg-teal-500 hover:bg-teal-600" onClick={() => router.push("/plan-selection")}>
               Return to Plans
             </Button>
           </CardFooter>
@@ -265,6 +302,14 @@ export default function ReceiptPage() {
                   <div className="flex justify-between">
                     <span>Payment Method:</span>
                     <span>Chapa Payment</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Status:</span>
+                    <span className={customerInfo.status === "pending" ? "text-amber-500" : "text-green-500"}>
+                      {customerInfo.status
+                        ? customerInfo.status.charAt(0).toUpperCase() + customerInfo.status.slice(1)
+                        : "Completed"}
+                    </span>
                   </div>
                   <div className="flex justify-between font-bold text-teal-600 pt-2 border-t mt-2">
                     <span>Total Paid:</span>

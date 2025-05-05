@@ -281,3 +281,5 @@ export function ServiceBasicInfoForm({ onSaveDraft, onContinue, isLoading, initi
     </motion.div>
   )
 }
+
+export default ServiceBasicInfoForm

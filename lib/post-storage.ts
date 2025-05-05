@@ -154,44 +154,79 @@ export function publishPost(post: Post): Post {
   return publishedPost
 }
 
+// Function to save a post (item or service) to localStorage
+export function savePost(post: any) {
+  try {
+    // Get existing posts
+    const existingPosts = JSON.parse(localStorage.getItem("posts") || "[]")
+
+    // Add the new post
+    existingPosts.push(post)
+
+    // Save back to localStorage
+    localStorage.setItem("posts", JSON.stringify(existingPosts))
+
+    // If the post is published, also add to published_posts
+    if (post.status === "published") {
+      const publishedPosts = JSON.parse(localStorage.getItem("published_posts") || "[]")
+      publishedPosts.push(post)
+      localStorage.setItem("published_posts", JSON.stringify(publishedPosts))
+    }
+
+    return true
+  } catch (error) {
+    console.error("Error saving post:", error)
+    return false
+  }
+}
+
+// Function to get stored posts
+export function getStoredPosts() {
+  try {
+    return JSON.parse(localStorage.getItem("posts") || "[]")
+  } catch (error) {
+    console.error("Error getting posts:", error)
+    return []
+  }
+}
+
 // Get published posts
 export function getPublishedPosts(): Post[] {
-  if (typeof window === "undefined") return []
-
-  const publishedPostsJson = localStorage.getItem(PUBLISHED_POSTS_KEY)
-
-  if (!publishedPostsJson) return []
-
   try {
-    return JSON.parse(publishedPostsJson) as Post[]
+    return JSON.parse(localStorage.getItem("published_posts") || "[]")
   } catch (error) {
-    console.error("Error parsing published posts:", error)
+    console.error("Error getting published posts:", error)
     return []
   }
 }
 
 // Get a specific post by ID
-export function getPostById(id: string): Post | null {
-  if (typeof window === "undefined") return null
-
-  // Check drafts first
-  const itemDraft = getDraftPost("item")
-  if (itemDraft && itemDraft.id === id) return itemDraft
-
-  const serviceDraft = getDraftPost("service")
-  if (serviceDraft && serviceDraft.id === id) return serviceDraft
-
-  // Check published posts
-  const publishedPosts = getPublishedPosts()
-  return publishedPosts.find((post) => post.id === id) || null
+export function getPostById(id: string) {
+  try {
+    const posts = JSON.parse(localStorage.getItem("posts") || "[]")
+    return posts.find((post: any) => post.id === id) || null
+  } catch (error) {
+    console.error("Error getting post by ID:", error)
+    return null
+  }
 }
 
 // Delete a post
-export function deletePost(id: string): boolean {
-  const posts = getPublishedPosts()
-  const updatedPosts = posts.filter((post) => post.id !== id)
-  localStorage.setItem(POSTS_KEY, JSON.stringify(updatedPosts))
-  return posts.length !== updatedPosts.length
+export function deletePost(id: string) {
+  try {
+    let posts = JSON.parse(localStorage.getItem("posts") || "[]")
+    posts = posts.filter((post: any) => post.id !== id)
+    localStorage.setItem("posts", JSON.stringify(posts))
+
+    let publishedPosts = JSON.parse(localStorage.getItem("published_posts") || "[]")
+    publishedPosts = publishedPosts.filter((post: any) => post.id !== id)
+    localStorage.setItem("published_posts", JSON.stringify(publishedPosts))
+
+    return true
+  } catch (error) {
+    console.error("Error deleting post:", error)
+    return false
+  }
 }
 
 // Update a post

@@ -1,460 +1,311 @@
-"use client"
+import { fetchItemById } from "../../../lib/api-client"
+import type { Metadata } from "next"
+import Image from "next/image"
+import Link from "next/link"
+import { Badge } from "../../../components/ui/badge"
+import { Button } from "../../../components/ui/button"
+import { Card, CardContent } from "../../../components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs"
+import { Heart, Share2, Flag, MapPin, Calendar, User, Shield } from "lucide-react"
 
-import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
-import { fetchItemById } from "@/lib/api-client"
-import { MapPin, Phone, Mail, Calendar, ArrowLeft, Share2, Heart, Flag } from "lucide-react"
-import { toast } from "@/components/ui/use-toast"
-
-export default function ItemDetailPage() {
-  const params = useParams()
-  const router = useRouter()
-  const [item, setItem] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [isFavorite, setIsFavorite] = useState(false)
-
-  // Extract the item ID from the slug
-  const itemId = params.slug.toString().split("-").pop()
-
-  useEffect(() => {
-    const fetchItemDetails = async () => {
-      try {
-        setLoading(true)
-        const itemData = await fetchItemById(itemId)
-        setItem(itemData)
-
-        // Set the first image as selected
-        if (itemData.images && itemData.images.length > 0) {
-          const mainImage = itemData.images.find((img: any) => img.is_main)
-          setSelectedImage(mainImage ? mainImage.url : itemData.images[0].url)
-        }
-      } catch (error) {
-        console.error("Error fetching item details:", error)
-        toast({
-          title: "Error loading item",
-          description: "There was a problem loading the item details. Please try again later.",
-          variant: "destructive",
-        })
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (itemId) {
-      fetchItemDetails()
-    }
-  }, [itemId])
-
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite)
-    toast({
-      title: isFavorite ? "Removed from favorites" : "Added to favorites",
-      description: isFavorite ? "Item removed from your favorites" : "Item added to your favorites",
-    })
+interface Item {
+  id: string
+  title: string
+  description: string
+  images: string[]
+  location?: string
+  postedDate?: string
+  categories?: string[]
+  condition?: string
+  specifications?: { name: string; value: string }[]
+  tradePreferences?: {
+    lookingFor?: string
+    tradeValue?: string
+    openToOffers?: boolean
   }
-
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: item.title,
-        text: `Check out this item: ${item.title}`,
-        url: window.location.href,
-      })
-    } else {
-      // Fallback for browsers that don't support the Web Share API
-      navigator.clipboard.writeText(window.location.href)
-      toast({
-        title: "Link copied",
-        description: "Item link copied to clipboard",
-      })
-    }
+  postedBy?: {
+    name?: string
+    memberSince?: string
+    responseRate?: string
+    responseTime?: string
   }
+}
 
-  const handleReport = () => {
-    toast({
-      title: "Report submitted",
-      description: "Thank you for reporting this item. We will review it shortly.",
-    })
+interface FetchItemResponseSuccess {
+  success: true
+  item: Item
+}
+
+interface FetchItemResponseError {
+  success: false
+  error: string
+}
+
+type FetchItemResponse = FetchItemResponseSuccess | FetchItemResponseError
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const response = (await fetchItemById(params.slug)) as FetchItemResponse
+
+  return {
+    title: response.success ? response.item.title : "Item Details",
+    description: response.success ? response.item.description : "View item details",
   }
+}
 
-  const handleContact = () => {
-    toast({
-      title: "Contact initiated",
-      description: "You can now contact the seller directly.",
-    })
-  }
+export default async function ItemDetailPage({ params }: { params: { slug: string } }) {
+  const response = (await fetchItemById(params.slug)) as FetchItemResponse
 
-  if (loading) {
+  if (!response.success) {
     return (
-      <div className="min-h-screen bg-gray-100">
-        <Header />
-        <main className="container mx-auto px-4 py-8">
-          <div className="flex justify-center items-center h-96">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-600"></div>
-          </div>
-        </main>
-        <Footer />
+      <div className="container mx-auto py-12 text-center">
+        <h1 className="text-2xl font-bold mb-4">Item not found</h1>
+        <p>The item you are looking for does not exist or has been removed.</p>
+        <Link href="/" className="text-blue-500 hover:underline mt-4 inline-block">
+          Return to home
+        </Link>
       </div>
     )
   }
 
-  if (!item) {
-    return (
-      <div className="min-h-screen bg-gray-100">
-        <Header />
-        <main className="container mx-auto px-4 py-8">
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-            <h1 className="text-2xl font-bold mb-4">Item Not Found</h1>
-            <p className="text-gray-600 mb-6">The item you're looking for doesn't exist or has been removed.</p>
-            <Button onClick={() => router.push("/")} className="bg-teal-600 hover:bg-teal-700">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
-            </Button>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    )
-  }
+  const item = response.item
+
+  const similarItems = [
+    {
+      id: "1",
+      title: "Vintage Camera",
+      image: "/placeholder.svg?height=200&width=300",
+      location: "New York",
+      postedDate: "2 days ago",
+    },
+    {
+      id: "2",
+      title: "Professional Tripod",
+      image: "/placeholder.svg?height=200&width=300",
+      location: "Los Angeles",
+      postedDate: "1 week ago",
+    },
+    {
+      id: "3",
+      title: "Camera Lens Kit",
+      image: "/placeholder.svg?height=200&width=300",
+      location: "Chicago",
+      postedDate: "3 days ago",
+    },
+  ]
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <Header />
+    <div className="container mx-auto py-8 px-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column - Item Details */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Image Gallery */}
+          <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
+            <Image
+              src={item.images?.[0] || "/placeholder.svg?height=400&width=600"}
+              alt={item.title}
+              fill
+              className="object-cover"
+            />
+          </div>
 
-      <main className="container mx-auto px-4 py-8">
-        <Button variant="outline" onClick={() => router.back()} className="mb-6 flex items-center text-gray-600">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Left Column - Images */}
-          <div className="md:col-span-2">
-            <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
-              <div className="relative h-[400px]">
-                <img
-                  src={selectedImage || "/placeholder.svg?height=400&width=600"}
-                  alt={item.title}
-                  className="w-full h-full object-contain"
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {(item.images || []).slice(1).map((image: string, index: number) => (
+              <div key={index} className="relative w-24 h-24 flex-shrink-0 rounded-md overflow-hidden">
+                <Image
+                  src={image || "/placeholder.svg?height=100&width=100"}
+                  alt={`${item.title} - image ${index + 2}`}
+                  fill
+                  className="object-cover"
                 />
               </div>
-
-              {/* Thumbnail Gallery */}
-              {item.images && item.images.length > 1 && (
-                <div className="p-4 flex gap-2 overflow-x-auto">
-                  {item.images.map((image: any, index: number) => (
-                    <button
-                      key={index}
-                      onClick={() => setSelectedImage(image.url)}
-                      className={`flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 ${
-                        selectedImage === image.url ? "border-teal-500" : "border-transparent"
-                      }`}
-                    >
-                      <img
-                        src={image.url || "/placeholder.svg"}
-                        alt={`Thumbnail ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Item Details */}
-            <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-              <Tabs defaultValue="details">
-                <TabsList className="mb-4">
-                  <TabsTrigger value="details">Details</TabsTrigger>
-                  <TabsTrigger value="specifications">Specifications</TabsTrigger>
-                  <TabsTrigger value="trade">Trade Preferences</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="details" className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Description</h3>
-                    <p className="text-gray-700 whitespace-pre-line">{item.description}</p>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Location</h3>
-                    <div className="flex items-center text-gray-700">
-                      <MapPin className="h-5 w-5 mr-2 text-gray-500" />
-                      <span>{item.location}</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Category</h3>
-                    <Badge variant="outline" className="text-sm font-medium">
-                      {item.category_name}
-                    </Badge>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="specifications" className="space-y-4">
-                  {item.specifications ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {item.specifications.brand && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-500">Brand</h4>
-                          <p>{item.specifications.brand}</p>
-                        </div>
-                      )}
-                      {item.specifications.model && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-500">Model</h4>
-                          <p>{item.specifications.model}</p>
-                        </div>
-                      )}
-                      {item.specifications.year && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-500">Year</h4>
-                          <p>{item.specifications.year}</p>
-                        </div>
-                      )}
-                      {item.specifications.storage && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-500">Storage</h4>
-                          <p>{item.specifications.storage}</p>
-                        </div>
-                      )}
-                      {item.specifications.ram && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-500">RAM</h4>
-                          <p>{item.specifications.ram}</p>
-                        </div>
-                      )}
-                      {item.specifications.camera && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-500">Camera</h4>
-                          <p>{item.specifications.camera}</p>
-                        </div>
-                      )}
-                      {item.specifications.battery && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-500">Battery</h4>
-                          <p>{item.specifications.battery}</p>
-                        </div>
-                      )}
-                      {item.specifications.additionalDetails && (
-                        <div className="md:col-span-2">
-                          <h4 className="text-sm font-semibold text-gray-500">Additional Details</h4>
-                          <p className="whitespace-pre-line">{item.specifications.additionalDetails}</p>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-gray-500">No specifications available for this item.</p>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="trade" className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Trade Options</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center">
-                        <Badge
-                          className={`mr-2 ${
-                            item.trade_type === "itemForItem" || item.trade_type === "openToAll"
-                              ? "bg-teal-100 text-teal-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {item.trade_type === "itemForItem" || item.trade_type === "openToAll"
-                            ? "Accepts Trades"
-                            : "No Trades"}
-                        </Badge>
-                        <Badge
-                          className={`${
-                            item.accept_cash ? "bg-amber-100 text-amber-800" : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {item.accept_cash ? "Accepts Cash" : "No Cash"}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-
-                  {item.specifications && item.specifications.meetupPreference && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">Meetup Preference</h3>
-                      <p className="text-gray-700">{item.specifications.meetupPreference}</p>
-                    </div>
-                  )}
-
-                  {item.specifications && item.specifications.paymentMethods && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">Payment Methods</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {item.specifications.paymentMethods.map((method: string) => (
-                          <Badge key={method} variant="outline" className="text-sm font-medium">
-                            {method}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {item.specifications &&
-                    item.specifications.preferredCategories &&
-                    item.specifications.preferredCategories.length > 0 && (
-                      <div>
-                        <h3 className="text-lg font-semibold mb-2">Preferred Categories for Trade</h3>
-                        <div className="flex flex-wrap gap-2">
-                          {item.specifications.preferredCategories.map((categoryId: string) => (
-                            <Badge
-                              key={categoryId}
-                              className="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-sm"
-                            >
-                              {categoryId}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                  {item.specifications && item.specifications.specificItems && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">Specific Items Looking For</h3>
-                      <p className="text-gray-700 whitespace-pre-line">{item.specifications.specificItems}</p>
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
-            </div>
-          </div>
-
-          {/* Right Column - Price and Seller Info */}
-          <div className="space-y-6">
-            <Card>
-              <CardContent className="p-6">
-                <div className="mb-4">
-                  <h1 className="text-2xl font-bold mb-2">{item.title}</h1>
-                  <div className="flex items-center mb-2">
-                    <Badge variant="outline" className="mr-2 text-sm font-medium">
-                      {item.condition}
-                    </Badge>
-                    <span className="text-gray-500 text-sm">
-                      Posted {new Date(item.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="text-3xl font-bold text-teal-700 mb-4">{item.price.toLocaleString()} ETB</div>
-                </div>
-
-                <div className="space-y-4">
-                  <Button className="w-full bg-teal-600 hover:bg-teal-700" onClick={handleContact}>
-                    Contact Seller
-                  </Button>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1 flex items-center justify-center"
-                      onClick={toggleFavorite}
-                    >
-                      <Heart className={`mr-1 h-4 w-4 ${isFavorite ? "fill-red-500 text-red-500" : ""}`} />
-                      {isFavorite ? "Saved" : "Save"}
-                    </Button>
-                    <Button variant="outline" className="flex-1 flex items-center justify-center" onClick={handleShare}>
-                      <Share2 className="mr-1 h-4 w-4" />
-                      Share
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="text-lg font-semibold mb-4">Seller Information</h2>
-                <div className="space-y-3">
-                  <div className="flex items-center">
-                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-xl mr-3">
-                      {item.user_name ? item.user_name.charAt(0).toUpperCase() : "U"}
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{item.user_name || "Anonymous User"}</h3>
-                      <p className="text-sm text-gray-500">Member since {item.user_joined || "January 2023"}</p>
-                    </div>
-                  </div>
-
-                  {item.user_phone && (
-                    <div className="flex items-center text-gray-700">
-                      <Phone className="h-4 w-4 mr-2 text-gray-500" />
-                      <span>{item.user_phone}</span>
-                    </div>
-                  )}
-
-                  {item.user_email && (
-                    <div className="flex items-center text-gray-700">
-                      <Mail className="h-4 w-4 mr-2 text-gray-500" />
-                      <span>{item.user_email}</span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center text-gray-700">
-                    <Calendar className="h-4 w-4 mr-2 text-gray-500" />
-                    <span>
-                      {item.created_at
-                        ? `Posted on ${new Date(item.created_at).toLocaleDateString()}`
-                        : "Recently posted"}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="text-lg font-semibold mb-4">Safety Tips</h2>
-                <ul className="text-sm text-gray-700 space-y-2 list-disc pl-5">
-                  <li>Meet in a public place</li>
-                  <li>Check the item before paying</li>
-                  <li>Pay only after inspecting the item</li>
-                  <li>Don't send money in advance</li>
-                </ul>
-
-                <Button
-                  variant="outline"
-                  className="w-full mt-4 text-red-600 border-red-200 hover:bg-red-50 flex items-center justify-center"
-                  onClick={handleReport}
-                >
-                  <Flag className="mr-1 h-4 w-4" />
-                  Report this item
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* Similar Items */}
-        <div className="mt-10">
-          <h2 className="text-2xl font-bold mb-4">Similar Items</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {/* Placeholder for similar items */}
-            {[1, 2, 3, 4].map((i) => (
-              <Card key={i} className="overflow-hidden">
-                <div className="h-48 bg-gray-200"></div>
-                <CardContent className="p-4">
-                  <div className="h-5 bg-gray-200 rounded mb-2 w-3/4"></div>
-                  <div className="h-4 bg-gray-200 rounded mb-2 w-1/2"></div>
-                  <div className="h-6 bg-gray-200 rounded w-1/3"></div>
-                </CardContent>
-              </Card>
             ))}
           </div>
-        </div>
-      </main>
 
-      <Footer />
+          {/* Action Buttons */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Heart size={16} />
+                <span>Save</span>
+              </Button>
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Share2 size={16} />
+                <span>Share</span>
+              </Button>
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Flag size={16} />
+                <span>Report</span>
+              </Button>
+            </div>
+            <div className="text-sm text-gray-500">ID: {item.id}</div>
+          </div>
+
+          {/* Item Info */}
+          <div>
+            <h1 className="text-3xl font-bold">{item.title}</h1>
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-1 text-gray-500">
+                <MapPin size={16} />
+                <span>{item.location || "Location not specified"}</span>
+              </div>
+              <div className="flex items-center gap-1 text-gray-500">
+                <Calendar size={16} />
+                <span>{item.postedDate || "Recently posted"}</span>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {item.categories?.map((category: string, index: number) => (
+                <Badge key={index} variant="secondary">
+                  {category}
+                </Badge>
+              ))}
+              {item.condition && (
+                <Badge variant="outline" className="bg-green-50">
+                  {item.condition}
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <Tabs defaultValue="details" className="w-full">
+            <TabsList className="grid grid-cols-3 mb-4">
+              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="specifications">Specifications</TabsTrigger>
+              <TabsTrigger value="trade">Trade Preferences</TabsTrigger>
+            </TabsList>
+            <TabsContent value="details" className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium mb-2">Description</h3>
+                <p className="text-gray-700 whitespace-pre-line">{item.description}</p>
+              </div>
+            </TabsContent>
+            <TabsContent value="specifications" className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium mb-2">Item Specifications</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {item.specifications?.map((spec: { name: string; value: string }, index: number) => (
+                    <div key={index} className="flex justify-between">
+                      <span className="font-medium">{spec.name}:</span>
+                      <span className="text-gray-700">{spec.value}</span>
+                    </div>
+                  )) || <p className="text-gray-500 col-span-2">No specifications provided</p>}
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="trade" className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium mb-2">Trade Preferences</h3>
+                <div className="space-y-2">
+                  <p>
+                    <strong>Looking for:</strong> {item.tradePreferences?.lookingFor || "Not specified"}
+                  </p>
+                  <p>
+                    <strong>Trade Value:</strong> {item.tradePreferences?.tradeValue || "Not specified"}
+                  </p>
+                  <p>
+                    <strong>Open to Offers:</strong> {item.tradePreferences?.openToOffers ? "Yes" : "No"}
+                  </p>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          {/* Similar Items */}
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold mb-4">Similar Items</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {similarItems.map((similarItem) => (
+                <Link href={`/items/${similarItem.id}`} key={similarItem.id}>
+                  <Card className="h-full hover:shadow-md transition-shadow">
+                    <div className="relative aspect-video">
+                      <Image
+                        src={similarItem.image || "/placeholder.svg"}
+                        alt={similarItem.title}
+                        fill
+                        className="object-cover rounded-t-lg"
+                      />
+                    </div>
+                    <CardContent className="p-4">
+                      <h3 className="font-medium truncate">{similarItem.title}</h3>
+                      <div className="flex justify-between text-sm text-gray-500 mt-2">
+                        <span>{similarItem.location}</span>
+                        <span>{similarItem.postedDate}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column - Poster Info & Actions */}
+        <div className="space-y-6">
+          {/* Poster Info */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="relative w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
+                  <User className="absolute inset-0 m-auto text-gray-400" size={24} />
+                </div>
+                <div>
+                  <h3 className="font-medium">{item.postedBy?.name || "Anonymous User"}</h3>
+                  <p className="text-sm text-gray-500">Member since {item.postedBy?.memberSince || "recently"}</p>
+                </div>
+              </div>
+
+              <Button className="w-full mb-4">Send Request</Button>
+
+              <div className="text-sm text-gray-500">
+                <p>Response rate: {item.postedBy?.responseRate || "Unknown"}</p>
+                <p>Average response time: {item.postedBy?.responseTime || "Unknown"}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Safety Tips */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Shield className="text-green-600" />
+                <h3 className="font-medium">Safety Tips</h3>
+              </div>
+              <ul className="text-sm space-y-2 text-gray-700">
+                <li>• Meet in a public place</li>
+                <li>• Don't pay in advance</li>
+                <li>• Inspect the item before trading</li>
+                <li>• Verify the item's condition and authenticity</li>
+              </ul>
+              <Link href="/safety" className="text-sm text-blue-600 hover:underline block mt-4">
+                Learn more about safe trading
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Item Location */}
+          {item.location && (
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <MapPin className="text-blue-600" />
+                  <h3 className="font-medium">Item Location</h3>
+                </div>
+                <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden mb-2">
+                  <Image
+                    src="/placeholder.svg?height=200&width=300&text=Map"
+                    alt="Location map"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <p className="text-sm text-gray-700">{item.location}</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Filter, MapPin, ArrowRight, Heart, Share2, Gift } from "lucide-react"
 import ApprovedAdvertisement from "./ad/page"
 import ThreeDAdvertisement from '../components/3d-advertisement-carousel'
+import { fetchItems } from "@/lib/api-client"
+import { toast } from "@/components/ui/use-toast"
 
 // Mock data for featured items
 const featuredItems = [
@@ -104,7 +106,8 @@ export default function Home() {
   const [pendingPosts, setPendingPosts] = useState<any[]>([])
   const router = useRouter()
 
-  // Simulating data loading
+
+  const [items, setItems] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -129,11 +132,41 @@ export default function Home() {
       setPendingPosts([])
     }, 300000)
 
+    const loadItems = async () => {
+      try {
+        setIsLoading(true)
+        const response = await fetchItems()
+        if (response.success) {
+          setItems(response.items)
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to load listings",
+            variant: "destructive",
+          })
+        }
+      } catch (error) {
+        console.error("Error loading items:", error)
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadItems()
     return () => {
       clearTimeout(timer)
       clearTimeout(clearTimer)
     }
   }, [])
+
+  const generateSlug = (title: string) => {
+    return title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+  }
 
   const toggleLike = (itemId: number) => {
     setLikedItems((prev) => {
@@ -220,19 +253,108 @@ export default function Home() {
               transition={{ duration: 0.3 }}
               className="mb-12"
             >
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white"> Listings</h2>
-                <div className="flex items-center space-x-4">
-                  <button className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-md shadow hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                    <Filter className="h-4 w-4" />
-                    <span>Filter</span>
-                  </button>
-                  <button className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-md shadow hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                    <MapPin className="h-4 w-4" />
-                    <span>Location</span>
-                  </button>
-                </div>
-              </div>
+              {/* Listings */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">Listings</h2>
+            <div className="flex items-center space-x-2">
+              <button className="inline-flex items-center rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                  />
+                </svg>
+                Filter
+              </button>
+              <button className="inline-flex items-center rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                <MapPin className="h-4 w-4 mr-1" />
+                Location
+              </button>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {Array(4)
+                .fill(0)
+                .map((_, i) => (
+                  <div key={i} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <div className="h-48 bg-gray-200 animate-pulse"></div>
+                    <div className="p-4">
+                      <div className="h-5 bg-gray-200 animate-pulse mb-2 w-3/4"></div>
+                      <div className="h-4 bg-gray-200 animate-pulse mb-2"></div>
+                      <div className="h-3 bg-gray-200 animate-pulse w-1/2"></div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {items.map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/products/${generateSlug(item.title)}`}
+                  className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                >
+                  <div className="relative h-48">
+                    <img
+                      src={item.images[0] || "/placeholder.svg?height=300&width=300"}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2 right-2 flex space-x-1">
+                      <button
+                        className="p-1.5 bg-white rounded-full shadow-sm hover:bg-gray-100"
+                        title="Like"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                        }}
+                      >
+                        <Heart className="h-4 w-4 text-gray-600" />
+                      </button>
+                      <button
+                        className="p-1.5 bg-white rounded-full shadow-sm hover:bg-gray-100"
+                        title="Share"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                        }}
+                      >
+                        <Share2 className="h-4 w-4 text-gray-600" />
+                      </button>
+                    </div>
+                    <div className="absolute top-2 left-2">
+                      <span className="bg-white text-xs px-2 py-0.5 rounded font-medium text-gray-700">
+                        {item.condition}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-3">
+                    <div className="flex justify-between">
+                      <p className="font-bold text-lg">{item.price.toLocaleString()} ETB</p>
+                      <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-700">{item.condition}</span>
+                    </div>
+                    <h3 className="text-sm mt-1">{item.title}</h3>
+                    <div className="flex items-center text-xs text-gray-500 mt-1">
+                      <MapPin className="h-3 w-3 mr-1" />
+                      <span>{item.location}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
 
               {isLoading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -271,6 +393,7 @@ export default function Home() {
                               e.stopPropagation()
                               toggleLike(item.id)
                             }}
+                            title={likedItems.includes(item.id) ? "Unlike" : "Like"}
                             className={`p-2 rounded-full ${likedItems.includes(item.id)
                               ? "bg-rose-500 text-white"
                               : "bg-white/80 text-gray-700 hover:bg-white"
@@ -285,6 +408,7 @@ export default function Home() {
                               e.stopPropagation()
                               // Share functionality would go here
                             }}
+                            title="Share"
                             className="p-2 rounded-full bg-white/80 text-gray-700 hover:bg-white"
                           >
                             <Share2 className="h-4 w-4" />

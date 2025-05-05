@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Upload, X, ImageIcon } from "lucide-react"
 import { uploadItemImages, uploadServiceImages } from "@/lib/api-client"
@@ -11,7 +11,7 @@ import { toast } from "@/components/ui/use-toast"
 interface ImageUploaderProps {
   entityType: "item" | "service"
   initialImages?: string[]
-  onImagesUploaded: (imageUrls: string[]) => void
+  onImagesUploaded: (images: string[]) => void
   maxImages?: number
 }
 
@@ -20,16 +20,21 @@ export function ImageUploader({ entityType, initialImages = [], onImagesUploaded
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return
+  useEffect(() => {
+    if (initialImages.length > 0) {
+      setImages(initialImages)
+    }
+  }, [initialImages])
 
-    const files = Array.from(e.target.files)
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
 
     // Check if adding these files would exceed the maximum
     if (images.length + files.length > maxImages) {
       toast({
         title: `Maximum ${maxImages} images allowed`,
-        description: `Please select fewer images. You can upload ${maxImages - images.length} more.`,
+        description: `You can only upload up to ${maxImages} images.`,
         variant: "destructive",
       })
       return
@@ -38,25 +43,43 @@ export function ImageUploader({ entityType, initialImages = [], onImagesUploaded
     setIsUploading(true)
 
     try {
-      // Upload the images to the server
-      const response = entityType === "item" ? await uploadItemImages(files) : await uploadServiceImages(files)
+      // Convert FileList to array
+      const fileArray = Array.from(files)
 
-      if (response.success && response.urls) {
-        const newImages = [...images, ...response.urls]
-        setImages(newImages)
-        onImagesUploaded(newImages)
-
+      // Validate file types
+      const validFiles = fileArray.filter((file) => file.type.startsWith("image/"))
+      if (validFiles.length !== fileArray.length) {
         toast({
-          title: "Images uploaded successfully",
-          description: `${files.length} image${files.length > 1 ? "s" : ""} uploaded.`,
+          title: "Invalid file type",
+          description: "Only image files are allowed.",
+          variant: "destructive",
         })
-      } else {
-        throw new Error("Failed to upload images")
       }
+
+      // Upload images based on entity type
+      const uploadFunction = entityType === "item" ? uploadItemImages : uploadServiceImages
+      const response = await uploadFunction(validFiles)
+      let uploadedUrls: string[] = []
+
+      if (Array.isArray(response)) {
+        uploadedUrls = response
+      } else if (response && typeof response === "object" && "success" in response && "urls" in response) {
+        uploadedUrls = response.urls
+      }
+
+      // Update state with new images
+      const newImages = [...images, ...uploadedUrls]
+      setImages(newImages)
+      onImagesUploaded(newImages)
+
+      toast({
+        title: "Images uploaded successfully",
+        description: `${uploadedUrls.length} image(s) have been uploaded.`,
+      })
     } catch (error) {
       console.error("Error uploading images:", error)
       toast({
-        title: "Error uploading images",
+        title: "Upload failed",
         description: "There was a problem uploading your images. Please try again.",
         variant: "destructive",
       })
@@ -69,153 +92,92 @@ export function ImageUploader({ entityType, initialImages = [], onImagesUploaded
     }
   }
 
-  const handleRemoveImage = (index: number) => {
+  const removeImage = (index: number) => {
     const newImages = [...images]
     newImages.splice(index, 1)
     setImages(newImages)
     onImagesUploaded(newImages)
   }
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-  }
-
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-
-    if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) return
-
-    const files = Array.from(e.dataTransfer.files).filter((file) => file.type.startsWith("image/"))
-
-    if (files.length === 0) {
-      toast({
-        title: "No valid images",
-        description: "Please drop image files only.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    // Check if adding these files would exceed the maximum
-    if (images.length + files.length > maxImages) {
-      toast({
-        title: `Maximum ${maxImages} images allowed`,
-        description: `Please select fewer images. You can upload ${maxImages - images.length} more.`,
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsUploading(true)
-
-    try {
-      // Upload the images to the server
-      const response = entityType === "item" ? await uploadItemImages(files) : await uploadServiceImages(files)
-
-      if (response.success && response.urls) {
-        const newImages = [...images, ...response.urls]
-        setImages(newImages)
-        onImagesUploaded(newImages)
-
-        toast({
-          title: "Images uploaded successfully",
-          description: `${files.length} image${files.length > 1 ? "s" : ""} uploaded.`,
-        })
-      } else {
-        throw new Error("Failed to upload images")
-      }
-    } catch (error) {
-      console.error("Error uploading images:", error)
-      toast({
-        title: "Error uploading images",
-        description: "There was a problem uploading your images. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsUploading(false)
-    }
-  }
-
   return (
     <div className="space-y-4">
-      <div
-        className={`border-2 border-dashed rounded-lg p-6 text-center ${
-          isUploading ? "bg-gray-50 border-gray-300" : "border-gray-300 hover:border-teal-500 hover:bg-teal-50/30"
-        }`}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-      >
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={handleFileChange}
-          ref={fileInputRef}
-          disabled={isUploading || images.length >= maxImages}
-        />
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+        {images.map((image, index) => (
+          <div key={index} className="relative h-32 bg-gray-100 rounded-md overflow-hidden">
+            <img
+              src={image || "/placeholder.svg"}
+              alt={`Uploaded ${index + 1}`}
+              className="w-full h-full object-cover"
+            />
+            <button
+              type="button"
+              title="Remove image"
+              onClick={() => removeImage(index)}
+              className="absolute top-1 right-1 bg-white rounded-full p-1 shadow-sm hover:bg-gray-100"
+            >
+              <X className="h-4 w-4 text-gray-600" />
+            </button>
+          </div>
+        ))}
 
-        <div className="flex flex-col items-center justify-center space-y-3">
-          {isUploading ? (
-            <>
-              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-teal-600"></div>
-              <p className="text-gray-500">Uploading images...</p>
-            </>
-          ) : (
-            <>
-              <Upload className="h-10 w-10 text-gray-400" />
-              <div>
-                <p className="text-base font-medium">
-                  {images.length === 0
-                    ? "Drag and drop your images here"
-                    : `${images.length} of ${maxImages} images uploaded`}
-                </p>
-                <p className="text-sm text-gray-500 mt-1">
-                  {images.length >= maxImages ? "Maximum number of images reached" : "PNG, JPG or JPEG (max. 5MB each)"}
-                </p>
+        {images.length < maxImages && (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="h-32 border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center hover:border-gray-400 transition-colors"
+            disabled={isUploading}
+          >
+            {isUploading ? (
+              <div className="flex flex-col items-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-500"></div>
+                <span className="mt-2 text-sm text-gray-500">Uploading...</span>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={images.length >= maxImages}
-                className="mt-2"
-              >
-                <ImageIcon className="mr-2 h-4 w-4" />
-                Select Images
-              </Button>
-            </>
-          )}
-        </div>
+            ) : (
+              <>
+                <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                <span className="text-sm text-gray-500">Upload Image</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
-      {images.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {images.map((image, index) => (
-            <div key={index} className="relative group">
-              <div className="aspect-square rounded-md overflow-hidden border border-gray-200">
-                <img
-                  src={image || "/placeholder.svg"}
-                  alt={`Uploaded ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => handleRemoveImage(index)}
-                className="absolute top-1 right-1 bg-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <X className="h-4 w-4 text-red-500" />
-              </button>
-              {index === 0 && (
-                <div className="absolute bottom-1 left-1 bg-teal-500 text-white text-xs px-2 py-0.5 rounded">Main</div>
-              )}
-            </div>
-          ))}
+      {images.length === 0 && (
+        <div className="border-2 border-dashed border-gray-300 rounded-md p-8 text-center">
+          <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-500 mb-4">
+            {entityType === "service" ? "No images uploaded yet (optional)" : "No images uploaded yet"}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="mx-auto"
+          >
+            {isUploading ? "Uploading..." : "Upload Images"}
+          </Button>
         </div>
       )}
+
+      <input
+        type="file"
+        aria-label="Upload images"
+        title="Upload images"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/*"
+        multiple
+        className="hidden"
+        disabled={isUploading || images.length >= maxImages}
+      />
+
+      <p className="text-sm text-gray-500">
+        {images.length} of {maxImages} images uploaded. {maxImages - images.length} remaining.
+        {entityType === "service" && " (Images are optional for services)"}
+      </p>
     </div>
   )
 }
+
+export default ImageUploader

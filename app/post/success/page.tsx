@@ -1,159 +1,88 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
-import { CheckCircle, ArrowRight, Home, Eye } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { motion } from "framer-motion"
+import { CheckCircle, ArrowRight, Home, Eye } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { getPublishedPosts } from "@/lib/post-storage"
 
 export default function SuccessPage() {
   const router = useRouter()
-  const [countdown, setCountdown] = useState(5)
-  const [postType, setPostType] = useState<"item" | "service" | null>(null)
-  const [postId, setPostId] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const [post, setPost] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check if there's a post ID in local storage or URL params
-    const searchParams = new URLSearchParams(window.location.search)
-    const typeParam = searchParams.get("type") as "item" | "service" | null
-    const idParam = searchParams.get("id")
+    // Check if there's a postId in the URL
+    const postId = searchParams.get("postId")
 
-    if (typeParam && idParam) {
-      setPostType(typeParam)
-      setPostId(idParam)
-    } else {
-      // Default to item if not specified
-      setPostType("item")
-      // Generate a random ID for demo purposes
-      setPostId(Math.random().toString(36).substring(2, 15))
+    if (postId) {
+      // Get the post from localStorage
+      const posts = getPublishedPosts()
+      const foundPost = posts.find((p: any) => p.id === postId)
+
+      if (foundPost) {
+        setPost(foundPost)
+      }
     }
 
-    // Start countdown for auto-redirect
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          router.push("/")
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
+    setLoading(false)
+  }, [searchParams])
 
-    return () => clearInterval(timer)
-  }, [router])
+  // Generate a slug from the title
+  const generateSlug = (title: string, id: string) => {
+    return `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${id}`
+  }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <Header />
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="bg-white rounded-xl shadow-lg border p-8 max-w-md w-full text-center"
+      >
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+          className="mx-auto mb-6 bg-green-100 rounded-full p-3 w-20 h-20 flex items-center justify-center"
+        >
+          <CheckCircle className="h-12 w-12 text-green-600" />
+        </motion.div>
 
-      <main className="container mx-auto px-4 py-12">
-        <Card className="max-w-2xl mx-auto">
-          <CardContent className="p-8 text-center">
-            <div className="flex justify-center mb-6">
-              <CheckCircle className="h-20 w-20 text-green-500" />
-            </div>
+        <h1 className="text-2xl font-bold mb-2">Post Submitted Successfully!</h1>
+        <p className="text-gray-600 mb-6">
+          Your {post?.type || "post"} has been published and is now visible to everyone.
+        </p>
 
-            <h1 className="text-3xl font-bold mb-4">Post Submitted Successfully!</h1>
-            <p className="text-gray-600 mb-8">
-              Your {postType} has been posted and is now visible to everyone. Thank you for using our platform!
-            </p>
+        <div className="space-y-4">
+          {post && (
+            <Link href={`/${post.type}s/${generateSlug(post.title, post.id)}`} className="block w-full">
+              <Button variant="outline" className="w-full flex items-center justify-center">
+                <Eye className="mr-2 h-4 w-4" />
+                View Your Post
+              </Button>
+            </Link>
+          )}
 
-            <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
-              <Link href="/">
-                <Button className="w-full sm:w-auto flex items-center justify-center gap-2">
-                  <Home className="h-4 w-4" />
-                  Go to Home
-                </Button>
-              </Link>
+          <Link href="/" className="block w-full">
+            <Button className="w-full bg-teal-600 hover:bg-teal-700 flex items-center justify-center">
+              <Home className="mr-2 h-4 w-4" />
+              Go to Home
+            </Button>
+          </Link>
 
-              <Link href={`/${postType}s/${postId}`}>
-                <Button variant="outline" className="w-full sm:w-auto flex items-center justify-center gap-2">
-                  <Eye className="h-4 w-4" />
-                  View Your Post
-                </Button>
-              </Link>
-            </div>
-
-            <div className="text-sm text-gray-500">
-              Redirecting to home page in {countdown} seconds...
-              <div className="mt-2 h-1 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-teal-500 transition-all duration-1000"
-                  style={{ width: `${(countdown / 5) * 100}%` }}
-                ></div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="max-w-2xl mx-auto mt-8">
-          <h2 className="text-xl font-bold mb-4">What's Next?</h2>
-          <div className="bg-white rounded-lg shadow p-6">
-            <ol className="space-y-4">
-              <li className="flex items-start">
-                <div className="flex-shrink-0 bg-teal-100 text-teal-800 font-bold rounded-full w-6 h-6 flex items-center justify-center mr-3">
-                  1
-                </div>
-                <div>
-                  <h3 className="font-medium">Wait for Responses</h3>
-                  <p className="text-gray-600">
-                    Interested users will contact you about your {postType}. You'll receive notifications when someone
-                    messages you.
-                  </p>
-                </div>
-              </li>
-              <li className="flex items-start">
-                <div className="flex-shrink-0 bg-teal-100 text-teal-800 font-bold rounded-full w-6 h-6 flex items-center justify-center mr-3">
-                  2
-                </div>
-                <div>
-                  <h3 className="font-medium">Negotiate and Agree</h3>
-                  <p className="text-gray-600">
-                    Discuss details with interested parties and agree on terms for the exchange or service.
-                  </p>
-                </div>
-              </li>
-              <li className="flex items-start">
-                <div className="flex-shrink-0 bg-teal-100 text-teal-800 font-bold rounded-full w-6 h-6 flex items-center justify-center mr-3">
-                  3
-                </div>
-                <div>
-                  <h3 className="font-medium">Complete the Transaction</h3>
-                  <p className="text-gray-600">
-                    Meet in a safe location to complete the exchange or provide the service as agreed.
-                  </p>
-                </div>
-              </li>
-              <li className="flex items-start">
-                <div className="flex-shrink-0 bg-teal-100 text-teal-800 font-bold rounded-full w-6 h-6 flex items-center justify-center mr-3">
-                  4
-                </div>
-                <div>
-                  <h3 className="font-medium">Mark as Completed</h3>
-                  <p className="text-gray-600">
-                    Once the transaction is complete, mark your post as completed in your dashboard.
-                  </p>
-                </div>
-              </li>
-            </ol>
-
-            <div className="mt-6 text-center">
-              <Link href="/post/selection">
-                <Button variant="outline" className="flex items-center gap-2">
-                  Post Another {postType === "item" ? "Item" : "Service"}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-          </div>
+          <Link href="/post/selection" className="block w-full">
+            <Button variant="ghost" className="w-full flex items-center justify-center">
+              Create Another Post
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
         </div>
-      </main>
-
-      <Footer />
+      </motion.div>
     </div>
   )
 }

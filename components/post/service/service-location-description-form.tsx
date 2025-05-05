@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowRight, ArrowLeft, Save, MapPin } from "lucide-react"
 import { motion } from "framer-motion"
+import { useEffect, useState } from "react"
 
 const formSchema = z.object({
   city: z.string().min(1, { message: "City is required" }),
@@ -31,6 +32,9 @@ export function ServiceLocationDescriptionForm({
   isLoading,
 }: ServiceLocationDescriptionFormProps) {
   const router = useRouter()
+  const [selectedCity, setSelectedCity] = useState<string | null>(null)
+  const [subcities, setSubcities] = useState<any[]>([])
+  const [mounted, setMounted] = useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -40,6 +44,25 @@ export function ServiceLocationDescriptionForm({
       description: initialData?.description || "",
     },
   })
+
+  useEffect(() => {
+    setMounted(true)
+
+    if (initialData?.city) {
+      setSelectedCity(initialData.city)
+      setSubcities(getSubcitiesByCity(initialData.city))
+    }
+  }, [initialData])
+
+  // Update subcities when city changes
+  useEffect(() => {
+    const city = form.watch("city")
+    if (city && city !== selectedCity) {
+      setSelectedCity(city)
+      setSubcities(getSubcitiesByCity(city))
+      form.setValue("subcity", "")
+    }
+  }, [form.watch("city"), selectedCity, form])
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     onContinue(values)
@@ -63,32 +86,47 @@ export function ServiceLocationDescriptionForm({
     { id: "bishoftu", name: "Bishoftu" },
   ]
 
-  const subcities: Record<string, { id: string; name: string }[]> = {
-    addis_ababa: [
-      { id: "addis_ketema", name: "Addis Ketema" },
-      { id: "akaky_kaliti", name: "Akaky Kaliti" },
-      { id: "arada", name: "Arada" },
-      { id: "bole", name: "Bole" },
-      { id: "gullele", name: "Gullele" },
-      { id: "kirkos", name: "Kirkos" },
-      { id: "kolfe_keranio", name: "Kolfe Keranio" },
-      { id: "lideta", name: "Lideta" },
-      { id: "nifas_silk_lafto", name: "Nifas Silk-Lafto" },
-      { id: "yeka", name: "Yeka" },
-    ],
-    dire_dawa: [
-      { id: "sabian", name: "Sabian" },
-      { id: "kezira", name: "Kezira" },
-      { id: "addis_ketema", name: "Addis Ketema" },
-      { id: "gendekore", name: "Gendekore" },
-    ],
-    bahir_dar: [
-      { id: "belay_zeleke", name: "Belay Zeleke" },
-      { id: "fasilo", name: "Fasilo" },
-      { id: "shum_abo", name: "Shum Abo" },
-      { id: "tana", name: "Tana" },
-    ],
+  const getSubcitiesByCity = (city: string): { id: string; name: string }[] => {
+    switch (city) {
+      case "addis_ababa":
+        return [
+          { id: "addis_ketema", name: "Addis Ketema" },
+          { id: "akaky_kaliti", name: "Akaky Kaliti" },
+          { id: "arada", name: "Arada" },
+          { id: "bole", name: "Bole" },
+          { id: "gullele", name: "Gullele" },
+          { id: "kirkos", name: "Kirkos" },
+          { id: "kolfe_keranio", name: "Kolfe Keranio" },
+          { id: "lideta", name: "Lideta" },
+          { id: "nifas_silk_lafto", name: "Nifas Silk-Lafto" },
+          { id: "yeka", name: "Yeka" },
+        ]
+      case "dire_dawa":
+        return [
+          { id: "sabian", name: "Sabian" },
+          { id: "kezira", name: "Kezira" },
+          { id: "addis_ketema", name: "Addis Ketema" },
+          { id: "gendekore", name: "Gendekore" },
+        ]
+      case "bahir_dar":
+        return [
+          { id: "belay_zeleke", name: "Belay Zeleke" },
+          { id: "fasilo", name: "Fasilo" },
+          { id: "shum_abo", name: "Shum Abo" },
+          { id: "tana", name: "Tana" },
+        ]
+      default:
+        return [
+          { id: "central", name: "Central" },
+          { id: "north", name: "North" },
+          { id: "south", name: "South" },
+          { id: "east", name: "East" },
+          { id: "west", name: "West" },
+        ]
+    }
   }
+
+  if (!mounted) return null
 
   return (
     <motion.div
@@ -148,7 +186,7 @@ export function ServiceLocationDescriptionForm({
                     </FormControl>
                     <SelectContent>
                       {form.watch("city") &&
-                        subcities[form.watch("city")]?.map((subcity) => (
+                        subcities.map((subcity) => (
                           <SelectItem key={subcity.id} value={subcity.id} className="py-3">
                             {subcity.name}
                           </SelectItem>
@@ -237,3 +275,5 @@ export function ServiceLocationDescriptionForm({
     </motion.div>
   )
 }
+
+export default ServiceLocationDescriptionForm

@@ -43,6 +43,7 @@ export function CategoryNav() {
       {/* Left Scroll Button */}
       <button
         onClick={() => scrollCategories("left")}
+        title="Scroll left"
         className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg z-20 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
       >
         <ChevronLeft className="h-6 w-6" />
@@ -73,6 +74,7 @@ export function CategoryNav() {
       {/* Right Scroll Button */}
       <button
         onClick={() => scrollCategories("right")}
+        title="Scroll right"
         className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg z-20 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
       >
         <ChevronRight className="h-6 w-6" />

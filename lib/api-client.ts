@@ -1,7 +1,59 @@
 // API client for interacting with the backend
 
+import { getPublishedPosts } from "./post-storage"
+
 // Base URL for API requests
 const API_BASE_URL = "/api"
+
+// Function to upload item images
+export async function uploadItemImages(images: File[]): Promise<string[]> {
+  try {
+    // For demo purposes, we'll simulate image uploads
+    console.log("Uploading images:", images)
+
+    // Simulate a delay
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    // Return mock image URLs
+    return images.map((_, index) => `/placeholder.svg?height=400&width=600&text=Image${index + 1}`)
+  } catch (error) {
+    console.error("Error uploading images:", error)
+    throw new Error("Failed to upload images")
+  }
+}
+
+// Function to upload service images
+export async function uploadServiceImages(files: File[]): Promise<{ success: boolean; urls: string[] }> {
+  try {
+    // Create FormData to send files
+    const formData = new FormData()
+    files.forEach((file, index) => {
+      formData.append(`images`, file)
+    })
+
+    // Send request to API
+    const response = await fetch("/api/services/upload-images", {
+      method: "POST",
+      body: formData,
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to upload images")
+    }
+
+    const data = await response.json()
+    return {
+      success: true,
+      urls: data.urls,
+    }
+  } catch (error) {
+    console.error("Error uploading service images:", error)
+    return {
+      success: false,
+      urls: [],
+    }
+  }
+}
 
 // Fetch categories
 export async function fetchCategories(type: "item" | "service") {
@@ -25,24 +77,23 @@ export async function fetchCategories(type: "item" | "service") {
               },
               {
                 id: "2",
-                name: "Computers",
+                name: "Home & Garden",
                 subcategories: [
-                  { id: "201", name: "Laptops" },
-                  { id: "202", name: "Desktops" },
-                  { id: "203", name: "Monitors" },
-                  { id: "204", name: "Computer Parts" },
-                  { id: "205", name: "Peripherals" },
+                  { id: "201", name: "Furniture" },
+                  { id: "202", name: "Appliances" },
+                  { id: "203", name: "Kitchen" },
+                  { id: "204", name: "Decor" },
+                  { id: "205", name: "Garden" },
                 ],
               },
               {
                 id: "3",
-                name: "Home & Garden",
+                name: "Vehicles",
                 subcategories: [
-                  { id: "301", name: "Furniture" },
-                  { id: "302", name: "Appliances" },
-                  { id: "303", name: "Kitchen" },
-                  { id: "304", name: "Decor" },
-                  { id: "305", name: "Garden" },
+                  { id: "301", name: "Cars" },
+                  { id: "302", name: "Motorcycles" },
+                  { id: "303", name: "Bicycles" },
+                  { id: "304", name: "Auto Parts" },
                 ],
               },
               {
@@ -106,102 +157,95 @@ export async function fetchCategories(type: "item" | "service") {
   }
 }
 
-// Fetch items
-export async function fetchItems(filters = {}) {
+// Function to fetch items
+export async function fetchItems(filters: any = {}) {
   try {
-    // For demo purposes, return mock data
+    // For demo mock data that matches the screenshot
     return {
       success: true,
       items: [
         {
           id: "item-1",
-          title: "iPhone 13 Pro Max",
-          description: "Excellent condition, barely used",
-          price: 45000,
-          condition: "Like New",
-          location: "Addis Ababa, Bole",
-          category_name: "Electronics",
+          title: "Comfortable Leather Sofa",
+          description:
+            "Beautiful and comfortable leather sofa in excellent condition. Perfect for your living room or office reception area.",
+          price: 20500,
+          condition: "Used",
+          location: "Addis Ababa",
+          category: "Home & Garden",
+          subcategory: "Furniture",
           status: "published",
           created_at: new Date().toISOString(),
-          images: [{ url: "/placeholder.svg?height=300&width=300&text=iPhone", is_main: true }],
+          images: ["/placeholder.svg?height=300&width=300&text=LeatherSofa"],
         },
         {
           id: "item-2",
-          title: "Samsung Galaxy S21 Ultra",
-          description: "Good condition, minor scratches",
-          price: 35000,
-          condition: "Good",
-          location: "Addis Ababa, Kirkos",
-          category_name: "Electronics",
+          title: "V40 Toyota",
+          description: "Well maintained Toyota V40 with low mileage. Perfect family car.",
+          price: 2300000,
+          condition: "Used",
+          location: "Addis Ababa",
+          category: "Vehicles",
+          subcategory: "Cars",
           status: "published",
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          images: [{ url: "/placeholder.svg?height=300&width=300&text=Samsung", is_main: true }],
+          created_at: new Date().toISOString(),
+          images: ["/placeholder.svg?height=300&width=300&text=Toyota"],
         },
         {
           id: "item-3",
-          title: "MacBook Pro 16-inch 2021",
-          description: "Brand new, unopened",
-          price: 120000,
-          condition: "Brand New",
-          location: "Addis Ababa, Yeka",
-          category_name: "Computers",
+          title: "iPhone 13 Pro",
+          description: "iPhone 13 Pro in excellent condition. 256GB storage, battery health 95%.",
+          price: 55000,
+          condition: "Like New",
+          location: "Dire Dawa",
+          category: "Electronics",
+          subcategory: "Smartphones",
           status: "published",
-          created_at: new Date(Date.now() - 172800000).toISOString(),
-          images: [{ url: "/placeholder.svg?height=300&width=300&text=MacBook", is_main: true }],
+          created_at: new Date().toISOString(),
+          images: ["/placeholder.svg?height=300&width=300&text=iPhone"],
+        },
+        {
+          id: "item-4",
+          title: "Mountain Bike",
+          description: "High-quality mountain bike, barely used.",
+          price: 14000,
+          condition: "Used",
+          location: "Hawassa",
+          category: "Vehicles",
+          subcategory: "Bicycles",
+          status: "published",
+          created_at: new Date().toISOString(),
+          images: ["/placeholder.svg?height=300&width=300&text=Bike"],
         },
       ],
     }
   } catch (error) {
     console.error("Error fetching items:", error)
-    return { success: false, error: "Failed to fetch items" }
+    return { items: [], success: false, error: "Failed to fetch items" }
   }
 }
 
-// Fetch services
-export async function fetchServices(filters = {}) {
+// Function to fetch services
+export async function fetchServices(filters: any = {}) {
   try {
-    // For demo purposes, return mock data
-    return {
-      success: true,
-      services: [
-        {
-          id: "service-1",
-          title: "Professional Web Development",
-          description: "Full-stack web development services",
-          hourly_rate: 500,
-          location: "Addis Ababa, Bole",
-          category_name: "Tech & IT",
-          status: "published",
-          created_at: new Date().toISOString(),
-          images: [{ url: "/placeholder.svg?height=300&width=300&text=WebDev", is_main: true }],
-        },
-        {
-          id: "service-2",
-          title: "Graphic Design Services",
-          description: "Logo design, branding, and marketing materials",
-          hourly_rate: 400,
-          location: "Addis Ababa, Kirkos",
-          category_name: "Creative & Design",
-          status: "published",
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          images: [{ url: "/placeholder.svg?height=300&width=300&text=Design", is_main: true }],
-        },
-        {
-          id: "service-3",
-          title: "Home Cleaning Service",
-          description: "Professional home cleaning services",
-          hourly_rate: 200,
-          location: "Addis Ababa, Yeka",
-          category_name: "Home Services",
-          status: "published",
-          created_at: new Date(Date.now() - 172800000).toISOString(),
-          images: [{ url: "/placeholder.svg?height=300&width=300&text=Cleaning", is_main: true }],
-        },
-      ],
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
+    // Get published posts
+    const publishedPosts = getPublishedPosts()
+
+    // Filter for services
+    let services = publishedPosts.filter((post: any) => post.type === "service")
+
+    // Apply additional filters if provided
+    if (filters.status) {
+      services = services.filter((service: any) => service.status === filters.status)
     }
+
+    return { services, success: true }
   } catch (error) {
     console.error("Error fetching services:", error)
-    return { success: false, error: "Failed to fetch services" }
+    return { services: [], success: false, error: "Failed to fetch services" }
   }
 }
 
@@ -282,15 +326,80 @@ export async function createService(serviceData: any) {
 }
 
 // Get item by ID
-export async function getItemById(id: string) {
+export async function fetchItemById(id: string) {
   try {
-    // For demo purposes, return mock data or from local storage
-    const publishedPostsJson = localStorage.getItem("published_posts")
-    let publishedPosts = []
+    // For demo purposes, return specific mock data for the sofa
+    if (id === "comfortable-leather-sofa") {
+      return {
+        success: true,
+        item: {
+          id: "comfortable-leather-sofa",
+          title: "Comfortable Leather Sofa",
+          description:
+            "Beautiful and comfortable leather sofa in excellent condition. Perfect for your living room or office reception area.",
+          price: 10500,
+          condition: "Used",
+          location: "Addis Ababa",
+          category: "Home & Garden",
+          subcategory: "Furniture",
+          status: "published",
+          created_at: "2023-01-15T08:30:00Z",
+          details: {
+            material: "Genuine leather",
+            color: "Brown",
+            dimensions: "200cm x 90cm x 85cm",
+            seatingCapacity: "3 people",
+            age: "2 years",
+            reasonForSelling: "Moving abroad",
+          },
+          images: [
+            "/placeholder.svg?height=400&width=600&text=LeatherSofa1",
+            "/placeholder.svg?height=400&width=600&text=LeatherSofa2",
+            "/placeholder.svg?height=400&width=600&text=LeatherSofa3",
+            "/placeholder.svg?height=400&width=600&text=LeatherSofa4",
+          ],
+          seller: {
+            name: "Abebe Kebede",
+            memberSince: "January 2022",
+            responseTime: "within 2 hours",
+            phone: "+251 91 234 5678",
+            email: "abebe@example.com",
+          },
+          similarItems: [
+            {
+              id: "leather-armchair",
+              title: "Leather Armchair",
+              price: 4500,
+              location: "Addis Ababa",
+              condition: "Used",
+              imageUrl: "/placeholder.svg?height=150&width=200&text=Armchair",
+            },
+            {
+              id: "coffee-table",
+              title: "Coffee Table",
+              price: 3200,
+              location: "Addis Ababa",
+              condition: "Used",
+              imageUrl: "/placeholder.svg?height=150&width=200&text=CoffeeTable",
+            },
+            {
+              id: "floor-lamp",
+              title: "Floor Lamp",
+              price: 1800,
+              location: "Addis Ababa",
+              condition: "New",
+              imageUrl: "/placeholder.svg?height=150&width=200&text=FloorLamp",
+            },
+          ],
+        },
+      }
+    }
 
+    // For other IDs, check local storage
+    const publishedPostsJson = localStorage.getItem("published_posts")
     if (publishedPostsJson) {
       try {
-        publishedPosts = JSON.parse(publishedPostsJson)
+        const publishedPosts = JSON.parse(publishedPostsJson)
         const item = publishedPosts.find((post: any) => post.id === id && post.type === "item")
         if (item) {
           return { success: true, item }
@@ -300,21 +409,10 @@ export async function getItemById(id: string) {
       }
     }
 
-    // If not found in local storage, return mock data
+    // If not found, return a default mock item
     return {
-      success: true,
-      item: {
-        id,
-        title: "iPhone 13 Pro Max",
-        description: "Excellent condition, barely used",
-        price: 45000,
-        condition: "Like New",
-        location: "Addis Ababa, Bole",
-        category_name: "Electronics",
-        status: "published",
-        created_at: new Date().toISOString(),
-        images: [{ url: "/placeholder.svg?height=300&width=300&text=iPhone", is_main: true }],
-      },
+      success: false,
+      error: "Item not found",
     }
   } catch (error) {
     console.error("Error fetching item:", error)
@@ -323,7 +421,7 @@ export async function getItemById(id: string) {
 }
 
 // Get service by ID
-export async function getServiceById(id: string) {
+export async function fetchServiceById(id: string) {
   try {
     // For demo purposes, return mock data or from local storage
     const publishedPostsJson = localStorage.getItem("published_posts")

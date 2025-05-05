@@ -385,19 +385,21 @@ export function PostItemForm() {
   const handleSaveDraft = () => {
     const post = {
       id: Date.now().toString(),
-      type: "item",
-      title: formData.title,
-      category: formData.category,
-      subcategory: formData.subcategory,
-      condition: formData.condition,
-      price: formData.price,
-      description: formData.description,
-      location: formData.location,
-      tradePreference: formData.tradePreference,
-      specifications: formData.specifications,
-      images: images,
+      type: "item" as const,
       createdAt: new Date().toISOString(),
-      status: "draft",
+      data: {
+        title: formData.title,
+        category: formData.category,
+        subcategory: formData.subcategory,
+        condition: formData.condition,
+        price: formData.price,
+        description: formData.description,
+        location: formData.location,
+        tradePreference: formData.tradePreference,
+        specifications: formData.specifications,
+        images: images,
+        status: "draft",
+      },
     }
 
     savePost(post)
@@ -420,19 +422,21 @@ export function PostItemForm() {
 
     const post = {
       id: Date.now().toString(),
-      type: "item",
-      title: formData.title,
-      category: formData.category,
-      subcategory: formData.subcategory,
-      condition: formData.condition,
-      price: formData.price,
-      description: formData.description,
-      location: formData.location,
-      tradePreference: formData.tradePreference,
-      specifications: formData.specifications,
-      images: images,
+      type: "item" as const,
       createdAt: new Date().toISOString(),
-      status: "published",
+      data: {
+        title: formData.title,
+        category: formData.category,
+        subcategory: formData.subcategory,
+        condition: formData.condition,
+        price: formData.price,
+        description: formData.description,
+        location: formData.location,
+        tradePreference: formData.tradePreference,
+        specifications: formData.specifications,
+        images: images,
+        status: "published",
+      },
     }
 
     savePost(post)
@@ -488,21 +492,24 @@ export function PostItemForm() {
                 <div className="space-y-2">
                   <Label>Subcategory</Label>
                   <div className="grid grid-cols-2 gap-3">
-                    {getSubcategories().map((subcategory) => (
+                  {getSubcategories().map((subcategory) => {
+                    const subcategoryStr = subcategory.toString()
+                    return (
                       <Button
-                        key={subcategory}
+                        key={subcategoryStr}
                         type="button"
-                        variant={formData.subcategory === subcategory ? "default" : "outline"}
+                        variant={formData.subcategory === subcategoryStr ? "default" : "outline"}
                         className="justify-start h-auto py-3"
-                        onClick={() => handleSubcategoryChange(subcategory)}
+                        onClick={() => handleSubcategoryChange(subcategoryStr)}
                       >
                         <div className="flex items-center">
-                          {getSubcategoryIcon(subcategory)}
-                          {subcategory}
+                          {getSubcategoryIcon(subcategoryStr)}
+                          {subcategoryStr}
                         </div>
-                        {formData.subcategory === subcategory && <Check className="h-4 w-4 ml-auto" />}
+                        {formData.subcategory === subcategoryStr && <Check className="h-4 w-4 ml-auto" />}
                       </Button>
-                    ))}
+                    )
+                  })}
                   </div>
                 </div>
               )}
@@ -539,7 +546,7 @@ export function PostItemForm() {
 
               <div className="space-y-2">
                 <Label>Images</Label>
-                <ImageUploader images={images} onChange={handleImagesChange} maxImages={5} />
+                <ImageUploader entityType="item" initialImages={images} onImagesUploaded={handleImagesChange} maxImages={5} />
               </div>
 
               <div className="space-y-2">

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowRight, ArrowLeft, Save, MapPin } from "lucide-react"
 import { motion } from "framer-motion"
 import { toast } from "@/components/ui/use-toast"
+import { createItem } from "@/lib/api-client"
 
 const formSchema = z.object({
   city: z.string({
@@ -28,18 +29,35 @@ export default function LocationForm() {
   const [mounted, setMounted] = useState(false)
   const [selectedCity, setSelectedCity] = useState<string | null>(null)
   const [subcities, setSubcities] = useState<any[]>([])
+  const [previousSteps, setPreviousSteps] = useState<{
+    basicInfo: any
+    specifications: any
+  } | null>(null)
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
   useEffect(() => {
+    if (!mounted) return
+
     // Check if specifications exist
+    const savedBasicInfo = localStorage.getItem("itemBasicInfo")
     const savedSpecs = localStorage.getItem("itemSpecifications")
-    if (!savedSpecs) {
-      router.push("/post/item/specifications")
+
+    if (!savedBasicInfo || !savedSpecs) {
+      if (!savedBasicInfo) {
+        router.push("/post/item/basic-info")
+      } else if (!savedSpecs) {
+        router.push("/post/item/specifications")
+      }
       return
     }
+
+    setPreviousSteps({
+      basicInfo: JSON.parse(savedBasicInfo),
+      specifications: JSON.parse(savedSpecs),
+    })
 
     // Check for draft data
     const draftData = localStorage.getItem("itemLocationDraft")
@@ -59,7 +77,7 @@ export default function LocationForm() {
     }
 
     setLoading(false)
-  }, [router])
+  }, [mounted, router])
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -77,31 +95,73 @@ export default function LocationForm() {
       setSubcities(getSubcitiesByCity(city))
       form.setValue("subcity", "")
     }
-  }, [form.watch("city"), selectedCity])
+  }, [form.watch("city"), selectedCity, form])
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!previousSteps) {
+      toast({
+        title: "Error",
+        description: "Missing previous form data. Please go back and fill out all steps.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
-      // Save to local storage for now
+      // Save to local storage
       localStorage.setItem("itemLocation", JSON.stringify(values))
 
-      // Clear draft
-      localStorage.removeItem("itemLocationDraft")
+      // Combine all form data
+      const postData = {
+        title: previousSteps.basicInfo.title,
+        category: previousSteps.basicInfo.category,
+        subcategory: previousSteps.basicInfo.subcategory,
+        condition: previousSteps.basicInfo.condition,
+        price: Number(previousSteps.basicInfo.price),
+        images: previousSteps.basicInfo.images || [],
+        specifications: previousSteps.specifications,
+        location: {
+          city: values.city,
+          subcity: values.subcity,
+        },
+        status: "published",
+        type: "item",
+        created_at: new Date().toISOString(),
+      }
 
-      // Show success toast
-      toast({
-        title: "Location saved",
-        description: "Your post has been created successfully!",
-        duration: 3000,
-      })
+      // Submit to the API
+      const response = await createItem(postData)
 
-      router.push("/post/success")
+      if (response.success) {
+        // Clear all drafts and form data
+        localStorage.removeItem("itemBasicInfo")
+        localStorage.removeItem("itemSpecifications")
+        localStorage.removeItem("itemLocation")
+        localStorage.removeItem("itemBasicInfoDraft")
+        localStorage.removeItem("itemSpecificationsDraft")
+        localStorage.removeItem("itemLocationDraft")
+        localStorage.removeItem("itemImages")
+        localStorage.removeItem("itemImagesDraft")
+
+        // Show success toast
+        toast({
+          title: "Post submitted successfully!",
+          description: "Your item has been posted.",
+          duration: 3000,
+        })
+
+        // Redirect to success page
+        router.push("/post/success")
+      } else {
+        throw new Error("Failed to create post")
+      }
     } catch (error) {
       console.error("Error saving form data:", error)
       toast({
-        title: "Error saving location",
-        description: "There was a problem saving your location. Please try again.",
+        title: "Error submitting post",
+        description: "There was a problem submitting your post. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -111,12 +171,21 @@ export default function LocationForm() {
 
   const saveDraft = () => {
     const values = form.getValues()
-    localStorage.setItem("itemLocationDraft", JSON.stringify(values))
-    toast({
-      title: "Draft saved",
-      description: "Your location draft has been saved. You can continue later.",
-      duration: 3000,
-    })
+    try {
+      localStorage.setItem("itemLocationDraft", JSON.stringify(values))
+      toast({
+        title: "Draft saved",
+        description: "Your location draft has been saved. You can continue later.",
+        duration: 3000,
+      })
+    } catch (error: any) {
+      console.error("Error saving draft:", error)
+      toast({
+        title: "Error saving draft",
+        description: "There was a problem saving your draft. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   const cities = [
@@ -302,7 +371,7 @@ export default function LocationForm() {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       ></path>
                     </svg>
-                    Saving...
+                    Submitting...
                   </>
                 ) : (
                   <>

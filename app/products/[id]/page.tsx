@@ -67,6 +67,8 @@ function ImageGallery({ images, currentIndex, onPrev, onNext, onSelect }: {
               onClick={onPrev}
               className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 dark:bg-gray-800/80 rounded-full p-1 shadow-md hover:bg-white dark:hover:bg-gray-800 transition-all"
               aria-label="Previous image"
+              title="Previous image"
+              type="button"
             >
               <ChevronLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
             </button>
@@ -74,6 +76,8 @@ function ImageGallery({ images, currentIndex, onPrev, onNext, onSelect }: {
               onClick={onNext}
               className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 dark:bg-gray-800/80 rounded-full p-1 shadow-md hover:bg-white dark:hover:bg-gray-800 transition-all"
               aria-label="Next image"
+              title="Next image"
+              type="button"
             >
               <ChevronRight className="h-6 w-6 text-gray-700 dark:text-gray-300" />
             </button>
@@ -88,11 +92,13 @@ function ImageGallery({ images, currentIndex, onPrev, onNext, onSelect }: {
             <button
               key={index}
               onClick={() => onSelect(index)}
-              className={`relative h-12 w-12 rounded-md overflow-hidden border-2 transition-all ${
-                currentIndex === index
+              className={`relative h-12 w-12 rounded-md overflow-hidden border-2 transition-all ${currentIndex === index
                   ? "border-teal-500 dark:border-teal-400"
                   : "border-gray-200 dark:border-gray-700"
-              }`}
+                }`}
+              aria-label={`Select thumbnail ${index + 1}`}
+              title={`Select thumbnail ${index + 1}`}
+              type="button"
             >
               <Image src={image || "/placeholder.svg"} alt={`Thumbnail ${index + 1}`} fill className="object-cover" />
             </button>
@@ -217,11 +223,11 @@ export default function ProductDetailPage({ params }: ItemPageProps) {
       <header className="sticky top-0 z-40 bg-teal-600 text-white p-3 flex items-center">
         <Link href="/" className="flex items-center mr-3">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" stroke.jsoup="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
           <span className="font-bold text-xl">LWIE</span>
         </Link>
-        
+
         <div className="relative flex-grow max-w-lg">
           <input
             type="text"
@@ -234,16 +240,16 @@ export default function ProductDetailPage({ params }: ItemPageProps) {
             </svg>
           </button>
         </div>
-        
+
         <div className="flex items-center ml-auto space-x-4">
-          <button className="p-2">
+          <button className="p-2" aria-label="Notifications" title="Notifications" type="button">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </button>
           
           <div className="relative">
-            <button className="p-2">
+            <button className="p-2" aria-label="Messages" title="Messages" type="button">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
@@ -251,20 +257,20 @@ export default function ProductDetailPage({ params }: ItemPageProps) {
             <span className="absolute top-1 right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center text-xs font-semibold">3</span>
           </div>
           
-          <button className="p-2">
+          <button className="p-2" aria-label="Cart" title="Cart" type="button">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </button>
           
-          <button className="bg-white text-teal-600 px-4 py-1.5 rounded font-semibold hover:bg-teal-50">Post</button>
+          <button className="bg-white text-teal-600 px-4 py-1.5 rounded font-semibold hover:bg-teal-50" aria-label="Post" title="Post" type="button">Post</button>
           
-          <button className="p-2">
+          <button className="p-2" aria-label="Settings" title="Settings" type="button">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
           </button>
-          
+
           <div className="h-8 w-8 bg-white rounded-full"></div>
         </div>
       </header>
@@ -325,6 +331,8 @@ export default function ProductDetailPage({ params }: ItemPageProps) {
                     size="icon"
                     onClick={toggleFavorite}
                     className="transition-all hover:border-teal-700 hover:text-teal-700 dark:border-gray-700 dark:text-white dark:hover:border-teal-500 dark:hover:text-teal-500"
+                    aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+                    title={isFavorited ? "Remove from favorites" : "Add to favorites"}
                   >
                     <Heart className={`h-4 w-4 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`} />
                   </Button>
@@ -333,6 +341,8 @@ export default function ProductDetailPage({ params }: ItemPageProps) {
                     size="icon"
                     onClick={shareItem}
                     className="transition-all hover:border-teal-700 hover:text-teal-700 dark:border-gray-700 dark:text-white dark:hover:border-teal-500 dark:hover:text-teal-500"
+                    aria-label="Share item"
+                    title="Share item"
                   >
                     <Share2 className="h-4 w-4" />
                   </Button>
@@ -341,6 +351,8 @@ export default function ProductDetailPage({ params }: ItemPageProps) {
                     size="icon"
                     onClick={reportItem}
                     className="transition-all hover:border-teal-700 hover:text-teal-700 dark:border-gray-700 dark:text-white dark:hover:border-teal-500 dark:hover:text-teal-500"
+                    aria-label="Report item"
+                    title="Report item"
                   >
                     <Flag className="h-4 w-4" />
                   </Button>
@@ -502,5 +514,10 @@ export default function ProductDetailPage({ params }: ItemPageProps) {
                 </li>
               </ul>
             </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
+}
 
-        

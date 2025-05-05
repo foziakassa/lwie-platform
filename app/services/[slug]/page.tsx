@@ -82,8 +82,52 @@ export default function ServicePage({ params }: ServicePageProps) {
       window.location.href = "/"
     }
 
-    setLoading(false)
+              setLoading(false)
   }, [slug])
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <main className="container mx-auto px-4 py-6">
+        <Link href="/" className="flex items-center text-teal-600 mb-4 hover:underline">
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back to Home
+        </Link>
+
+        <h1 className="text-2xl font-bold mb-1">{service.title}</h1>
+        <p className="flex items-center text-gray-600 mb-4">
+          <span className="inline-block mr-1">📍</span> {service.location}
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Left Column - Service Images */}
+          <div className="md:col-span-2">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
+              <div className="relative">
+                <img
+                  src={service.images[currentImageIndex] || "/placeholder.svg"}
+                  alt={service.title}
+                  className="w-full h-[400px] object-cover"
+                />
+                <div className="absolute bottom-4 right-4 flex gap-2">
+                  <button title="Add to favorites" className="bg-white rounded-full p-2 shadow-md">
+                    <Heart className="h-4 w-4 text-gray-600" />
+                  </button>
+                  <button title="Share service" className="bg-white rounded-full p-2 shadow-md">
+                    <Share2 className="h-4 w-4 text-gray-600" />
+                  </button>
+                  <button title="Report service" className="bg-white rounded-full p-2 shadow-md">
+                    <Flag className="h-4 w-4 text-gray-600" />
+                  </button>
+                </div>
+              </div>
+=======
+  }, [slug])
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+
+  // Add title attributes to buttons for accessibility
+  // Buttons: Add to favorites, Share service, Report service
 
   const goToNextImage = () => {
     if (!service) return

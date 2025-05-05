@@ -136,7 +136,9 @@ export async function createItem(itemData: any) {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to create item');
+      const errorText = await response.text();
+      console.error('Failed to create item, response:', errorText);
+      throw new Error(`Failed to create item: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -167,5 +169,48 @@ export async function createService(serviceData: any) {
   } catch (error) {
     console.error('Error creating service:', error);
     return { success: false, error: 'Failed to create service' };
+  }
+}
+
+// Upload item images - placeholder implementation
+export async function uploadItemImages(files: File[]): Promise<string[]> {
+  // TODO: Implement actual upload logic
+  console.warn('uploadItemImages is a placeholder function');
+  return files.map((file, index) => `https://example.com/uploads/items/${file.name || 'image'}-${index}.jpg`);
+}
+
+// Upload service images - placeholder implementation
+export async function uploadServiceImages(files: File[]): Promise<string[]> {
+  // TODO: Implement actual upload logic
+  console.warn('uploadServiceImages is a placeholder function');
+  return files.map((file, index) => `https://example.com/uploads/services/${file.name || 'image'}-${index}.jpg`);
+}
+
+// Fetch categories
+export async function fetchCategories() {
+  try {
+    const response = await fetch('/api/categories', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch categories');
+    }
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to fetch categories');
+    }
+
+    return {
+      success: true,
+      categories: data.categories,
+    };
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    return { categories: [], success: false, error: 'Failed to fetch categories' };
   }
 }

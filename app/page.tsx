@@ -1,278 +1,143 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import Image from "next/image"
-import Link from "next/link"
-import { motion, AnimatePresence } from "framer-motion"
-import { Filter, MapPin, ArrowRight, Heart, Share2, Gift } from "lucide-react"
-import ApprovedAdvertisement from "./ad/page"
-import ThreeDAdvertisement from '../components/3d-advertisement-carousel'
-import { fetchItems } from "@/lib/api-client"
-import { toast } from "@/components/ui/use-toast"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { Filter, MapPin, Heart, Share2, Gift } from "lucide-react";
+import ApprovedAdvertisement from "./ad/page";
+import ThreeDAdvertisement from '../components/3d-advertisement-carousel';
+import { fetchItems, fetchServices } from "@/lib/api-client";
+import { toast } from "@/components/ui/use-toast";
 
-// Mock data for featured items
-const featuredItems = [
-  {
-    id: 1,
-    title: "Comfortable Leather Sofa",
-    price: "20,500 ETB",
-    location: "Addis Ababa",
-    condition: "Used",
-    image: "/sofa1.jpg",
-    likes: 23,
-    createdAt: new Date().toISOString(),
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
   },
-  {
-    id: 2,
-    title: "V40 Toyota",
-    price: "2,300,000 ETB",
-    location: "Addis Ababa",
-    condition: "Used",
-    image: "/v40 toyota.jpg",
-    likes: 45,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 3,
-    title: "iPhone 13 Pro",
-    price: "55,000 ETB",
-    location: "Dire Dawa",
-    condition: "Like New",
-    image: "/iphone 13.jpg",
-    likes: 18,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 4,
-    title: "Mountain Bike",
-    price: "14,000 ETB",
-    location: "Hawassa",
-    condition: "Used",
-    image: "/bike.jpg",
-    likes: 12,
-    createdAt: new Date().toISOString(),
-  },
-]
+};
 
-// Mock data for latest posts
-const latestPosts = [
-  {
-    id: 9,
-    title: "MacBook Air M1",
-    price: "75,000 ETB",
-    location: "Addis Ababa",
-    condition: "Like New",
-    image: "/mac.jpg",
-    postedTime: "5 minutes ago",
-    createdAt: new Date().toISOString(),
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 24,
+    },
   },
-  {
-    id: 10,
-    title: "Vintage Record Player",
-    price: "7,800 ETB",
-    location: "Mekelle",
-    condition: "Good",
-    image: "/vintage record player.jpg",
-    postedTime: "2 hours ago",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 11,
-    title: "Fitness Equipment Set",
-    price: "13,500 ETB",
-    location: "Addis Ababa",
-    condition: "Used",
-    image: "/Ab Roller Wheel Set.jpg",
-    postedTime: "4 hours ago",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 12,
-    title: "Coffee Table",
-    price: "5,000 ETB",
-    location: "Hawassa",
-    condition: "Used",
-    image: "/coffee table.jpg",
-    postedTime: "6 hours ago",
-    createdAt: new Date().toISOString(),
-  },
-]
+};
+
+interface Item {
+  id: number;
+  title: string;
+  created_at: string;
+  images?: { url: string }[];
+  location?: string;
+  price?: number;
+  condition?: string;
+}
+
+interface Service {
+  id: number;
+  title: string;
+  created_at: string;
+  images?: { url: string }[];
+  location?: string;
+  hourly_rate?: number;
+  category_name?: string;
+}
 
 export default function Home() {
-  const [visibleSection, setVisibleSection] = useState("featured")
-  const [selectedCategory, setSelectedCategory] = useState("All")
-  const [likedItems, setLikedItems] = useState<number[]>([])
-  const [pendingPosts, setPendingPosts] = useState<any[]>([])
-  const router = useRouter()
-
-
-  const [items, setItems] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [visibleSection, setVisibleSection] = useState("featured");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [likedItems, setLikedItems] = useState<number[]>([]);
+  const [posts, setPosts] = useState<any[]>([]); // Combined items and services
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    // Simulate data loading
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 1000)
-
-    // Load liked items from localStorage
-    const savedLikedItems = localStorage.getItem("likedItems")
-    if (savedLikedItems) {
-      setLikedItems(JSON.parse(savedLikedItems))
-    }
-
-    // Load pending posts from localStorage
-    const savedPending = JSON.parse(localStorage.getItem("pendingPosts") || "[]")
-    setPendingPosts(savedPending)
-
-    // Clear pending posts after 5 minutes
-    const clearTimer = setTimeout(() => {
-      localStorage.removeItem("pendingPosts")
-      setPendingPosts([])
-    }, 300000)
-
-    const loadItems = async () => {
+    const loadPosts = async () => {
       try {
-        setIsLoading(true)
-        const response = await fetchItems()
-        if (response.success) {
-          setItems(response.items)
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to load listings",
-            variant: "destructive",
-          })
+        setIsLoading(true);
+
+        // Fetch items and services
+        const [itemsResponse, servicesResponse] = await Promise.all([
+          fetchItems(),
+          fetchServices(),
+        ]);
+
+        // Combine items and services
+        const combinedPosts = [
+          ...(itemsResponse.success ? itemsResponse.items : []).map((item: Item) => ({
+            ...item,
+            type: 'item',
+          })),
+          ...(servicesResponse.success ? servicesResponse.services : []).map((service: Service) => ({
+            ...service,
+            type: 'service',
+          })),
+        ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        setPosts(combinedPosts);
+
+        // Load liked items from localStorage
+        const savedLikedItems = localStorage.getItem("likedItems");
+        if (savedLikedItems) {
+          setLikedItems(JSON.parse(savedLikedItems));
         }
       } catch (error) {
-        console.error("Error loading items:", error)
+        console.error("Error loading posts:", error);
         toast({
           title: "Error",
-          description: "An unexpected error occurred",
+          description: "Failed to load listings",
           variant: "destructive",
-        })
+        });
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    loadItems()
-    return () => {
-      clearTimeout(timer)
-      clearTimeout(clearTimer)
-    }
-  }, [])
+    loadPosts();
+  }, []);
 
-  const generateSlug = (title: string) => {
-    return title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
-  }
+  const generateSlug = (title: string, id: string) => {
+    return `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${id}`;
+  };
 
   const toggleLike = (itemId: number) => {
     setLikedItems((prev) => {
-      const newLikedItems = prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
+      const newLikedItems = prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId];
+      localStorage.setItem("likedItems", JSON.stringify(newLikedItems));
+      return newLikedItems;
+    });
+  };
 
-      // Save to localStorage
-      localStorage.setItem("likedItems", JSON.stringify(newLikedItems))
-      return newLikedItems
-    })
-  }
-
-  const navigateToItemDetail = (itemId: number) => {
-    // Navigate to the product detail page for the leather sofa (id: 1)
-    if (itemId === 1) {
-      router.push(`/products/comfortable-leather-sofa`)
-    } else {
-      router.push(`/item/${itemId}`)
-    }
-  }
-
-  const categories = ["All", "Electronics", "Furniture", "Vehicles", "Fashion", "Books", "Sports"]
-
-  // Merge pending posts with featured items
-  const mergedFeaturedItems = [
-    ...pendingPosts,
-    ...featuredItems,
-  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  }
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 24,
-      },
-    },
-  }
+  const navigateToDetail = (post: any) => {
+    const slug = generateSlug(post.title, post.id);
+    router.push(`/${post.type === 'item' ? 'products' : 'services'}/${slug}`);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="container mx-auto px-4 py-8">
-        {/* Section Navigation */}
-<ThreeDAdvertisement/>
+        <ThreeDAdvertisement />
         <ApprovedAdvertisement />
-        {/* <div className="flex justify-center mb-8">
-          <div className="flex space-x-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
-            {["featured", "latest"].map((section) => (
-              <button
-                key={section}
-                onClick={() => setVisibleSection(section)}
-                className={`px-4 py-2 rounded-md transition-colors ${visibleSection === section
-                    ? "bg-teal-600 text-white"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                  }`}
-              >
-                {section.charAt(0).toUpperCase() + section.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div> */}
 
-        {/* Featured Items */}
-        <AnimatePresence mode="wait">
-          {visibleSection === "featured" && (
-            <motion.section
-              key="featured"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="mb-12"
-            >
-              {/* Listings */}
+        {/* Listings */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">Listings</h2>
             <div className="flex items-center space-x-2">
               <button className="inline-flex items-center rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4 mr-1"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                  />
-                </svg>
+                <Filter className="h-4 w-4 mr-1" />
                 Filter
               </button>
               <button className="inline-flex items-center rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
@@ -298,150 +163,82 @@ export default function Home() {
                 ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {items.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`/products/${generateSlug(item.title)}`}
-                  className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
-                >
-                  <div className="relative h-48">
-                    <img
-                      src={item.images[0] || "/placeholder.svg?height=300&width=300"}
-                      alt={item.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-2 right-2 flex space-x-1">
-                      <button
-                        className="p-1.5 bg-white rounded-full shadow-sm hover:bg-gray-100"
-                        title="Like"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                        }}
-                      >
-                        <Heart className="h-4 w-4 text-gray-600" />
-                      </button>
-                      <button
-                        className="p-1.5 bg-white rounded-full shadow-sm hover:bg-gray-100"
-                        title="Share"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                        }}
-                      >
-                        <Share2 className="h-4 w-4 text-gray-600" />
-                      </button>
+            <motion.div
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {posts.length === 0 ? (
+                <p className="text-gray-500 text-center col-span-full">No listings available.</p>
+              ) : (
+                posts.map((post) => (
+                  <motion.div
+                    key={post.id}
+                    variants={itemVariants}
+                    whileHover={{ y: -5 }}
+                    className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                    onClick={() => navigateToDetail(post)}
+                  >
+                    <div className="relative h-48">
+                      <img
+                        src={post.images?.[0]?.url || "/placeholder.svg?height=300&width=300"}
+                        alt={post.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-2 right-2 flex space-x-1">
+                        <button
+                          className="p-1.5 bg-white rounded-full shadow-sm hover:bg-gray-100"
+                          title="Like"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleLike(post.id);
+                          }}
+                        >
+                          <Heart
+                            className={`h-4 w-4 ${likedItems.includes(post.id) ? "fill-rose-500 text-rose-500" : "text-gray-600"}`}
+                          />
+                        </button>
+                        <button
+                          className="p-1.5 bg-white rounded-full shadow-sm hover:bg-gray-100"
+                          title="Share"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Share functionality would go here
+                          }}
+                        >
+                          <Share2 className="h-4 w-4 text-gray-600" />
+                        </button>
+                      </div>
+                      <div className="absolute top-2 left-2">
+                        <span className="bg-white text-xs px-2 py-0.5 rounded font-medium text-gray-700">
+                          {post.type === 'item' ? post.condition : post.category_name}
+                        </span>
+                      </div>
                     </div>
-                    <div className="absolute top-2 left-2">
-                      <span className="bg-white text-xs px-2 py-0.5 rounded font-medium text-gray-700">
-                        {item.condition}
-                      </span>
+                    <div className="p-3">
+                      <div className="flex justify-between">
+                        <p className="font-bold text-lg">
+                          {post.type === 'item' ? `${post.price?.toLocaleString() || 'Negotiable'} ETB` : `${post.hourly_rate?.toLocaleString() || 'Negotiable'} ETB/hr`}
+                        </p>
+                        <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-700">
+                          {post.type === 'item' ? post.condition : post.category_name}
+                        </span>
+                      </div>
+                      <h3 className="text-sm mt-1">{post.title}</h3>
+                      <div className="flex items-center text-xs text-gray-500 mt-1">
+                        <MapPin className="h-3 w-3 mr-1" />
+                        <span>{post.location}</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="p-3">
-                    <div className="flex justify-between">
-                      <p className="font-bold text-lg">{item.price.toLocaleString()} ETB</p>
-                      <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-700">{item.condition}</span>
-                    </div>
-                    <h3 className="text-sm mt-1">{item.title}</h3>
-                    <div className="flex items-center text-xs text-gray-500 mt-1">
-                      <MapPin className="h-3 w-3 mr-1" />
-                      <span>{item.location}</span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
+                  </motion.div>
+                ))
+              )}
+            </motion.div>
           )}
         </div>
-
-              {isLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {[1, 2, 3, 4].map((item) => (
-                    <div key={item} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-                      <div className="h-48 bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
-                      <div className="p-4">
-                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2"></div>
-                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-2/3"></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <motion.div
-                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate="visible"
-                >
-                  {mergedFeaturedItems.map((item) => (
-                    <motion.div
-                      key={item.id}
-                      variants={itemVariants}
-                      whileHover={{ y: -5 }}
-                      className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden group cursor-pointer"
-                      onClick={() => navigateToItemDetail(item.id)}
-                    >
-                      <div className="relative h-48">
-                        <Image src={item.image || "/placeholder.svg"} alt={item.title} fill className="object-cover" />
-                        <div className="absolute top-2 right-2 flex space-x-2">
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              toggleLike(item.id)
-                            }}
-                            title={likedItems.includes(item.id) ? "Unlike" : "Like"}
-                            className={`p-2 rounded-full ${likedItems.includes(item.id)
-                              ? "bg-rose-500 text-white"
-                              : "bg-white/80 text-gray-700 hover:bg-white"
-                              }`}
-                          >
-                            <Heart className="h-4 w-4" fill={likedItems.includes(item.id) ? "currentColor" : "none"} />
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              // Share functionality would go here
-                            }}
-                            title="Share"
-                            className="p-2 rounded-full bg-white/80 text-gray-700 hover:bg-white"
-                          >
-                            <Share2 className="h-4 w-4" />
-                          </motion.button>
-                        </div>
-                      </div>
-                      <div className="p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <p className="font-bold text-xl text-gray-900 dark:text-white">{item.price}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">{item.title}</p>
-                          </div>
-                          <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                            {item.condition}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{item.location}</p>
-                          <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded-full text-sm font-medium">
-                            View
-                          </span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              )}
-            </motion.section>
-          )}
-
-          {/* Latest Posts */}
-
-        </AnimatePresence>
 
         {/* Charity Section */}
         <section className="mb-12">
@@ -502,5 +299,5 @@ export default function Home() {
         </section>
       </main>
     </div>
-  )
+  );
 }

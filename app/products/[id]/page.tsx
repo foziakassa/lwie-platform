@@ -93,8 +93,8 @@ function ImageGallery({ images, currentIndex, onPrev, onNext, onSelect }: {
               key={index}
               onClick={() => onSelect(index)}
               className={`relative h-12 w-12 rounded-md overflow-hidden border-2 transition-all ${currentIndex === index
-                  ? "border-teal-500 dark:border-teal-400"
-                  : "border-gray-200 dark:border-gray-700"
+                ? "border-teal-500 dark:border-teal-400"
+                : "border-gray-200 dark:border-gray-700"
                 }`}
               aria-label={`Select thumbnail ${index + 1}`}
               title={`Select thumbnail ${index + 1}`}
@@ -247,7 +247,7 @@ export default function ProductDetailPage({ params }: ItemPageProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </button>
-          
+
           <div className="relative">
             <button className="p-2" aria-label="Messages" title="Messages" type="button">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -256,15 +256,15 @@ export default function ProductDetailPage({ params }: ItemPageProps) {
             </button>
             <span className="absolute top-1 right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center text-xs font-semibold">3</span>
           </div>
-          
+
           <button className="p-2" aria-label="Cart" title="Cart" type="button">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </button>
-          
+
           <button className="bg-white text-teal-600 px-4 py-1.5 rounded font-semibold hover:bg-teal-50" aria-label="Post" title="Post" type="button">Post</button>
-          
+
           <button className="p-2" aria-label="Settings" title="Settings" type="button">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />

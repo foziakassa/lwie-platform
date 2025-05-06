@@ -1,16 +1,28 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, type SubmitHandler } from "react-hook-form"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowRight, ArrowLeft, Save, Package } from "lucide-react"
+import {
+  ArrowRight,
+  ArrowLeft,
+  Save,
+  Package,
+  Cpu,
+  MemoryStickIcon as Memory,
+  HardDrive,
+  Camera,
+  Battery,
+} from "lucide-react"
 import { motion } from "framer-motion"
 
 // Define subcategory keys
@@ -151,6 +163,7 @@ interface FieldConfig {
   required?: boolean
   options?: string[]
   placeholder?: string
+  icon?: React.ReactNode
 }
 
 // Define field configurations for each subcategory
@@ -181,15 +194,29 @@ const subcategoryFields: Record<Subcategory, FieldConfig[]> = {
       label: "Storage",
       type: "select",
       options: ["16GB", "32GB", "64GB", "128GB", "256GB", "512GB", "1TB", "2TB", "Other"],
+      icon: <HardDrive className="h-4 w-4 text-[#00A693]" />,
     },
     {
       name: "ram",
       label: "RAM",
       type: "select",
       options: ["2GB", "3GB", "4GB", "6GB", "8GB", "12GB", "16GB", "Other"],
+      icon: <Memory className="h-4 w-4 text-[#00A693]" />,
     },
-    { name: "camera", label: "Camera", type: "text", placeholder: "e.g., 50MP main, 12MP ultra-wide, 10MP telephoto" },
-    { name: "battery", label: "Battery", type: "text", placeholder: "e.g., 5000mAh, 45W fast charging" },
+    {
+      name: "camera",
+      label: "Camera",
+      type: "text",
+      placeholder: "e.g., 50MP main, 12MP ultra-wide, 10MP telephoto",
+      icon: <Camera className="h-4 w-4 text-[#00A693]" />,
+    },
+    {
+      name: "battery",
+      label: "Battery",
+      type: "text",
+      placeholder: "e.g., 5000mAh, 45W fast charging",
+      icon: <Battery className="h-4 w-4 text-[#00A693]" />,
+    },
     {
       name: "additionalDetails",
       label: "Additional Details (Optional)",
@@ -206,9 +233,27 @@ const subcategoryFields: Record<Subcategory, FieldConfig[]> = {
       options: ["Dell", "HP", "Lenovo", "Apple", "Asus", "Acer", "MSI", "Other"],
     },
     { name: "model", label: "Model", type: "select", required: true, options: [] },
-    { name: "processor", label: "Processor", type: "text", placeholder: "e.g., Intel Core i7-12700H, Apple M2" },
-    { name: "ram", label: "RAM", type: "select", options: ["4GB", "8GB", "16GB", "32GB", "64GB", "Other"] },
-    { name: "storage", label: "Storage", type: "select", options: ["128GB", "256GB", "512GB", "1TB", "2TB", "Other"] },
+    {
+      name: "processor",
+      label: "Processor",
+      type: "text",
+      placeholder: "e.g., Intel Core i7-12700H, Apple M2",
+      icon: <Cpu className="h-4 w-4 text-[#00A693]" />,
+    },
+    {
+      name: "ram",
+      label: "RAM",
+      type: "select",
+      options: ["4GB", "8GB", "16GB", "32GB", "64GB", "Other"],
+      icon: <Memory className="h-4 w-4 text-[#00A693]" />,
+    },
+    {
+      name: "storage",
+      label: "Storage",
+      type: "select",
+      options: ["128GB", "256GB", "512GB", "1TB", "2TB", "Other"],
+      icon: <HardDrive className="h-4 w-4 text-[#00A693]" />,
+    },
     { name: "screenSize", label: "Screen Size", type: "text", placeholder: "e.g., 15.6 inches" },
     {
       name: "additionalDetails",
@@ -231,10 +276,23 @@ const subcategoryFields: Record<Subcategory, FieldConfig[]> = {
       label: "Storage",
       type: "select",
       options: ["32GB", "64GB", "128GB", "256GB", "512GB", "1TB", "Other"],
+      icon: <HardDrive className="h-4 w-4 text-[#00A693]" />,
     },
-    { name: "ram", label: "RAM", type: "select", options: ["2GB", "4GB", "6GB", "8GB", "16GB", "Other"] },
+    {
+      name: "ram",
+      label: "RAM",
+      type: "select",
+      options: ["2GB", "4GB", "6GB", "8GB", "16GB", "Other"],
+      icon: <Memory className="h-4 w-4 text-[#00A693]" />,
+    },
     { name: "screenSize", label: "Screen Size", type: "text", placeholder: "e.g., 10.9 inches" },
-    { name: "battery", label: "Battery", type: "text", placeholder: "e.g., 7600mAh" },
+    {
+      name: "battery",
+      label: "Battery",
+      type: "text",
+      placeholder: "e.g., 7600mAh",
+      icon: <Battery className="h-4 w-4 text-[#00A693]" />,
+    },
     {
       name: "additionalDetails",
       label: "Additional Details (Optional)",
@@ -637,9 +695,9 @@ export function SpecificationsForm({ initialData, onSaveDraft, onContinue, isLoa
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-lg border p-8">
+      <div className="bg-white rounded-xl shadow-lg p-8">
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#00796B]"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#00A693]"></div>
         </div>
       </div>
     )
@@ -650,15 +708,16 @@ export function SpecificationsForm({ initialData, onSaveDraft, onContinue, isLoa
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white rounded-xl shadow-lg border p-8"
+      className="bg-white rounded-xl shadow-lg p-8"
     >
       <div className="mb-6">
         <div className="flex items-center mb-2">
-          <Package className="h-6 w-6 mr-2 text-[#00796B]" />
-          <h2 className="text-3xl font-bold text-[#00796B]">
+          <Package className="h-6 w-6 mr-2 text-[#00A693]" />
+          <h2 className="text-2xl font-bold text-[#00A693]">
             {subcategory.replace(/([A-Z])/g, " $1").trim()} Specifications
           </h2>
         </div>
+        <p className="text-gray-500">Provide detailed specifications to help buyers understand your item better</p>
       </div>
 
       <Form {...form}>
@@ -671,13 +730,14 @@ export function SpecificationsForm({ initialData, onSaveDraft, onContinue, isLoa
                 name={fieldConfig.name}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base">
+                    <FormLabel className="text-base font-medium flex items-center">
+                      {fieldConfig.icon && <span className="mr-2">{fieldConfig.icon}</span>}
                       {fieldConfig.label} {fieldConfig.required && <span className="text-red-500">*</span>}
                     </FormLabel>
                     {fieldConfig.type === "select" ? (
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="text-base py-6">
+                          <SelectTrigger className="text-base py-6 border-gray-300 focus:border-[#00A693] focus:ring-[#00A693]">
                             <SelectValue placeholder={`Select ${fieldConfig.label.toLowerCase()}`} />
                           </SelectTrigger>
                         </FormControl>
@@ -696,7 +756,7 @@ export function SpecificationsForm({ initialData, onSaveDraft, onContinue, isLoa
                       <FormControl>
                         <Input
                           placeholder={fieldConfig.placeholder || `Enter ${fieldConfig.label.toLowerCase()}`}
-                          className="text-base py-6"
+                          className="text-base py-6 border-gray-300 focus:border-[#00A693] focus:ring-[#00A693]"
                           {...field}
                           value={field.value || ""}
                         />
@@ -718,13 +778,14 @@ export function SpecificationsForm({ initialData, onSaveDraft, onContinue, isLoa
                   name={fieldConfig.name}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-base">
+                      <FormLabel className="text-base font-medium flex items-center">
+                        {fieldConfig.icon && <span className="mr-2">{fieldConfig.icon}</span>}
                         {fieldConfig.label} {fieldConfig.required && <span className="text-red-500">*</span>}
                       </FormLabel>
                       {fieldConfig.type === "select" ? (
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger className="text-base py-6">
+                            <SelectTrigger className="text-base py-6 border-gray-300 focus:border-[#00A693] focus:ring-[#00A693]">
                               <SelectValue placeholder={`Select ${fieldConfig.label.toLowerCase()}`} />
                             </SelectTrigger>
                           </FormControl>
@@ -740,7 +801,7 @@ export function SpecificationsForm({ initialData, onSaveDraft, onContinue, isLoa
                         <FormControl>
                           <Input
                             placeholder={fieldConfig.placeholder || `Enter ${fieldConfig.label.toLowerCase()}`}
-                            className="text-base py-6"
+                            className="text-base py-6 border-gray-300 focus:border-[#00A693] focus:ring-[#00A693]"
                             {...field}
                             value={field.value || ""}
                           />
@@ -762,14 +823,15 @@ export function SpecificationsForm({ initialData, onSaveDraft, onContinue, isLoa
                 name={fieldConfig.name}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base">
+                    <FormLabel className="text-base font-medium flex items-center">
+                      {fieldConfig.icon && <span className="mr-2">{fieldConfig.icon}</span>}
                       {fieldConfig.label} {fieldConfig.required && <span className="text-red-500">*</span>}
                     </FormLabel>
                     {fieldConfig.type === "textarea" ? (
                       <FormControl>
                         <Textarea
                           placeholder={fieldConfig.placeholder || `Enter ${fieldConfig.label.toLowerCase()}`}
-                          className="min-h-[100px] text-base"
+                          className="min-h-[100px] text-base border-gray-300 focus:border-[#00A693] focus:ring-[#00A693]"
                           {...field}
                           value={field.value || ""}
                         />
@@ -777,7 +839,7 @@ export function SpecificationsForm({ initialData, onSaveDraft, onContinue, isLoa
                     ) : fieldConfig.type === "select" ? (
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="text-base py-6">
+                          <SelectTrigger className="text-base py-6 border-gray-300 focus:border-[#00A693] focus:ring-[#00A693]">
                             <SelectValue placeholder={`Select ${fieldConfig.label.toLowerCase()}`} />
                           </SelectTrigger>
                         </FormControl>
@@ -793,11 +855,16 @@ export function SpecificationsForm({ initialData, onSaveDraft, onContinue, isLoa
                       <FormControl>
                         <Input
                           placeholder={fieldConfig.placeholder || `Enter ${fieldConfig.label.toLowerCase()}`}
-                          className="text-base py-6"
+                          className="text-base py-6 border-gray-300 focus:border-[#00A693] focus:ring-[#00A693]"
                           {...field}
                           value={field.value || ""}
                         />
                       </FormControl>
+                    )}
+                    {fieldConfig.type === "textarea" && (
+                      <FormDescription>
+                        Include any other relevant details that might help potential buyers.
+                      </FormDescription>
                     )}
                     <FormMessage />
                   </FormItem>
@@ -810,7 +877,7 @@ export function SpecificationsForm({ initialData, onSaveDraft, onContinue, isLoa
               type="button"
               variant="outline"
               onClick={() => router.push("/post/item/basic-info")}
-              className="px-6 py-6 text-base flex items-center"
+              className="px-6 py-6 text-base border-gray-300 hover:bg-gray-50"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Previous
@@ -820,14 +887,14 @@ export function SpecificationsForm({ initialData, onSaveDraft, onContinue, isLoa
                 type="button"
                 variant="outline"
                 onClick={handleSaveDraft}
-                className="px-6 py-6 text-base flex items-center"
+                className="px-6 py-6 text-base border-[#00A693] text-[#00A693] hover:bg-[#00A693]/10"
               >
                 <Save className="h-4 w-4 mr-2" />
                 Save Draft
               </Button>
               <Button
                 type="submit"
-                className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 px-8 py-6 text-base shadow-md flex items-center"
+                className="bg-[#00A693] hover:bg-[#008F7F] px-8 py-6 text-base shadow-md"
                 disabled={isLoading}
               >
                 {isLoading ? (

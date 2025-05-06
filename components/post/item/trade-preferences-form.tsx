@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, ArrowRight, Save } from "lucide-react"
 import { motion } from "framer-motion"
@@ -59,7 +59,7 @@ export function TradePreferencesForm({ initialData, onSaveDraft, onContinue, isL
     >
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-teal-600">Trade Preferences</h2>
-        <p className="text-gray-600">Set your preferences for trading or selling your-with item</p>
+        <p className="text-gray-600">Set your preferences for trading or selling your item</p>
       </div>
 
       <Form {...form}>

@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, Heart, Share2, Flag } from "lucide-react"
-import { Button } from "../../../components/ui/button"
-import { getPublishedPosts } from "../../../lib/post-storage"
+import { Button } from "@/components/ui/button"
+import { getPublishedPosts } from "@/lib/post-storage"
 
 interface ServicePageProps {
   params: {
@@ -12,31 +12,12 @@ interface ServicePageProps {
   }
 }
 
-interface Service {
-  id: string
-  title: string
-  price: number
-  location: string
-  description: string
-  experience: string
-  serviceArea: string
-  details: string[]
-  images: string[]
-  provider: {
-    name: string
-    memberSince: string
-    responseTime: string
-    phone: string
-    email: string
-  }
-}
-
 export default function ServicePage({ params }: ServicePageProps) {
   const { slug } = params
-  const [service, setService] = useState<Service | null>(null)
+  const [service, setService] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [similarServices, setSimilarServices] = useState<Service[]>([])
+  const [similarServices, setSimilarServices] = useState<any[]>([])
 
   useEffect(() => {
     // Extract ID from slug
@@ -46,28 +27,23 @@ export default function ServicePage({ params }: ServicePageProps) {
     const storedPosts = getPublishedPosts()
 
     // Find the post with the matching ID
-    const post = storedPosts.find((p: any) => p.id === id && p.type === "service") as any
+    const post = storedPosts.find((p: any) => p.id === id && p.type === "service")
 
     if (post) {
-      const price: number = post.price ?? 0
-      const location: string = post.location ?? "Unknown location"
-      const experience: string = post.experience ?? "Not specified"
-      const serviceArea: string = post.serviceArea ?? "Not specified"
-
       // Format the post data for display
       setService({
         id: post.id,
         title: post.title,
-        price: price,
-        location: location,
+        price: post.price,
+        location: post.location,
         description: post.description || "No description provided",
-        experience: experience,
-        serviceArea: serviceArea,
+        experience: post.experience || "Not specified",
+        serviceArea: post.serviceArea || "Not specified",
         details: [
           `Category: ${post.category || "Not specified"}`,
           `Subcategory: ${post.subcategory || "Not specified"}`,
-          `Experience: ${experience}`,
-          `Service Area: ${serviceArea}`,
+          `Experience: ${post.experience || "Not specified"}`,
+          `Service Area: ${post.serviceArea || "Not specified"}`,
         ],
         images: Array.isArray(post.images)
           ? typeof post.images[0] === "string"
@@ -87,48 +63,26 @@ export default function ServicePage({ params }: ServicePageProps) {
       const similar = storedPosts
         .filter((p: any) => p.id !== id && p.type === "service" && p.category === post.category)
         .slice(0, 3)
-        .map((p: any) => {
-          const postAny = p as any
-          const price: number = postAny.price ?? 0
-          const location: string = postAny.location ?? "Unknown location"
-          const experience: string = postAny.experience ?? "Not specified"
-          const serviceArea: string = postAny.serviceArea ?? "Not specified"
-
-          return {
-            id: postAny.id,
-            title: postAny.title,
-            price: price,
-            location: location,
-            description: postAny.description || "No description provided",
-            experience: experience,
-            serviceArea: serviceArea,
-            details: [
-              `Category: ${postAny.category || "Not specified"}`,
-              `Subcategory: ${postAny.subcategory || "Not specified"}`,
-              `Experience: ${experience}`,
-              `Service Area: ${serviceArea}`,
-            ],
-            images: Array.isArray(postAny.images)
-              ? typeof postAny.images[0] === "string"
-                ? postAny.images
-                : postAny.images.map((img: any) => img.url)
-              : ["/placeholder.svg?height=150&width=200"],
-            provider: {
-              name: "Service Provider",
-              memberSince: "January 2023",
-              responseTime: "within 2 hours",
-              phone: "+251 91 234 5678",
-              email: "provider@example.com",
-            },
-          }
-        })
+        .map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          price: p.price,
+          location: p.location,
+          imageUrl:
+            Array.isArray(p.images) && p.images.length > 0
+              ? typeof p.images[0] === "string"
+                ? p.images[0]
+                : p.images[0].url
+              : "/placeholder.svg?height=150&width=200",
+        }))
 
       setSimilarServices(similar)
-      setLoading(false)
     } else {
       // If post not found, redirect to home
       window.location.href = "/"
     }
+
+    setLoading(false)
   }, [slug])
 
   const goToNextImage = () => {
@@ -173,13 +127,13 @@ export default function ServicePage({ params }: ServicePageProps) {
                   className="w-full h-[400px] object-cover"
                 />
                 <div className="absolute bottom-4 right-4 flex gap-2">
-                  <button className="bg-white rounded-full p-2 shadow-md" title="Add to favorites" type="button" aria-label="Add to favorites">
+                  <button className="bg-white rounded-full p-2 shadow-md">
                     <Heart className="h-4 w-4 text-gray-600" />
                   </button>
-                  <button className="bg-white rounded-full p-2 shadow-md" title="Share service" type="button" aria-label="Share service">
+                  <button className="bg-white rounded-full p-2 shadow-md">
                     <Share2 className="h-4 w-4 text-gray-600" />
                   </button>
-                  <button className="bg-white rounded-full p-2 shadow-md" title="Report service" type="button" aria-label="Report service">
+                  <button className="bg-white rounded-full p-2 shadow-md">
                     <Flag className="h-4 w-4 text-gray-600" />
                   </button>
                 </div>
@@ -229,7 +183,7 @@ export default function ServicePage({ params }: ServicePageProps) {
                 {similarServices.map((service) => (
                   <div key={service.id} className="border rounded-md overflow-hidden">
                     <img
-                      src={service.images[0] || "/placeholder.svg"}
+                      src={service.imageUrl || "/placeholder.svg"}
                       alt={service.title}
                       className="w-full h-32 object-cover"
                     />

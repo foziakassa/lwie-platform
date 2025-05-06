@@ -24,31 +24,44 @@ export default function ItemLocationDescriptionPage() {
     setDraftData(draft)
   }, [router])
 
-  const handleSaveDraft = async (formData: any) => {
+  const handleSaveDraft = (data: any) => {
     try {
-      setIsLoading(true)
-      if (draftData) {
-        const updatedDraft = {
-          ...draftData,
-          ...formData,
-          updatedAt: new Date().toISOString(),
-        }
-        saveDraftPost(updatedDraft)
+      // Get the existing draft
+      const draft = getDraftPost("item")
+      if (!draft) {
         toast({
-          title: "Draft saved",
-          description: "Your item draft has been saved successfully.",
+          title: "Error",
+          description: "No draft found. Please start from the beginning.",
+          variant: "destructive",
         })
-        router.push("/")
+        router.push("/post/item/basic-info")
+        return
       }
+
+      // Update with new data
+      const updatedDraft = {
+        ...draft,
+        ...data,
+        updatedAt: new Date().toISOString(),
+      }
+
+      // Save the updated draft
+      saveDraftPost(updatedDraft)
+
+      toast({
+        title: "Draft saved",
+        description: "Your post has been saved as a draft",
+      })
+
+      // Navigate to home
+      router.push("/")
     } catch (error) {
       console.error("Error saving draft:", error)
       toast({
-        title: "Error saving draft",
-        description: "There was a problem saving your draft. Please try again.",
+        title: "Error",
+        description: "Failed to save draft",
         variant: "destructive",
       })
-    } finally {
-      setIsLoading(false)
     }
   }
 

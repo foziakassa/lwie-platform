@@ -5,23 +5,19 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"
 import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowRight, ArrowLeft, Save } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ArrowRight, ArrowLeft, Save, Clock } from "lucide-react"
 import { motion } from "framer-motion"
 
 const formSchema = z.object({
-  experience: z.string({
-    required_error: "Please select your experience level.",
-  }),
-  availability: z.string().optional(),
   duration: z.string().optional(),
-  qualifications: z.array(z.string()).optional(),
-  hasLicense: z.boolean().optional(),
-  hasCertification: z.boolean().optional(),
-  additionalDetails: z.string().optional(),
+  availability: z.string().min(5, {
+    message: "Please provide your availability details (at least 5 characters).",
+  }),
+  experience: z.string().optional(),
+  qualifications: z.string().optional(),
 })
 
 interface ServiceDetailsFormProps {
@@ -37,13 +33,10 @@ export function ServiceDetailsForm({ initialData, onSaveDraft, onContinue, isLoa
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      experience: initialData?.experience || "",
-      availability: initialData?.availability || "",
       duration: initialData?.duration || "",
-      qualifications: initialData?.qualifications || [],
-      hasLicense: initialData?.hasLicense || false,
-      hasCertification: initialData?.hasCertification || false,
-      additionalDetails: initialData?.additionalDetails || "",
+      availability: initialData?.availability || "",
+      experience: initialData?.experience || "",
+      qualifications: initialData?.qualifications || "",
     },
   })
 
@@ -56,186 +49,104 @@ export function ServiceDetailsForm({ initialData, onSaveDraft, onContinue, isLoa
     onSaveDraft(values)
   }
 
-  const qualifications = [
-    { id: "degree", label: "Degree" },
-    { id: "certificate", label: "Certificate" },
-    { id: "license", label: "Professional License" },
-    { id: "training", label: "Specialized Training" },
-  ]
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white rounded-xl p-6"
+      className="bg-white rounded-xl shadow-lg p-8"
     >
+      <div className="flex items-center mb-6">
+        <Clock className="h-6 w-6 text-teal-600 mr-2" />
+        <h2 className="text-2xl font-bold text-[#00A693]">Service Details</h2>
+      </div>
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
             control={form.control}
-            name="experience"
+            name="duration"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-base">
-                  Experience Level <span className="text-red-500">*</span>
-                </FormLabel>
+                <FormLabel className="text-base font-medium">Service Duration (Optional)</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                    <SelectTrigger className="text-base py-6">
-                      <SelectValue placeholder="Select your experience level" />
+                    <SelectTrigger className="text-base py-6 border-gray-300">
+                      <SelectValue placeholder="Select typical service duration" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="Beginner">Beginner (0-1 years)</SelectItem>
-                    <SelectItem value="Intermediate">Intermediate (1-3 years)</SelectItem>
-                    <SelectItem value="Experienced">Experienced (3-5 years)</SelectItem>
-                    <SelectItem value="Expert">Expert (5+ years)</SelectItem>
+                    <SelectItem value="less_than_1_hour">Less than 1 hour</SelectItem>
+                    <SelectItem value="1_to_2_hours">1-2 hours</SelectItem>
+                    <SelectItem value="2_to_4_hours">2-4 hours</SelectItem>
+                    <SelectItem value="half_day">Half day</SelectItem>
+                    <SelectItem value="full_day">Full day</SelectItem>
+                    <SelectItem value="multiple_days">Multiple days</SelectItem>
+                    <SelectItem value="varies">Varies by project</SelectItem>
                   </SelectContent>
                 </Select>
+                <FormDescription>How long does your service typically take to complete?</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="availability"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-base">Availability</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="text-base py-6">
-                        <SelectValue placeholder="Select your availability" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Weekdays">Weekdays</SelectItem>
-                      <SelectItem value="Weekends">Weekends</SelectItem>
-                      <SelectItem value="Evenings">Evenings</SelectItem>
-                      <SelectItem value="Full-time">Full-time</SelectItem>
-                      <SelectItem value="Part-time">Part-time</SelectItem>
-                      <SelectItem value="Flexible">Flexible</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="duration"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-base">Service Duration</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="text-base py-6">
-                        <SelectValue placeholder="Select service duration" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Less than 1 hour">Less than 1 hour</SelectItem>
-                      <SelectItem value="1-2 hours">1-2 hours</SelectItem>
-                      <SelectItem value="Half day">Half day</SelectItem>
-                      <SelectItem value="Full day">Full day</SelectItem>
-                      <SelectItem value="Multiple days">Multiple days</SelectItem>
-                      <SelectItem value="Ongoing">Ongoing</SelectItem>
-                      <SelectItem value="Varies">Varies by project</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className="space-y-3">
-            <FormLabel className="text-base">Qualifications (Optional)</FormLabel>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {qualifications.map((qualification) => (
-                <FormField
-                  key={qualification.id}
-                  control={form.control}
-                  name="qualifications"
-                  render={({ field }) => {
-                    return (
-                      <FormItem
-                        key={qualification.id}
-                        className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3"
-                      >
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value?.includes(qualification.id)}
-                            onCheckedChange={(checked) => {
-                              const currentValues = field.value || []
-                              if (checked) {
-                                field.onChange([...currentValues, qualification.id])
-                              } else {
-                                field.onChange(currentValues.filter((value) => value !== qualification.id))
-                              }
-                            }}
-                          />
-                        </FormControl>
-                        <FormLabel className="text-sm font-normal">{qualification.label}</FormLabel>
-                      </FormItem>
-                    )
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="hasLicense"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                  <FormControl>
-                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>Has Professional License</FormLabel>
-                    <p className="text-sm text-gray-500">I have a professional license for this service</p>
-                  </div>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="hasCertification"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                  <FormControl>
-                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>Has Certification</FormLabel>
-                    <p className="text-sm text-gray-500">I have certification for this service</p>
-                  </div>
-                </FormItem>
-              )}
-            />
-          </div>
-
           <FormField
             control={form.control}
-            name="additionalDetails"
+            name="availability"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-base">Additional Details (Optional)</FormLabel>
+                <FormLabel className="text-base font-medium">
+                  Availability <span className="text-red-500">*</span>
+                </FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder="Add any other details about your service qualifications..."
-                    className="min-h-[120px]"
+                    placeholder="E.g., Weekdays 9am-5pm, Weekends by appointment only"
+                    className="min-h-[100px] text-base border-gray-300"
                     {...field}
                   />
                 </FormControl>
+                <FormDescription>When are you available to provide this service?</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="experience"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-base font-medium">Experience (Optional)</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Describe your experience in this field"
+                    className="min-h-[100px] text-base border-gray-300"
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>Share your relevant experience to build trust with potential clients</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="qualifications"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-base font-medium">Qualifications (Optional)</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="List any relevant qualifications, certifications, or credentials"
+                    className="min-h-[100px] text-base border-gray-300"
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Include any certifications, degrees, or training that qualify you for this service
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -252,13 +163,18 @@ export function ServiceDetailsForm({ initialData, onSaveDraft, onContinue, isLoa
               Previous
             </Button>
             <div className="space-x-3">
-              <Button type="button" variant="outline" onClick={handleSaveDraft} className="px-6 py-6 text-base">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleSaveDraft}
+                className="px-6 py-6 text-base border-[#00A693] text-[#00A693] hover:bg-[#00A693]/10"
+              >
                 <Save className="h-4 w-4 mr-2" />
                 Save Draft
               </Button>
               <Button
                 type="submit"
-                className="bg-teal-600 hover:bg-teal-700 px-8 py-6 text-base shadow-md"
+                className="bg-[#00A693] hover:bg-[#008F7F] px-8 py-6 text-base shadow-md"
                 disabled={isLoading}
               >
                 {isLoading ? (

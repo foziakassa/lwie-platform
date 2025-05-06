@@ -7,15 +7,17 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 import { MapPin, ArrowLeft, ArrowRight, Save } from "lucide-react"
 import { motion } from "framer-motion"
 
 const formSchema = z.object({
   city: z.string().min(1, {
-    message: "Please select a city.",
+    message: "Please enter a city.",
   }),
-  subcity: z.string().optional(),
+  subcity: z.string().min(1, {
+    message: "Please enter a subcity or area.",
+  }),
 })
 
 interface LocationDescriptionFormProps {
@@ -33,8 +35,6 @@ export function LocationDescriptionForm({
 }: LocationDescriptionFormProps) {
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
-  const [selectedCity, setSelectedCity] = useState<string | null>(null)
-  const [subcities, setSubcities] = useState<any[]>([])
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,22 +46,7 @@ export function LocationDescriptionForm({
 
   useEffect(() => {
     setMounted(true)
-
-    if (initialData?.city) {
-      setSelectedCity(initialData.city)
-      setSubcities(getSubcitiesByCity(initialData.city))
-    }
   }, [initialData])
-
-  // Update subcities when city changes
-  useEffect(() => {
-    const city = form.watch("city")
-    if (city && city !== selectedCity) {
-      setSelectedCity(city)
-      setSubcities(getSubcitiesByCity(city))
-      form.setValue("subcity", "")
-    }
-  }, [form.watch("city"), selectedCity, form])
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     onContinue(values)
@@ -70,57 +55,6 @@ export function LocationDescriptionForm({
   const handleSaveDraft = () => {
     const values = form.getValues()
     onSaveDraft(values)
-  }
-
-  const cities = [
-    "Addis Ababa",
-    "Dire Dawa",
-    "Bahir Dar",
-    "Hawassa",
-    "Mekelle",
-    "Adama",
-    "Gondar",
-    "Jimma",
-    "Dessie",
-    "Bishoftu",
-    "Sodo",
-    "Jijiga",
-    "Shashemene",
-    "Arba Minch",
-    "Hosaena",
-    "Harar",
-    "Dilla",
-    "Nekemte",
-    "Debre Birhan",
-    "Asella",
-  ]
-
-  const getSubcitiesByCity = (city: string): string[] => {
-    switch (city) {
-      case "Addis Ababa":
-        return [
-          "Addis Ketema",
-          "Akaky Kaliti",
-          "Arada",
-          "Bole",
-          "Gullele",
-          "Kirkos",
-          "Kolfe Keranio",
-          "Lideta",
-          "Nifas Silk-Lafto",
-          "Yeka",
-        ]
-      case "Dire Dawa":
-        return ["Dire Dawa City", "Melka Jebdu", "Gendekore", "Legehare"]
-      case "Bahir Dar":
-        return ["Bahir Dar City", "Shimbit", "Belay Zeleke", "Sefene Selam"]
-      case "Hawassa":
-        return ["Hawassa City", "Tabor", "Menaharia", "Misrak"]
-      case "Mekelle":
-        return ["Ayder", "Hadnet", "Hawelti", "Kedamay Weyane", "Quiha"]
-      default:
-        return ["Central", "North", "South", "East", "West"]
-    }
   }
 
   if (!mounted) return null
@@ -151,20 +85,9 @@ export function LocationDescriptionForm({
                   <FormLabel className="text-base">
                     City <span className="text-red-500">*</span>
                   </FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="text-base py-6">
-                        <SelectValue placeholder="Select your city" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {cities.map((city) => (
-                        <SelectItem key={city} value={city} className="py-2.5">
-                          {city}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Input placeholder="Enter your city" {...field} className="text-base py-6" />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -175,25 +98,12 @@ export function LocationDescriptionForm({
               name="subcity"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base">Subcity</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    disabled={!form.watch("city") || !subcities.length}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="text-base py-6">
-                        <SelectValue placeholder="Select your subcity" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {subcities.map((subcity) => (
-                        <SelectItem key={subcity} value={subcity} className="py-2.5">
-                          {subcity}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormLabel className="text-base">
+                    Subcity/Area <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter your subcity or area" {...field} className="text-base py-6" />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

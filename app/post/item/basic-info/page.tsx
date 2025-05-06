@@ -21,32 +21,35 @@ export default function ItemBasicInfoPage() {
     }
   }, [])
 
-  const handleSaveDraft = async (formData: any) => {
+  const handleSaveDraft = (data: any) => {
     try {
-      setIsLoading(true)
-      const draft = getDraftPost("item")
-      if (draft) {
-        const updatedDraft = {
-          ...draft,
-          ...formData,
-          updatedAt: new Date().toISOString(),
-        }
-        saveDraftPost(updatedDraft)
-        toast({
-          title: "Draft saved",
-          description: "Your item draft has been saved successfully.",
-        })
-        router.push("/")
+      // Initialize a new post if there isn't one already
+      let draft = getDraftPost("item") || initializePost("item")
+
+      // Update with new data
+      draft = {
+        ...draft,
+        ...data,
+        updatedAt: new Date().toISOString(),
       }
+
+      // Save the draft
+      saveDraftPost(draft)
+
+      toast({
+        title: "Draft saved",
+        description: "Your post has been saved as a draft",
+      })
+
+      // Navigate to home
+      router.push("/")
     } catch (error) {
       console.error("Error saving draft:", error)
       toast({
-        title: "Error saving draft",
-        description: "There was a problem saving your draft. Please try again.",
+        title: "Error",
+        description: "Failed to save draft",
         variant: "destructive",
       })
-    } finally {
-      setIsLoading(false)
     }
   }
 

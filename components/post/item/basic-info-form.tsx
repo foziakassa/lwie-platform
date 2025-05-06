@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ImageUploader } from "@/components/post/image-uploader"
@@ -24,7 +24,7 @@ const formSchema = z.object({
   subcategory: z.string({ required_error: "Please select a subcategory." }),
   condition: z.string({ required_error: "Please select a condition." }),
   price: z.string().min(1, { message: "Please enter a price." }),
-  images: z.array(z.string()).optional(),
+  images: z.array(z.string()).min(1, { message: "Please upload at least one image." }),
 })
 
 // Explicitly define form values type
@@ -137,10 +137,11 @@ export function BasicInfoForm({ initialData, onSaveDraft, onContinue, isLoading 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white rounded-xl shadow-lg border p-8"
+      className="bg-white rounded-xl shadow-lg p-8"
     >
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-[#00796B]">Basic Information</h2>
+        <h2 className="text-2xl font-bold text-[#00A693]">Item Information</h2>
+        <p className="text-gray-500 mt-2">Provide basic details about the item you're posting</p>
       </div>
 
       <Form {...form}>
@@ -150,16 +151,17 @@ export function BasicInfoForm({ initialData, onSaveDraft, onContinue, isLoading 
             name="title"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-base">
+                <FormLabel className="text-base font-medium">
                   Title <span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
                   <Input
                     placeholder="e.g., Samsung Galaxy S21 Ultra 5G, 128GB, Black"
                     {...field}
-                    className="text-base py-6"
+                    className="text-base py-6 border-gray-300 focus:border-[#00A693] focus:ring-[#00A693]"
                   />
                 </FormControl>
+                <FormDescription>Be specific with your title to help others find your item.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -171,12 +173,12 @@ export function BasicInfoForm({ initialData, onSaveDraft, onContinue, isLoading 
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base">
+                  <FormLabel className="text-base font-medium">
                     Category <span className="text-red-500">*</span>
                   </FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger className="text-base py-6">
+                      <SelectTrigger className="text-base py-6 border-gray-300 focus:border-[#00A693] focus:ring-[#00A693]">
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
                     </FormControl>
@@ -201,12 +203,12 @@ export function BasicInfoForm({ initialData, onSaveDraft, onContinue, isLoading 
               name="subcategory"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base">
+                  <FormLabel className="text-base font-medium">
                     Subcategory <span className="text-red-500">*</span>
                   </FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedCategory}>
                     <FormControl>
-                      <SelectTrigger className="text-base py-6">
+                      <SelectTrigger className="text-base py-6 border-gray-300 focus:border-[#00A693] focus:ring-[#00A693]">
                         <SelectValue
                           placeholder={selectedCategory ? "Select a subcategory" : "Select a category first"}
                         />
@@ -232,12 +234,12 @@ export function BasicInfoForm({ initialData, onSaveDraft, onContinue, isLoading 
               name="condition"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base">
+                  <FormLabel className="text-base font-medium">
                     Condition <span className="text-red-500">*</span>
                   </FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger className="text-base py-6">
+                      <SelectTrigger className="text-base py-6 border-gray-300 focus:border-[#00A693] focus:ring-[#00A693]">
                         <SelectValue placeholder="Select condition" />
                       </SelectTrigger>
                     </FormControl>
@@ -259,12 +261,18 @@ export function BasicInfoForm({ initialData, onSaveDraft, onContinue, isLoading 
               name="price"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base">
+                  <FormLabel className="text-base font-medium">
                     Price (ETB) <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="Enter price in ETB" className="text-base py-6" {...field} />
+                    <Input
+                      type="number"
+                      placeholder="Enter price in ETB"
+                      className="text-base py-6 border-gray-300 focus:border-[#00A693] focus:ring-[#00A693]"
+                      {...field}
+                    />
                   </FormControl>
+                  <FormDescription>Set a fair price for your item. You can negotiate later.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -276,7 +284,7 @@ export function BasicInfoForm({ initialData, onSaveDraft, onContinue, isLoading 
             name="images"
             render={({ field }) => (
               <FormItem className="mt-6">
-                <FormLabel className="text-base">
+                <FormLabel className="text-base font-medium">
                   Images <span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
@@ -290,6 +298,9 @@ export function BasicInfoForm({ initialData, onSaveDraft, onContinue, isLoading 
                     maxImages={5}
                   />
                 </FormControl>
+                <FormDescription>
+                  Upload clear images of your item from different angles. Maximum 5 images.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -299,8 +310,8 @@ export function BasicInfoForm({ initialData, onSaveDraft, onContinue, isLoading 
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push("/post")}
-              className="px-6 py-6 text-base"
+              onClick={() => router.push("/post/selection")}
+              className="px-6 py-6 text-base border-gray-300 hover:bg-gray-50"
             >
               Cancel
             </Button>
@@ -309,14 +320,14 @@ export function BasicInfoForm({ initialData, onSaveDraft, onContinue, isLoading 
                 type="button"
                 variant="outline"
                 onClick={handleSaveDraft}
-                className="px-6 py-6 text-base flex items-center"
+                className="px-6 py-6 text-base border-[#00A693] text-[#00A693] hover:bg-[#00A693]/10"
               >
                 <Save className="h-4 w-4 mr-2" />
                 Save Draft
               </Button>
               <Button
                 type="submit"
-                className="bg-[#00796B] hover:bg-[#00695C] px-8 py-6 text-base shadow-md"
+                className="bg-[#00A693] hover:bg-[#008F7F] px-8 py-6 text-base shadow-md"
                 disabled={isLoading}
               >
                 {isLoading ? (

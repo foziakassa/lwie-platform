@@ -2,16 +2,17 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { PostProgressIndicator } from "@/components/post/post-progress-indicator"
-import { getDraftPost, saveDraftPost, clearDraftPost } from "@/lib/post-storage"
+import { ActionButtons } from "@/components/post/shared/action-buttons"
+import { getDraftPost, clearDraftPost } from "@/lib/post-storage"
 import { createItem } from "@/lib/api-client"
 import { toast } from "@/components/ui/use-toast"
 
 export default function ItemCreatePage() {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isValid, setIsValid] = useState(false)
   const [draftData, setDraftData] = useState<any>(null)
 
   useEffect(() => {
@@ -20,76 +21,87 @@ export default function ItemCreatePage() {
       router.push("/post/item/basic-info")
       return
     }
+
     setDraftData(draft)
+
+    // Validate the draft has all required fields
+    const isComplete = Boolean(
+      draft.title &&
+        draft.category &&
+        draft.subcategory &&
+        draft.city &&
+        draft.subcity &&
+        draft.images &&
+        draft.images.length > 0,
+    )
+
+    setIsValid(isComplete)
   }, [router])
 
   const handleSubmit = async () => {
-    if (!draftData) return
+    if (!draftData || !isValid) {
+      toast({
+        title: "Missing information",
+        description: "Please complete all required fields before submitting.",
+        variant: "destructive",
+      })
+      return
+    }
 
     try {
-      setIsLoading(true)
-      const userId = 1 // TODO: Replace with actual user ID from auth context
-      const postData = {
-        user_id: userId,
+      setIsSubmitting(true)
+
+      // Format the data for the API
+      const itemData = {
         title: draftData.title,
-        category_id: draftData.category_id,
-        description: draftData.description || null,
-        condition: draftData.condition,
-        location: draftData.location,
-        trade_type: draftData.tradePreferences?.trade_type || "openToAll",
-        accept_cash: draftData.tradePreferences?.accept_cash || false,
-        price: draftData.tradePreferences?.price ? parseFloat(draftData.tradePreferences.price) : null,
-        brand: draftData.specifications?.brand || null,
-        model: draftData.specifications?.model || null,
-        year: draftData.specifications?.year || null,
-        specifications: draftData.specifications?.additionalSpecs || null,
-        images: draftData.images ? draftData.images.map((url: string) => ({ url })) : [],
+        description: draftData.description || "",
+        category: draftData.category,
+        subcategory: draftData.subcategory,
+        condition: draftData.condition || "Used",
+        price: Number.parseFloat(draftData.price) || 0,
+        location: `${draftData.city}, ${draftData.subcity}`,
+        city: draftData.city,
+        subcity: draftData.subcity,
+        specifications: {
+          brand: draftData.brand || "",
+          model: draftData.model || "",
+        },
+        tradePreferences: draftData.tradePreferences || {
+          openToOffers: true,
+          acceptCash: true,
+        },
+        images: draftData.images,
         status: "published",
       }
 
-      await createItem(postData)
-      clearDraftPost("item")
-      toast({
-        title: "Item posted",
-        description: "Your item has been successfully posted.",
-      })
-      router.push("/")
-    } catch (error: any) {
-      console.error("Error creating item:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to post item. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
+      // Submit to the API
+      const response = await createItem(itemData)
 
-  const handleSaveDraft = async () => {
-    try {
-      setIsLoading(true)
-      if (draftData) {
-        const updatedDraft = {
-          ...draftData,
-          updatedAt: new Date().toISOString(),
-        }
-        saveDraftPost(updatedDraft)
+      if (response.success) {
+        // Clear the draft
+        clearDraftPost("item")
+
+        // Set flag for new post submitted
+        localStorage.setItem("newPostSubmitted", "true")
+
         toast({
-          title: "Draft saved",
-          description: "Your item draft has been saved successfully.",
+          title: "Item posted successfully",
+          description: "Your item has been published and is now visible to others.",
         })
-        router.push("/")
+
+        router.push("/post/success")
+      } else {
+        throw new Error("Failed to create item")
       }
     } catch (error) {
-      console.error("Error saving draft:", error)
+      console.error("Error submitting post:", error)
       toast({
-        title: "Error saving draft",
-        description: "There was a problem saving your draft. Please try again.",
+        title: "Error submitting post",
+        description: "There was a problem submitting your post. Please try again.",
         variant: "destructive",
       })
     } finally {
-      setIsLoading(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -106,62 +118,83 @@ export default function ItemCreatePage() {
         currentStep={4}
       />
 
-      <Card className="w-full max-w-4xl mx-auto mt-6">
+      <Card className="w-full max-w-md mx-auto mt-6">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">Review & Submit Item</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Review & Submit</CardTitle>
         </CardHeader>
         <CardContent>
-          {draftData ? (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold">Basic Information</h3>
-                <p><strong>Title:</strong> {draftData.title || "N/A"}</p>
-                <p><strong>Category ID:</strong> {draftData.category_id || "N/A"}</p>
-                <p><strong>Description:</strong> {draftData.description || "No description"}</p>
-                <p><strong>Condition:</strong> {draftData.condition || "N/A"}</p>
+          <p className="text-center mb-4">
+            Your item post is ready to be published. Click the button below to submit your post.
+          </p>
+
+          {!isValid && (
+            <div className="bg-yellow-50 p-4 rounded-md mb-4">
+              <p className="text-yellow-700 text-sm">
+                Some required information is missing. Please go back and complete all required fields.
+              </p>
+            </div>
+          )}
+
+          {draftData && (
+            <div className="space-y-4 mt-6">
+              <div className="border rounded-md p-4">
+                <h3 className="font-medium mb-2">Basic Information</h3>
+                <p>
+                  <span className="font-medium">Title:</span> {draftData.title}
+                </p>
+                <p>
+                  <span className="font-medium">Category:</span> {draftData.category}
+                </p>
+                <p>
+                  <span className="font-medium">Subcategory:</span> {draftData.subcategory}
+                </p>
+                <p>
+                  <span className="font-medium">Condition:</span> {draftData.condition}
+                </p>
+                <p>
+                  <span className="font-medium">Price:</span> {draftData.price} ETB
+                </p>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold">Specifications</h3>
-                <p><strong>Brand:</strong> {draftData.specifications?.brand || "N/A"}</p>
-                <p><strong>Model:</strong> {draftData.specifications?.model || "N/A"}</p>
-                <p><strong>Year:</strong> {draftData.specifications?.year || "N/A"}</p>
-                <p><strong>Additional Specs:</strong> {draftData.specifications?.additionalSpecs ? JSON.stringify(draftData.specifications.additionalSpecs) : "N/A"}</p>
+
+              <div className="border rounded-md p-4">
+                <h3 className="font-medium mb-2">Location</h3>
+                <p>
+                  <span className="font-medium">City:</span> {draftData.city}
+                </p>
+                <p>
+                  <span className="font-medium">Subcity:</span> {draftData.subcity}
+                </p>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold">Trade Preferences</h3>
-                <p><strong>Trade Type:</strong> {draftData.tradePreferences?.trade_type || "N/A"}</p>
-                <p><strong>Accept Cash:</strong> {draftData.tradePreferences?.accept_cash ? "Yes" : "No"}</p>
-                <p><strong>Price:</strong> {draftData.tradePreferences?.price ? `$${draftData.tradePreferences.price}` : "N/A"}</p>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Location</h3>
-                <p><strong>Location:</strong> {draftData.location || "N/A"}</p>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Images</h3>
-                {draftData.images?.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {draftData.images.map((url: string, index: number) => (
-                      <img key={index} src={url} alt={`Item image ${index + 1}`} className="w-full h-32 object-cover rounded-md" />
+
+              <div className="border rounded-md p-4">
+                <h3 className="font-medium mb-2">Images</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {draftData.images &&
+                    draftData.images.map((image: string, index: number) => (
+                      <div key={index} className="relative h-20 rounded overflow-hidden">
+                        <img
+                          src={image || "/placeholder.svg"}
+                          alt={`Item image ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                     ))}
-                  </div>
-                ) : (
-                  <p>No images uploaded</p>
-                )}
-              </div>
-              <div className="flex justify-between">
-                <Button variant="outline" onClick={handleSaveDraft} disabled={isLoading}>
-                  Save Draft
-                </Button>
-                <Button onClick={handleSubmit} disabled={isLoading}>
-                  {isLoading ? "Submitting..." : "Submit Post"}
-                </Button>
+                </div>
               </div>
             </div>
-          ) : (
-            <p>Loading draft...</p>
           )}
         </CardContent>
+        <CardFooter>
+          <ActionButtons
+            onBack={() => router.push("/post/item/location-description")}
+            onSaveDraft={() => router.push("/")}
+            onContinue={handleSubmit}
+            continueText={isSubmitting ? "Submitting..." : "Submit Post"}
+            saveDraftText="Save & Exit"
+            isLoading={isSubmitting}
+            continueDisabled={!isValid || isSubmitting}
+          />
+        </CardFooter>
       </Card>
     </div>
   )

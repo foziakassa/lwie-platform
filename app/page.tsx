@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import Image from "next/image"
-import Link from "next/link"
-import { motion, AnimatePresence } from "framer-motion"
-import { Filter, MapPin, Heart, Share2, Gift } from "lucide-react"
-import ApprovedAdvertisement from "./ad/page"
-import ThreeDAdvertisement from '../components/3d-advertisement-carousel'
-import { fetchItems, fetchServices } from "@/lib/api-client"
-import { toast } from "@/components/ui/use-toast"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { Filter, MapPin, Heart, Share2, Gift } from "lucide-react";
+import ApprovedAdvertisement from "./ad/page";
+import ThreeDAdvertisement from '../components/3d-advertisement-carousel';
+import { fetchItems, fetchServices } from "@/lib/api-client";
+import { toast } from "@/components/ui/use-toast";
 
 // Animation variants
 const containerVariants = {
@@ -20,7 +20,7 @@ const containerVariants = {
       staggerChildren: 0.1,
     },
   },
-}
+};
 
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
@@ -33,46 +33,48 @@ const itemVariants = {
       damping: 24,
     },
   },
-}
+};
 
 interface Item {
-  id: number
-  title: string
-  created_at: string
-  images?: { url: string; is_main: boolean }[]
-  location?: string
-  price?: number
-  condition?: string
-  category_name?: string
+  id: number;
+  title: string;
+  created_at: string;
+  images?: { url: string }[];
+  location?: string;
+  price?: number;
+  condition?: string;
 }
 
 interface Service {
-  id: number
-  title: string
-  created_at: string
-  images?: { url: string; is_main: boolean }[]
-  location?: string
-  hourly_rate?: number
-  category_name?: string
+  id: number;
+  title: string;
+  created_at: string;
+  images?: { url: string }[];
+  location?: string;
+  hourly_rate?: number;
+  category_name?: string;
 }
 
 export default function Home() {
-  const [visibleSection, setVisibleSection] = useState("featured")
-  const [selectedCategory, setSelectedCategory] = useState("All")
-  const [likedItems, setLikedItems] = useState<number[]>([])
-  const [posts, setPosts] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const router = useRouter()
+  const [visibleSection, setVisibleSection] = useState("featured");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [likedItems, setLikedItems] = useState<number[]>([]);
+  const [posts, setPosts] = useState<any[]>([]); // Combined items and services
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const loadPosts = async () => {
       try {
-        setIsLoading(true)
-        const [itemsResponse, servicesResponse] = await Promise.all([
-          fetchItems({ status: "published", limit: 50 }),
-          fetchServices({ status: "published", limit: 50 }),
-        ])
+        setIsLoading(true);
 
+        // Fetch items and services
+        const [itemsResponse, servicesResponse] = await Promise.all([
+          fetchItems(),
+          fetchServices(),
+        ]);
+
+        // Combine items and services
         const combinedPosts = [
           ...(itemsResponse.success ? itemsResponse.items : []).map((item: Item) => ({
             ...item,
@@ -82,45 +84,46 @@ export default function Home() {
             ...service,
             type: 'service',
           })),
-        ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-        setPosts(combinedPosts)
+        setPosts(combinedPosts);
 
-        const savedLikedItems = localStorage.getItem("likedItems")
+        // Load liked items from localStorage
+        const savedLikedItems = localStorage.getItem("likedItems");
         if (savedLikedItems) {
-          setLikedItems(JSON.parse(savedLikedItems))
+          setLikedItems(JSON.parse(savedLikedItems));
         }
-      } catch (error: any) {
-        console.error("Error loading posts:", error)
+      } catch (error) {
+        console.error("Error loading posts:", error);
         toast({
           title: "Error",
-          description: error.message || "Failed to load listings",
+          description: "Failed to load listings",
           variant: "destructive",
-        })
+        });
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    loadPosts()
-  }, [])
+    loadPosts();
+  }, []);
 
   const generateSlug = (title: string, id: string) => {
-    return `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${id}`
-  }
+    return `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${id}`;
+  };
 
   const toggleLike = (itemId: number) => {
     setLikedItems((prev) => {
-      const newLikedItems = prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
-      localStorage.setItem("likedItems", JSON.stringify(newLikedItems))
-      return newLikedItems
-    })
-  }
+      const newLikedItems = prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId];
+      localStorage.setItem("likedItems", JSON.stringify(newLikedItems));
+      return newLikedItems;
+    });
+  };
 
   const navigateToDetail = (post: any) => {
-    const slug = generateSlug(post.title, post.id)
-    router.push(`/${post.type === 'item' ? 'products' : 'services'}/${slug}`)
-  }
+    const slug = generateSlug(post.title, post.id);
+    router.push(`/${post.type === 'item' ? 'products' : 'services'}/${slug}`);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -179,7 +182,7 @@ export default function Home() {
                   >
                     <div className="relative h-48">
                       <img
-                        src={post.images?.find((img: any) => img.is_main)?.url || post.images?.[0]?.url || "/placeholder.svg?height=300&width=300"}
+                        src={post.images?.[0]?.url || "/placeholder.svg?height=300&width=300"}
                         alt={post.title}
                         className="w-full h-full object-cover"
                       />
@@ -188,9 +191,9 @@ export default function Home() {
                           className="p-1.5 bg-white rounded-full shadow-sm hover:bg-gray-100"
                           title="Like"
                           onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            toggleLike(post.id)
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleLike(post.id);
                           }}
                         >
                           <Heart
@@ -201,8 +204,8 @@ export default function Home() {
                           className="p-1.5 bg-white rounded-full shadow-sm hover:bg-gray-100"
                           title="Share"
                           onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
+                            e.preventDefault();
+                            e.stopPropagation();
                             // Share functionality would go here
                           }}
                         >
@@ -211,7 +214,7 @@ export default function Home() {
                       </div>
                       <div className="absolute top-2 left-2">
                         <span className="bg-white text-xs px-2 py-0.5 rounded font-medium text-gray-700">
-                          {post.type === 'item' ? post.condition : post.category_name || "N/A"}
+                          {post.type === 'item' ? post.condition : post.category_name}
                         </span>
                       </div>
                     </div>
@@ -221,13 +224,13 @@ export default function Home() {
                           {post.type === 'item' ? `${post.price?.toLocaleString() || 'Negotiable'} ETB` : `${post.hourly_rate?.toLocaleString() || 'Negotiable'} ETB/hr`}
                         </p>
                         <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-700">
-                          {post.type === 'item' ? post.condition : post.category_name || "N/A"}
+                          {post.type === 'item' ? post.condition : post.category_name}
                         </span>
                       </div>
                       <h3 className="text-sm mt-1">{post.title}</h3>
                       <div className="flex items-center text-xs text-gray-500 mt-1">
                         <MapPin className="h-3 w-3 mr-1" />
-                        <span>{post.location || "N/A"}</span>
+                        <span>{post.location}</span>
                       </div>
                     </div>
                   </motion.div>
@@ -296,5 +299,5 @@ export default function Home() {
         </section>
       </main>
     </div>
-  )
+  );
 }

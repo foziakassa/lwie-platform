@@ -4,7 +4,19 @@ import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
-import { Bell, Repeat, Heart, Gift, Settings, Check, Trash2, ChevronRight } from "lucide-react"
+import { Bell, Repeat, Heart, Gift, Settings, Check, Trash2, ChevronRight, Volume2, Moon, Filter } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
 
 // Mock notifications data
 const allNotifications = [
@@ -106,6 +118,18 @@ const notificationTypes = [
 export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState("all")
   const [notifications, setNotifications] = useState(allNotifications)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [notificationPreferences, setNotificationPreferences] = useState({
+    emailNotifications: true,
+    pushNotifications: true,
+    soundEnabled: true,
+    doNotDisturb: false,
+    swapRequests: true,
+    swapUpdates: true,
+    likes: true,
+    donations: true,
+    messages: true,
+  })
 
   // Filter notifications by type
   const filteredNotifications =
@@ -164,6 +188,14 @@ export default function NotificationsPage() {
     setNotifications((prev) => prev.filter((notif) => notif.id !== id))
   }
 
+  // Toggle notification preference
+  const togglePreference = (key: keyof typeof notificationPreferences) => {
+    setNotificationPreferences((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }))
+  }
+
   // Count unread notifications
   const unreadCount = notifications.filter((notif) => !notif.read).length
 
@@ -194,9 +226,153 @@ export default function NotificationsPage() {
                 <Check className="h-4 w-4 mr-2 text-teal-600" />
                 <span className="text-sm font-medium">Mark all read</span>
               </button>
-              <button className="p-2 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
-                <Settings className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-              </button>
+
+              {/* Settings Button with Dropdown */}
+              <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+                <DialogTrigger asChild>
+                  <button className="p-2 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+                    <Settings className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center">
+                      <Bell className="h-5 w-5 mr-2 text-teal-600" />
+                      Notification Settings
+                    </DialogTitle>
+                    <DialogDescription>Customize how you receive notifications</DialogDescription>
+                  </DialogHeader>
+
+                  <div className="space-y-6 py-4">
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-medium text-gray-900 dark:text-gray-200 flex items-center">
+                        <Volume2 className="h-4 w-4 mr-2 text-teal-600" />
+                        Notification Delivery
+                      </h3>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="email-notifications">Email Notifications</Label>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Receive notifications via email</p>
+                        </div>
+                        <Switch
+                          id="email-notifications"
+                          checked={notificationPreferences.emailNotifications}
+                          onCheckedChange={() => togglePreference("emailNotifications")}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="push-notifications">Push Notifications</Label>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Receive notifications on your device
+                          </p>
+                        </div>
+                        <Switch
+                          id="push-notifications"
+                          checked={notificationPreferences.pushNotifications}
+                          onCheckedChange={() => togglePreference("pushNotifications")}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="sound-enabled">Sound Alerts</Label>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Play sound when notifications arrive
+                          </p>
+                        </div>
+                        <Switch
+                          id="sound-enabled"
+                          checked={notificationPreferences.soundEnabled}
+                          onCheckedChange={() => togglePreference("soundEnabled")}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-medium text-gray-900 dark:text-gray-200 flex items-center">
+                        <Filter className="h-4 w-4 mr-2 text-teal-600" />
+                        Notification Types
+                      </h3>
+
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="swap-requests">Swap Requests</Label>
+                        <Switch
+                          id="swap-requests"
+                          checked={notificationPreferences.swapRequests}
+                          onCheckedChange={() => togglePreference("swapRequests")}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="swap-updates">Swap Updates</Label>
+                        <Switch
+                          id="swap-updates"
+                          checked={notificationPreferences.swapUpdates}
+                          onCheckedChange={() => togglePreference("swapUpdates")}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="likes">Likes</Label>
+                        <Switch
+                          id="likes"
+                          checked={notificationPreferences.likes}
+                          onCheckedChange={() => togglePreference("likes")}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="donations">Donations</Label>
+                        <Switch
+                          id="donations"
+                          checked={notificationPreferences.donations}
+                          onCheckedChange={() => togglePreference("donations")}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="messages">Messages</Label>
+                        <Switch
+                          id="messages"
+                          checked={notificationPreferences.messages}
+                          onCheckedChange={() => togglePreference("messages")}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-medium text-gray-900 dark:text-gray-200 flex items-center">
+                        <Moon className="h-4 w-4 mr-2 text-teal-600" />
+                        Quiet Hours
+                      </h3>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="do-not-disturb">Do Not Disturb</Label>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Pause all notifications</p>
+                        </div>
+                        <Switch
+                          id="do-not-disturb"
+                          checked={notificationPreferences.doNotDisturb}
+                          onCheckedChange={() => togglePreference("doNotDisturb")}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3">
+                    <DialogClose asChild>
+                      <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <DialogClose asChild>
+                      <Button className="bg-teal-600 hover:bg-teal-700 text-white">Save Changes</Button>
+                    </DialogClose>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </motion.div>
 

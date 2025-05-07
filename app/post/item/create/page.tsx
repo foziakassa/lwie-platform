@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { PostProgressIndicator } from "@/components/post/post-progress-indicator"
 import { ActionButtons } from "@/components/post/shared/action-buttons"
-import { getDraftPost, publishPost } from "@/lib/post-storage"
+import { getDraftPost, clearDraftPost } from "@/lib/post-storage"
 import { createItem } from "@/lib/api-client"
 import { toast } from "@/components/ui/use-toast"
 
@@ -55,7 +55,7 @@ export default function ItemCreatePage() {
       const itemData = {
         title: draftData.title,
         description: draftData.description || "",
-        category_id: draftData.category,
+        category: draftData.category,
         subcategory: draftData.subcategory,
         condition: draftData.condition || "Used",
         price: Number.parseFloat(draftData.price) || 0,
@@ -65,19 +65,12 @@ export default function ItemCreatePage() {
         specifications: {
           brand: draftData.brand || "",
           model: draftData.model || "",
-          hasCamera: draftData.hasCamera || false,
-          hasBattery: draftData.hasBattery || false,
         },
-        trade_preferences: {
-          openToOffers: draftData.tradePreferences?.openToOffers || true,
-          specificItems: draftData.tradePreferences?.specificItems || [],
-          preferredCategories: draftData.tradePreferences?.preferredCategories || [],
-          cashValue: draftData.tradePreferences?.cashValue || 0,
+        tradePreferences: draftData.tradePreferences || {
+          openToOffers: true,
+          acceptCash: true,
         },
-        images: draftData.images.map((img: any) => ({
-          url: img.url,
-          is_main: img.main,
-        })),
+        images: draftData.images,
         status: "published",
       }
 
@@ -85,8 +78,11 @@ export default function ItemCreatePage() {
       const response = await createItem(itemData)
 
       if (response.success) {
-        // Publish the post locally
-        publishPost(draftData)
+        // Clear the draft
+        clearDraftPost("item")
+
+        // Set flag for new post submitted
+        localStorage.setItem("newPostSubmitted", "true")
 
         toast({
           title: "Item posted successfully",
@@ -136,6 +132,55 @@ export default function ItemCreatePage() {
               <p className="text-yellow-700 text-sm">
                 Some required information is missing. Please go back and complete all required fields.
               </p>
+            </div>
+          )}
+
+          {draftData && (
+            <div className="space-y-4 mt-6">
+              <div className="border rounded-md p-4">
+                <h3 className="font-medium mb-2">Basic Information</h3>
+                <p>
+                  <span className="font-medium">Title:</span> {draftData.title}
+                </p>
+                <p>
+                  <span className="font-medium">Category:</span> {draftData.category}
+                </p>
+                <p>
+                  <span className="font-medium">Subcategory:</span> {draftData.subcategory}
+                </p>
+                <p>
+                  <span className="font-medium">Condition:</span> {draftData.condition}
+                </p>
+                <p>
+                  <span className="font-medium">Price:</span> {draftData.price} ETB
+                </p>
+              </div>
+
+              <div className="border rounded-md p-4">
+                <h3 className="font-medium mb-2">Location</h3>
+                <p>
+                  <span className="font-medium">City:</span> {draftData.city}
+                </p>
+                <p>
+                  <span className="font-medium">Subcity:</span> {draftData.subcity}
+                </p>
+              </div>
+
+              <div className="border rounded-md p-4">
+                <h3 className="font-medium mb-2">Images</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {draftData.images &&
+                    draftData.images.map((image: string, index: number) => (
+                      <div key={index} className="relative h-20 rounded overflow-hidden">
+                        <img
+                          src={image || "/placeholder.svg"}
+                          alt={`Item image ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))}
+                </div>
+              </div>
             </div>
           )}
         </CardContent>

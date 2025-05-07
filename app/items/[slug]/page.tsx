@@ -1,61 +1,26 @@
-import { fetchItemById } from "../../../lib/api-client"
+import { fetchItemById } from "@/lib/api-client"
 import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
-import { Badge } from "../../../components/ui/badge"
-import { Button } from "../../../components/ui/button"
-import { Card, CardContent } from "../../../components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Heart, Share2, Flag, MapPin, Calendar, User, Shield } from "lucide-react"
 
-interface Item {
-  id: string
-  title: string
-  description: string
-  images: string[]
-  location?: string
-  postedDate?: string
-  categories?: string[]
-  condition?: string
-  specifications?: { name: string; value: string }[]
-  tradePreferences?: {
-    lookingFor?: string
-    tradeValue?: string
-    openToOffers?: boolean
-  }
-  postedBy?: {
-    name?: string
-    memberSince?: string
-    responseRate?: string
-    responseTime?: string
-  }
-}
-
-interface FetchItemResponseSuccess {
-  success: true
-  item: Item
-}
-
-interface FetchItemResponseError {
-  success: false
-  error: string
-}
-
-type FetchItemResponse = FetchItemResponseSuccess | FetchItemResponseError
-
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const response = (await fetchItemById(params.slug)) as FetchItemResponse
+  const item = await fetchItemById(params.slug)
 
   return {
-    title: response.success ? response.item.title : "Item Details",
-    description: response.success ? response.item.description : "View item details",
+    title: item?.title || "Item Details",
+    description: item?.description || "View item details",
   }
 }
 
 export default async function ItemDetailPage({ params }: { params: { slug: string } }) {
-  const response = (await fetchItemById(params.slug)) as FetchItemResponse
+  const item = await fetchItemById(params.slug)
 
-  if (!response.success) {
+  if (!item) {
     return (
       <div className="container mx-auto py-12 text-center">
         <h1 className="text-2xl font-bold mb-4">Item not found</h1>
@@ -66,8 +31,6 @@ export default async function ItemDetailPage({ params }: { params: { slug: strin
       </div>
     )
   }
-
-  const item = response.item
 
   const similarItems = [
     {
@@ -109,7 +72,7 @@ export default async function ItemDetailPage({ params }: { params: { slug: strin
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-2">
-            {(item.images || []).slice(1).map((image: string, index: number) => (
+            {(item.images || []).slice(1).map((image, index) => (
               <div key={index} className="relative w-24 h-24 flex-shrink-0 rounded-md overflow-hidden">
                 <Image
                   src={image || "/placeholder.svg?height=100&width=100"}
@@ -155,7 +118,7 @@ export default async function ItemDetailPage({ params }: { params: { slug: strin
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              {item.categories?.map((category: string, index: number) => (
+              {item.categories?.map((category, index) => (
                 <Badge key={index} variant="secondary">
                   {category}
                 </Badge>
@@ -185,7 +148,7 @@ export default async function ItemDetailPage({ params }: { params: { slug: strin
               <div>
                 <h3 className="text-lg font-medium mb-2">Item Specifications</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  {item.specifications?.map((spec: { name: string; value: string }, index: number) => (
+                  {item.specifications?.map((spec, index) => (
                     <div key={index} className="flex justify-between">
                       <span className="font-medium">{spec.name}:</span>
                       <span className="text-gray-700">{spec.value}</span>

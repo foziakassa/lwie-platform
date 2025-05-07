@@ -385,24 +385,27 @@ export function PostItemForm() {
   const handleSaveDraft = () => {
     const post = {
       id: Date.now().toString(),
-      type: "item" as const,
+      type: "item" as "item",
+      title: formData.title,
+      category: formData.category,
+      subcategory: formData.subcategory,
+      condition: formData.condition,
+      price: formData.price,
+      description: formData.description,
+      location: formData.location,
+      tradePreference: formData.tradePreference,
+      specifications: formData.specifications,
+      images: images,
       createdAt: new Date().toISOString(),
-      data: {
-        title: formData.title,
-        category: formData.category,
-        subcategory: formData.subcategory,
-        condition: formData.condition,
-        price: formData.price,
-        description: formData.description,
-        location: formData.location,
-        tradePreference: formData.tradePreference,
-        specifications: formData.specifications,
-        images: images,
-        status: "draft",
-      },
+      status: "draft",
     }
 
-    savePost(post)
+    savePost({
+      id: post.id,
+      type: post.type,
+      createdAt: post.createdAt,
+      data: post,
+    })
     alert("Draft saved successfully!")
   }
 
@@ -422,24 +425,27 @@ export function PostItemForm() {
 
     const post = {
       id: Date.now().toString(),
-      type: "item" as const,
+      type: "item" as "item",
+      title: formData.title,
+      category: formData.category,
+      subcategory: formData.subcategory,
+      condition: formData.condition,
+      price: formData.price,
+      description: formData.description,
+      location: formData.location,
+      tradePreference: formData.tradePreference,
+      specifications: formData.specifications,
+      images: images,
       createdAt: new Date().toISOString(),
-      data: {
-        title: formData.title,
-        category: formData.category,
-        subcategory: formData.subcategory,
-        condition: formData.condition,
-        price: formData.price,
-        description: formData.description,
-        location: formData.location,
-        tradePreference: formData.tradePreference,
-        specifications: formData.specifications,
-        images: images,
-        status: "published",
-      },
+      status: "published",
     }
 
-    savePost(post)
+    savePost({
+      id: post.id,
+      type: post.type,
+      createdAt: post.createdAt,
+      data: post,
+    })
     router.push("/post/success")
   }
 
@@ -493,20 +499,20 @@ export function PostItemForm() {
                   <Label>Subcategory</Label>
                   <div className="grid grid-cols-2 gap-3">
                   {getSubcategories().map((subcategory) => {
-                    const subcategoryStr = subcategory.toString()
+                    const subcategoryName = typeof subcategory === "string" ? subcategory : subcategory.name;
                     return (
                       <Button
-                        key={subcategoryStr}
+                        key={subcategoryName}
                         type="button"
-                        variant={formData.subcategory === subcategoryStr ? "default" : "outline"}
+                        variant={formData.subcategory === subcategoryName ? "default" : "outline"}
                         className="justify-start h-auto py-3"
-                        onClick={() => handleSubcategoryChange(subcategoryStr)}
+                        onClick={() => handleSubcategoryChange(subcategoryName)}
                       >
                         <div className="flex items-center">
-                          {getSubcategoryIcon(subcategoryStr)}
-                          {subcategoryStr}
+                          {getSubcategoryIcon(subcategoryName)}
+                          {subcategoryName}
                         </div>
-                        {formData.subcategory === subcategoryStr && <Check className="h-4 w-4 ml-auto" />}
+                        {formData.subcategory === subcategoryName && <Check className="h-4 w-4 ml-auto" />}
                       </Button>
                     )
                   })}
@@ -546,7 +552,11 @@ export function PostItemForm() {
 
               <div className="space-y-2">
                 <Label>Images</Label>
-                <ImageUploader entityType="item" initialImages={images} onImagesUploaded={handleImagesChange} maxImages={5} />
+                <ImageUploader
+                  maxImages={5}
+                  entityType="item"
+                  onImagesUploaded={(newImages: string[]) => handleImagesChange(newImages)}
+                />
               </div>
 
               <div className="space-y-2">

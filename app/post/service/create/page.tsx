@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { PostProgressIndicator } from "@/components/post/post-progress-indicator"
 import { ActionButtons } from "@/components/post/shared/action-buttons"
-import { getDraftPost, publishPost } from "@/lib/post-storage"
+import { getDraftPost, clearDraftPost } from "@/lib/post-storage"
 import { createService } from "@/lib/api-client"
 import { toast } from "@/components/ui/use-toast"
 
@@ -33,8 +33,7 @@ export default function ServiceCreatePage() {
         draft.subcity &&
         draft.images &&
         draft.images.length > 0 &&
-        draft.pricingTerms &&
-        draft.pricingTerms.pricing,
+        draft.experience,
     )
 
     setIsValid(isComplete)
@@ -57,25 +56,13 @@ export default function ServiceCreatePage() {
       const serviceData = {
         title: draftData.title,
         description: draftData.description || "",
-        category_id: draftData.category,
+        category: draftData.category,
         subcategory: draftData.subcategory,
+        experience: draftData.experience,
         location: `${draftData.city}, ${draftData.subcity}`,
         city: draftData.city,
         subcity: draftData.subcity,
-        service_details: {
-          duration: draftData.serviceDetails?.duration || "",
-          availability: draftData.serviceDetails?.availability || "",
-        },
-        pricing_terms: {
-          pricing_type: draftData.pricingTerms?.pricing || "fixed",
-          hourly_rate: Number.parseFloat(draftData.pricingTerms?.priceAmount) || 0,
-          negotiable: draftData.pricingTerms?.negotiable || true,
-          terms_conditions: draftData.pricingTerms?.termsAndConditions || "",
-        },
-        images: draftData.images.map((img: any) => ({
-          url: img.url,
-          is_main: img.main,
-        })),
+        images: draftData.images,
         status: "published",
       }
 
@@ -83,8 +70,11 @@ export default function ServiceCreatePage() {
       const response = await createService(serviceData)
 
       if (response.success) {
-        // Publish the post locally
-        publishPost(draftData)
+        // Clear the draft
+        clearDraftPost("service")
+
+        // Set flag for new post submitted
+        localStorage.setItem("newPostSubmitted", "true")
 
         toast({
           title: "Service posted successfully",
@@ -112,12 +102,9 @@ export default function ServiceCreatePage() {
       <PostProgressIndicator
         steps={[
           { label: "Basic Info", completed: true },
-          { label: "Details", completed: true },
-          { label: "Pricing & Terms", completed: true },
-          { label: "Location", completed: true },
           { label: "Review & Submit", completed: false },
         ]}
-        currentStep={4}
+        currentStep={1}
       />
 
       <Card className="w-full max-w-md mx-auto mt-6">
@@ -136,10 +123,59 @@ export default function ServiceCreatePage() {
               </p>
             </div>
           )}
+
+          {draftData && (
+            <div className="space-y-4 mt-6">
+              <div className="border rounded-md p-4">
+                <h3 className="font-medium mb-2">Basic Information</h3>
+                <p>
+                  <span className="font-medium">Title:</span> {draftData.title}
+                </p>
+                <p>
+                  <span className="font-medium">Category:</span> {draftData.category}
+                </p>
+                <p>
+                  <span className="font-medium">Subcategory:</span> {draftData.subcategory}
+                </p>
+                <p>
+                  <span className="font-medium">Experience:</span> {draftData.experience}
+                </p>
+                <p>
+                  <span className="font-medium">Description:</span> {draftData.description}
+                </p>
+              </div>
+
+              <div className="border rounded-md p-4">
+                <h3 className="font-medium mb-2">Location</h3>
+                <p>
+                  <span className="font-medium">City:</span> {draftData.city}
+                </p>
+                <p>
+                  <span className="font-medium">Subcity:</span> {draftData.subcity}
+                </p>
+              </div>
+
+              <div className="border rounded-md p-4">
+                <h3 className="font-medium mb-2">Images</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {draftData.images &&
+                    draftData.images.map((image: string, index: number) => (
+                      <div key={index} className="relative h-20 rounded overflow-hidden">
+                        <img
+                          src={image || "/placeholder.svg"}
+                          alt={`Service image ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
         <CardFooter>
           <ActionButtons
-            onBack={() => router.push("/post/service/location-description")}
+            onBack={() => router.push("/post/service/basic-info")}
             onSaveDraft={() => router.push("/")}
             onContinue={handleSubmit}
             continueText={isSubmitting ? "Submitting..." : "Submit Post"}

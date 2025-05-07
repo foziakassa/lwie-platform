@@ -24,19 +24,19 @@ export function ActionButtons({
 }: ActionButtonsProps) {
   return (
     <div className="flex justify-between w-full">
-      <Button type="button" variant="outline" onClick={onBack} className="px-4 py-2">
+      <Button type="button" variant="outline" onClick={onBack} className="px-4 py-2" disabled={isLoading}>
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back
       </Button>
-      <div className="space-x-3">
-        <Button type="button" variant="outline" onClick={onSaveDraft} className="px-4 py-2">
-          <Save className="h-4 w-4 mr-2" />
+      <div className="space-x-2">
+        <Button type="button" variant="outline" onClick={onSaveDraft} className="px-4 py-2" disabled={isLoading}>
+          <Save className="mr-2 h-4 w-4" />
           {saveDraftText}
         </Button>
         <Button
           type="button"
           onClick={onContinue}
-          className="bg-teal-600 hover:bg-teal-700 px-6 py-2 text-white"
+          className="px-4 py-2 bg-[#00A693] hover:bg-[#008F7F] text-white"
           disabled={isLoading || continueDisabled}
         >
           {isLoading ? (
@@ -54,7 +54,7 @@ export function ActionButtons({
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 ></path>
               </svg>
-              Processing...
+              Loading...
             </>
           ) : (
             continueText

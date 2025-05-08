@@ -151,7 +151,7 @@ interface FetchOptions extends RequestInit {
 // Configuration
 const config = {
   // IMPORTANT: Set to true to use mock data when API is unavailable
-  useMockData: true,
+  useMockData: false,
   // Log detailed API requests for debugging
   debugMode: true,
   // API timeout in milliseconds
@@ -321,10 +321,24 @@ const fetchAPI = async (endpoint: string, options: FetchOptions = {}): Promise<a
     const timeoutId = setTimeout(() => controller.abort(), config.timeout);
     
     try {
-      const response = await fetch(url, {
-        ...fetchOptions,
-        signal: controller.signal,
-      });
+      if (!url || typeof url !== 'string') {
+        throw new Error(`Invalid URL for fetch: ${url}`);
+      }
+      console.log(`Fetching URL: ${url}`);
+      let response;
+      try {
+        if (typeof fetch === "function") {
+          response = await fetch(url, {
+            ...fetchOptions,
+            signal: controller.signal,
+          });
+        } else {
+          throw new Error("Fetch API is not available in this environment.");
+        }
+      } catch (fetchError) {
+        console.error(`Fetch error for URL ${url}:`, fetchError);
+        throw fetchError;
+      }
       
       clearTimeout(timeoutId);
       

@@ -123,7 +123,17 @@ export function ItemPostForm() {
   const [selectedImages, setSelectedImages] = useState<File[]>([])
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const userId = "user-id-placeholder" // Replace with actual user ID from context or props
+
+  // NOTE: Import statements must be at the top of the file, not inside the component.
+  // Please move the following import to the top of this file:
+  // import { useAuth } from "path-to-auth-context" // Adjust import path as needed
+
+  // Then use the hook here:
+  // const { user } = useAuth()
+  // const userId = user?.id || ""
+
+  // For now, keep the placeholder userId until you add the import and hook usage correctly.
+  const userId = "replace-with-actual-user-id"
   const onSuccess = (newItem: any) => {
     // Optional success callback, can be passed as prop or defined here
     console.log("Item created successfully:", newItem)

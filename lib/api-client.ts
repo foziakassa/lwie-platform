@@ -1,4 +1,4 @@
-// Enhanced API client for the Swap Trade Platform with TypeScript types
+// Enhanced API client with improved mock data handling
 import type { 
   User, 
   Post, 
@@ -6,8 +6,14 @@ import type {
   Notification 
 } from "./types";
 
-/* Removed import of mock-data due to missing module */
-// import { mockItems, mockServices } from "./mock-data";
+// Import mock data
+import { 
+  mockItems, 
+  mockServices, 
+  mockUsers, 
+  mockSwapRequests, 
+  mockNotifications 
+} from "./mock-data";
 
 // Additional types needed for the API client
 interface Message {
@@ -99,7 +105,7 @@ interface ItemData {
   item_details?: Record<string, any>;
   trade_preferences?: Record<string, any>;
   contact_info?: Record<string, any>;
-  status?: string;
+  status?: "draft" | "published" | "archived";
   image_urls?: string[] | string;
 }
 
@@ -115,7 +121,7 @@ interface ServiceData {
   service_details?: Record<string, any>;
   trade_preferences?: Record<string, any>;
   contact_info?: Record<string, any>;
-  status?: string;
+  status?: "draft" | "published" | "archived";
   image_urls?: string[] | string;
 }
 
@@ -144,45 +150,152 @@ interface FetchOptions extends RequestInit {
 
 // Configuration
 const config = {
-  // Use mock data in development when API is unavailable
+  // IMPORTANT: Set to true to use mock data when API is unavailable
   useMockData: true,
   // Log detailed API requests for debugging
   debugMode: true,
   // API timeout in milliseconds
-  timeout: 10000,
+  timeout: 5000,
+  // Force mock data even for successful API calls (for testing)
+  forceMockData: false
 };
 
 // Base API URL - using your environment variable
 const API_BASE_URL = process.env.NEXT_PUBLIC_APP_API || 'https://liwedoc.vercel.app/';
 
-// Helper function to handle API responses
-const handleResponse = async (response: Response): Promise<any> => {
-  // First check if the response is ok (status in the range 200-299)
-  if (!response.ok) {
-    // Try to parse the error response as JSON
-    try {
-      const errorData: ApiError = await response.json();
-      throw new Error(errorData.error || errorData.message || `API request failed with status ${response.status}`);
-    } catch (e) {
-      // If parsing fails, throw a generic error with the status
-      throw new Error(`API request failed with status ${response.status}`);
+// Function to get mock data based on endpoint
+const getMockData = (endpoint: string, method: string = 'GET'): any => {
+  if (config.debugMode) {
+    console.log(`Using mock data for ${method} ${endpoint}`);
+  }
+  
+  // Items endpoints
+  if (endpoint.startsWith('/api/items')) {
+    if (endpoint === '/api/items' && method === 'GET') {
+      return { 
+        results: mockItems,
+        pagination: { 
+          total: mockItems.length, 
+          limit: 10, 
+          offset: 0, 
+          has_more: false 
+        } 
+      };
+    } else if (endpoint.match(/\/api\/items\/[a-zA-Z0-9-]+$/) && method === 'GET') {
+      const itemId = endpoint.split('/').pop();
+      const mockItem = mockItems.find(item => item.id === itemId) || mockItems[0];
+      return mockItem;
+    } else if (endpoint.match(/\/api\/items\/user\/[a-zA-Z0-9-]+$/) && method === 'GET') {
+      const userId = endpoint.split('/').pop();
+      return mockItems.filter(item => item.user_id === userId);
+    } else if (endpoint === '/api/items' && method === 'POST') {
+      return {
+        ...mockItems[0],
+        id: `mock-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
     }
   }
   
-  // For successful responses, parse and return the JSON
-  return response.json();
+  // Services endpoints
+  if (endpoint.startsWith('/api/services')) {
+    if (endpoint === '/api/services' && method === 'GET') {
+      return { 
+        results: mockServices,
+        pagination: { 
+          total: mockServices.length, 
+          limit: 10, 
+          offset: 0, 
+          has_more: false 
+        } 
+      };
+    } else if (endpoint.match(/\/api\/services\/[a-zA-Z0-9-]+$/) && method === 'GET') {
+      const serviceId = endpoint.split('/').pop();
+      const mockService = mockServices.find(service => service.id === serviceId) || mockServices[0];
+      return mockService;
+    } else if (endpoint.match(/\/api\/services\/user\/[a-zA-Z0-9-]+$/) && method === 'GET') {
+      const userId = endpoint.split('/').pop();
+      return mockServices.filter(service => service.user_id === userId);
+    } else if (endpoint === '/api/services' && method === 'POST') {
+      return {
+        ...mockServices[0],
+        id: `mock-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    }
+  }
+  
+  // User endpoints
+  if (endpoint.startsWith('/api/users')) {
+    if (endpoint.match(/\/api\/users\/[a-zA-Z0-9-]+$/) && method === 'GET') {
+      const userId = endpoint.split('/').pop();
+      const mockUser = mockUsers.find(user => user.id === userId) || mockUsers[0];
+      return mockUser;
+    }
+  }
+  
+  // Swap request endpoints
+  if (endpoint.startsWith('/api/swap-requests')) {
+    if (endpoint === '/api/swap-requests' && method === 'GET') {
+      return { 
+        results: mockSwapRequests,
+        pagination: { 
+          total: mockSwapRequests.length, 
+          limit: 10, 
+          offset: 0, 
+          has_more: false 
+        } 
+      };
+    } else if (endpoint.match(/\/api\/swap-requests\/[a-zA-Z0-9-]+$/) && method === 'GET') {
+      const requestId = endpoint.split('/').pop();
+      const mockRequest = mockSwapRequests.find(req => req.id === requestId) || mockSwapRequests[0];
+      return mockRequest;
+    }
+  }
+  
+  // Notifications endpoints
+  if (endpoint.startsWith('/api/notifications')) {
+    if (endpoint.match(/\/api\/notifications\/user\/[a-zA-Z0-9-]+$/) && method === 'GET') {
+      const userId = endpoint.split('/').pop();
+      return mockNotifications.filter(notification => notification.user_id === userId);
+    }
+  }
+  
+  // Search endpoints
+  if (endpoint.startsWith('/api/search')) {
+    return { 
+      results: [...mockItems, ...mockServices],
+      pagination: { 
+        total: mockItems.length + mockServices.length, 
+        limit: 10, 
+        offset: 0, 
+        has_more: false 
+      } 
+    };
+  }
+  
+  // Default empty response
+  return method === 'GET' ? {} : { id: `mock-${Date.now()}` };
 };
 
 // Generic fetch function with error handling and fallbacks
 const fetchAPI = async (endpoint: string, options: FetchOptions = {}): Promise<any> => {
   const url = `${API_BASE_URL}${endpoint}`;
+  const method = options.method || 'GET';
   
   // Log the request in debug mode
   if (config.debugMode) {
-    console.log(`API Request: ${options.method || 'GET'} ${url}`);
+    console.log(`API Request: ${method} ${url}`);
     if (options.body) {
       console.log('Request Body:', options.body);
     }
+  }
+  
+  // If forceMockData is true, immediately return mock data
+  if (config.forceMockData) {
+    return getMockData(endpoint, method);
   }
   
   try {
@@ -207,14 +320,38 @@ const fetchAPI = async (endpoint: string, options: FetchOptions = {}): Promise<a
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), config.timeout);
     
-    const response = await fetch(url, {
-      ...fetchOptions,
-      signal: controller.signal,
-    });
-    
-    clearTimeout(timeoutId);
-    
-    return handleResponse(response);
+    try {
+      const response = await fetch(url, {
+        ...fetchOptions,
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      
+      // Check if response is ok
+      if (!response.ok) {
+        // Try to parse the error response as JSON
+        try {
+          const errorData: ApiError = await response.json();
+          throw new Error(errorData.error || errorData.message || `API request failed with status ${response.status}`);
+        } catch (e) {
+          // If parsing fails, throw a generic error with the status
+          throw new Error(`API request failed with status ${response.status}`);
+        }
+      }
+      
+      // For successful responses, parse and return the JSON
+      return await response.json();
+    } catch (fetchError) {
+      // If fetch fails and useMockData is true, return mock data
+      if (config.useMockData) {
+        if (config.debugMode) {
+          console.warn(`Fetch failed for ${method} ${endpoint}, using mock data:`, fetchError);
+        }
+        return getMockData(endpoint, method);
+      }
+      throw fetchError;
+    }
   } catch (error: unknown) {
     // Log the error in debug mode
     if (config.debugMode) {
@@ -223,55 +360,22 @@ const fetchAPI = async (endpoint: string, options: FetchOptions = {}): Promise<a
     
     // Handle abort errors specifically
     if (error instanceof Error && error.name === 'AbortError') {
+      console.warn(`Request timed out after ${config.timeout}ms: ${url}`);
+      
+      // If useMockData is true, return mock data for timeouts
+      if (config.useMockData) {
+        return getMockData(endpoint, method);
+      }
+      
       throw new Error(`Request timed out after ${config.timeout}ms: ${url}`);
     }
     
-    // For GET requests, return mock data if enabled
-    if (config.useMockData && (options.method === undefined || options.method === 'GET')) {
-      console.warn(`Using mock data for ${endpoint} due to fetch error`);
-      
-      // Return appropriate mock data based on the endpoint
-      if (endpoint.includes('/api/items')) {
-        if (endpoint.includes('/items/') && endpoint.split('/').length > 3) {
-          // Single item request
-          const itemId = endpoint.split('/').pop();
-          // Removed usage of mockItems due to missing module
-          return {} as Post;
-        }
-        // Items list request
-        return { 
-          results: [],
-          pagination: { 
-            total: 0, 
-            limit: 10, 
-            offset: 0, 
-            has_more: false 
-          } 
-        };
-      } else if (endpoint.includes('/api/services')) {
-        if (endpoint.includes('/services/') && endpoint.split('/').length > 3) {
-          // Single service request
-          const serviceId = endpoint.split('/').pop();
-          // Removed usage of mockServices due to missing module
-          return {} as Post;
-        }
-        // Services list request
-           return { 
-             results: [],
-             pagination: { 
-               total: 0, 
-               limit: 10, 
-               offset: 0, 
-               has_more: false 
-             } 
-           };
-      }
-      
-      // Default empty response
-      return {};
+    // For any error, if useMockData is true, return mock data
+    if (config.useMockData) {
+      return getMockData(endpoint, method);
     }
     
-    // For POST/PUT/DELETE or if mock data is disabled, throw the error
+    // Otherwise, throw the error
     throw error;
   }
 };
@@ -364,8 +468,16 @@ const itemsAPI = {
       // If using mock data, return a mock item
       if (config.useMockData) {
         console.warn('Using mock data for item creation due to error');
-        // Removed usage of mockItems due to missing module
-        return {} as Post;
+        return {
+          ...mockItems[0],
+          id: `mock-${Date.now()}`,
+          title: itemData.title,
+          description: itemData.description,
+          category: itemData.category,
+          user_id: itemData.user_id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
       }
       
       throw error;
@@ -487,8 +599,16 @@ const servicesAPI = {
       // If using mock data, return a mock service
       if (config.useMockData) {
         console.warn('Using mock data for service creation due to error');
-        // Removed usage of mockServices due to missing module
-        return {} as Post;
+        return {
+          ...mockServices[0],
+          id: `mock-${Date.now()}`,
+          title: serviceData.title,
+          description: serviceData.description,
+          category: serviceData.category,
+          user_id: serviceData.user_id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
       }
       
       throw error;
@@ -734,19 +854,18 @@ export const fetchItems = async (params?: PaginationParams): Promise<PaginatedRe
     return await apiClient.items.getItems(params);
   } catch (error) {
     console.error('Error in fetchItems:', error);
-    // Return empty data as fallback since mockItems is unavailable
-      if (config.useMockData) {
-        // Removed usage of mockItems due to missing module
-        return { 
-          results: [],
-          pagination: { 
-            total: 0, 
-            limit: 10, 
-            offset: 0, 
-            has_more: false 
-          } 
-        };
-      }
+    // Return mock data if enabled
+    if (config.useMockData) {
+      return { 
+        results: mockItems,
+        pagination: { 
+          total: mockItems.length, 
+          limit: 10, 
+          offset: 0, 
+          has_more: false 
+        } 
+      };
+    }
     throw error;
   }
 };
@@ -756,9 +875,10 @@ export const fetchItemById = async (id: string): Promise<Post> => {
     return await apiClient.items.getItem(id);
   } catch (error) {
     console.error(`Error in fetchItemById for id ${id}:`, error);
-    // Return empty object as fallback since mockItems is unavailable
+    // Return mock data if enabled
     if (config.useMockData) {
-      return {} as Post;
+      const mockItem = mockItems.find(item => item.id === id) || mockItems[0];
+      return mockItem;
     }
     throw error;
   }
@@ -769,9 +889,9 @@ export const fetchUserItems = async (userId: string): Promise<Post[]> => {
     return await apiClient.items.getUserItems(userId);
   } catch (error) {
     console.error(`Error in fetchUserItems for userId ${userId}:`, error);
-    // Return empty array as fallback since mockItems is unavailable
+    // Return mock data if enabled
     if (config.useMockData) {
-      return [];
+      return mockItems.filter(item => item.user_id === userId);
     }
     throw error;
   }
@@ -782,20 +902,51 @@ export const createItem = async (itemData: ItemData, images?: File[]): Promise<P
     return await apiClient.items.createItem(itemData, images);
   } catch (error) {
     console.error('Error in createItem:', error);
-    // Return empty object as fallback since mockItems is unavailable
+    // Return mock data if enabled
     if (config.useMockData) {
-      return {} as Post;
+      return {
+        ...mockItems[0],
+        id: `mock-${Date.now()}`,
+        title: itemData.title,
+        description: itemData.description,
+        category: itemData.category,
+        user_id: itemData.user_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
     }
     throw error;
   }
 };
 
 export const updateItem = async (itemId: string, itemData: Partial<ItemData>, images?: File[]): Promise<Post> => {
-  return apiClient.items.updateItem(itemId, itemData, images);
+  try {
+    return await apiClient.items.updateItem(itemId, itemData, images);
+  } catch (error) {
+    console.error(`Error in updateItem for itemId ${itemId}:`, error);
+    // Return mock data if enabled
+    if (config.useMockData) {
+      return {
+        ...mockItems.find(item => item.id === itemId) || mockItems[0],
+        ...itemData,
+        updated_at: new Date().toISOString(),
+      };
+    }
+    throw error;
+  }
 };
 
 export const deleteItem = async (itemId: string): Promise<{ message: string }> => {
-  return apiClient.items.deleteItem(itemId);
+  try {
+    return await apiClient.items.deleteItem(itemId);
+  } catch (error) {
+    console.error(`Error in deleteItem for itemId ${itemId}:`, error);
+    // Return mock data if enabled
+    if (config.useMockData) {
+      return { message: "Item deleted successfully" };
+    }
+    throw error;
+  }
 };
 
 export const uploadItemImages = async (itemId: string, images: File[]): Promise<string[]> => {
@@ -817,13 +968,12 @@ export const fetchServices = async (params?: PaginationParams): Promise<Paginate
     return await apiClient.services.getServices(params);
   } catch (error) {
     console.error('Error in fetchServices:', error);
-    // Return empty data as fallback since mockServices is unavailable
+    // Return mock data if enabled
     if (config.useMockData) {
-      // Removed usage of mockServices due to missing module
       return { 
-        results: [],
+        results: mockServices,
         pagination: { 
-          total: 0, 
+          total: mockServices.length, 
           limit: 10, 
           offset: 0, 
           has_more: false 
@@ -839,9 +989,10 @@ export const fetchServiceById = async (id: string): Promise<Post> => {
     return await apiClient.services.getService(id);
   } catch (error) {
     console.error(`Error in fetchServiceById for id ${id}:`, error);
-    // Return empty object as fallback since mockServices is unavailable
+    // Return mock data if enabled
     if (config.useMockData) {
-      return {} as Post;
+      const mockService = mockServices.find(service => service.id === id) || mockServices[0];
+      return mockService;
     }
     throw error;
   }
@@ -852,9 +1003,9 @@ export const fetchUserServices = async (userId: string): Promise<Post[]> => {
     return await apiClient.services.getUserServices(userId);
   } catch (error) {
     console.error(`Error in fetchUserServices for userId ${userId}:`, error);
-    // Return empty array as fallback since mockServices is unavailable
+    // Return mock data if enabled
     if (config.useMockData) {
-      return [];
+      return mockServices.filter(service => service.user_id === userId);
     }
     throw error;
   }
@@ -865,20 +1016,51 @@ export const createService = async (serviceData: ServiceData, images?: File[]): 
     return await apiClient.services.createService(serviceData, images);
   } catch (error) {
     console.error('Error in createService:', error);
-    // Return empty object as fallback since mockServices is unavailable
+    // Return mock data if enabled
     if (config.useMockData) {
-      return {} as Post;
+      return {
+        ...mockServices[0],
+        id: `mock-${Date.now()}`,
+        title: serviceData.title,
+        description: serviceData.description,
+        category: serviceData.category,
+        user_id: serviceData.user_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
     }
     throw error;
   }
 };
 
 export const updateService = async (serviceId: string, serviceData: Partial<ServiceData>, images?: File[]): Promise<Post> => {
-  return apiClient.services.updateService(serviceId, serviceData, images);
+  try {
+    return await apiClient.services.updateService(serviceId, serviceData, images);
+  } catch (error) {
+    console.error(`Error in updateService for serviceId ${serviceId}:`, error);
+    // Return mock data if enabled
+    if (config.useMockData) {
+      return {
+        ...mockServices.find(service => service.id === serviceId) || mockServices[0],
+        ...serviceData,
+        updated_at: new Date().toISOString(),
+      };
+    }
+    throw error;
+  }
 };
 
 export const deleteService = async (serviceId: string): Promise<{ message: string }> => {
-  return apiClient.services.deleteService(serviceId);
+  try {
+    return await apiClient.services.deleteService(serviceId);
+  } catch (error) {
+    console.error(`Error in deleteService for serviceId ${serviceId}:`, error);
+    // Return mock data if enabled
+    if (config.useMockData) {
+      return { message: "Service deleted successfully" };
+    }
+    throw error;
+  }
 };
 
 export const uploadServiceImages = async (serviceId: string, images: File[]): Promise<string[]> => {
@@ -896,53 +1078,187 @@ export const uploadServiceImages = async (serviceId: string, images: File[]): Pr
 
 // User compatibility functions
 export const fetchUser = async (userId: string): Promise<User> => {
-  return apiClient.user.getUser(userId);
+  try {
+    return await apiClient.user.getUser(userId);
+  } catch (error) {
+    console.error(`Error in fetchUser for userId ${userId}:`, error);
+    // Return mock data if enabled
+    if (config.useMockData) {
+      const mockUser = mockUsers.find(user => user.id === userId) || mockUsers[0];
+      return mockUser;
+    }
+    throw error;
+  }
 };
 
 export const loginUser = async (credentials: LoginCredentials): Promise<User> => {
-  return apiClient.user.login(credentials);
+  try {
+    return await apiClient.user.login(credentials);
+  } catch (error) {
+    console.error('Error in loginUser:', error);
+    // For login, we should still throw the error even with mock data
+    throw error;
+  }
 };
 
 export const registerUser = async (userData: RegisterData): Promise<User> => {
-  return apiClient.user.register(userData);
+  try {
+    return await apiClient.user.register(userData);
+  } catch (error) {
+    console.error('Error in registerUser:', error);
+    // For registration, we should still throw the error even with mock data
+    throw error;
+  }
 };
 
 export const updateUser = async (userId: string, userData: UpdateUserData): Promise<User> => {
-  return apiClient.user.updateUser(userId, userData);
+  try {
+    return await apiClient.user.updateUser(userId, userData);
+  } catch (error) {
+    console.error(`Error in updateUser for userId ${userId}:`, error);
+    // Return mock data if enabled
+    if (config.useMockData) {
+      return {
+        ...mockUsers.find(user => user.id === userId) || mockUsers[0],
+        ...userData,
+      };
+    }
+    throw error;
+  }
 };
 
 export const changePassword = async (userId: string, passwordData: PasswordChangeData): Promise<{ message: string }> => {
-  return apiClient.user.changePassword(userId, passwordData);
+  try {
+    return await apiClient.user.changePassword(userId, passwordData);
+  } catch (error) {
+    console.error(`Error in changePassword for userId ${userId}:`, error);
+    // For password changes, we should still throw the error even with mock data
+    throw error;
+  }
 };
 
 // Swap requests compatibility functions
 export const fetchSwapRequests = async (params?: PaginationParams): Promise<PaginatedResponse<SwapRequest>> => {
-  return apiClient.swapRequests.getSwapRequests(params);
+  try {
+    return await apiClient.swapRequests.getSwapRequests(params);
+  } catch (error) {
+    console.error('Error in fetchSwapRequests:', error);
+    // Return mock data if enabled
+    if (config.useMockData) {
+      return { 
+        results: mockSwapRequests,
+        pagination: { 
+          total: mockSwapRequests.length, 
+          limit: 10, 
+          offset: 0, 
+          has_more: false 
+        } 
+      };
+    }
+    throw error;
+  }
 };
 
 export const fetchSwapRequestById = async (id: string): Promise<SwapRequest> => {
-  return apiClient.swapRequests.getSwapRequest(id);
+  try {
+    return await apiClient.swapRequests.getSwapRequest(id);
+  } catch (error) {
+    console.error(`Error in fetchSwapRequestById for id ${id}:`, error);
+    // Return mock data if enabled
+    if (config.useMockData) {
+      const mockRequest = mockSwapRequests.find(req => req.id === id) || mockSwapRequests[0];
+      return mockRequest;
+    }
+    throw error;
+  }
 };
 
 export const fetchUserSwapRequests = async (userId: string): Promise<SwapRequest[]> => {
-  return apiClient.swapRequests.getUserSwapRequests(userId);
+  try {
+    return await apiClient.swapRequests.getUserSwapRequests(userId);
+  } catch (error) {
+    console.error(`Error in fetchUserSwapRequests for userId ${userId}:`, error);
+    // Return mock data if enabled
+    if (config.useMockData) {
+      return mockSwapRequests.filter(req => req.requester_id === userId);
+    }
+    throw error;
+  }
 };
 
 export const fetchReceivedSwapRequests = async (userId: string): Promise<SwapRequest[]> => {
-  return apiClient.swapRequests.getReceivedSwapRequests(userId);
+  try {
+    return await apiClient.swapRequests.getReceivedSwapRequests(userId);
+  } catch (error) {
+    console.error(`Error in fetchReceivedSwapRequests for userId ${userId}:`, error);
+    // Return mock data if enabled
+    if (config.useMockData) {
+      // This is a simplification - in a real app, you'd need to join posts and swap requests
+      return mockSwapRequests;
+    }
+    throw error;
+  }
 };
 
 export const createSwapRequest = async (requestData: SwapRequestData): Promise<SwapRequest> => {
-  return apiClient.swapRequests.createSwapRequest(requestData);
+  try {
+    return await apiClient.swapRequests.createSwapRequest(requestData);
+  } catch (error) {
+    console.error('Error in createSwapRequest:', error);
+    // Return mock data if enabled
+    if (config.useMockData) {
+      return {
+        ...mockSwapRequests[0],
+        id: `mock-${Date.now()}`,
+        post_id: requestData.post_id,
+        requester_id: requestData.requester_id,
+        message: requestData.message,
+        status: requestData.status || 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    }
+    throw error;
+  }
 };
 
 export const updateSwapRequest = async (requestId: string, requestData: Partial<SwapRequestData>): Promise<SwapRequest> => {
-  return apiClient.swapRequests.updateSwapRequest(requestId, requestData);
+  try {
+    return await apiClient.swapRequests.updateSwapRequest(requestId, requestData);
+  } catch (error) {
+    console.error(`Error in updateSwapRequest for requestId ${requestId}:`, error);
+    // Return mock data if enabled
+    if (config.useMockData) {
+      return {
+        ...mockSwapRequests.find(req => req.id === requestId) || mockSwapRequests[0],
+        ...requestData,
+        updated_at: new Date().toISOString(),
+      };
+    }
+    throw error;
+  }
 };
 
 // Search compatibility functions
 export const searchPosts = async (params: SearchParams): Promise<PaginatedResponse<Post>> => {
-  return apiClient.search.search(params);
+  try {
+    return await apiClient.search.search(params);
+  } catch (error) {
+    console.error('Error in searchPosts:', error);
+    // Return mock data if enabled
+    if (config.useMockData) {
+      return { 
+        results: [...mockItems, ...mockServices],
+        pagination: { 
+          total: mockItems.length + mockServices.length, 
+          limit: 10, 
+          offset: 0, 
+          has_more: false 
+        } 
+      };
+    }
+    throw error;
+  }
 };
 
 // Export the default client

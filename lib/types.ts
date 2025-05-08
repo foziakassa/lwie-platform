@@ -55,7 +55,7 @@ export interface SwapRequest {
     phone?: string
     email?: string
   }
-  status: "pending" | "accepted" | "rejected"
+  status: "pending" | "accepted" | "rejected" | "completed" | "cancelled"
   created_at: string
   updated_at: string
   post?: Post

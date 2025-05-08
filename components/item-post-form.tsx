@@ -181,6 +181,8 @@ export function ItemPostForm() {
       if (onSuccess) {
         onSuccess(newItem)
       }
+      // Navigate back to home page to refresh listings
+      router.push("/")
     } catch (err) {
       console.error("Error submitting item form:", err)
       setError(err instanceof Error ? err.message : "Failed to create item. Please try again.")

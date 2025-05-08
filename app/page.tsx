@@ -20,8 +20,6 @@ import { Badge } from "components/ui/badge";
 import { CategoryNav } from "components/category-nav";
 
 
-
-
 // Animation variants
 
 export default function Home() {
@@ -34,7 +32,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [items, setItems] = useState<any[]>([])
   const [services, setServices] = useState<any[]>([])
-  const [activeTab, setActiveTab] = useState("all")
+  const [activeTab, setActiveTab] = useState("items")
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [showNewPostBanner, setShowNewPostBanner] = useState(false)

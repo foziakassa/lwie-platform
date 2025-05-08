@@ -118,7 +118,8 @@ export function ServiceForm() {
           title: "Success!",
           description: "Your service has been published successfully.",
         })
-        router.push("/post/success")
+        // Navigate back to home page to refresh listings
+        router.push("/")
       } else {
         throw new Error("Failed to create service")
       }

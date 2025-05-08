@@ -1,204 +1,281 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"
+import { z } from "zod"
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { SimplifiedImageUploader } from "@/components/post/simplified-image-uploader"
-import { Briefcase, ArrowRight, Save } from "lucide-react"
-import { motion } from "framer-motion"
-
-// Define service categories with their subcategories
-const serviceCategories = [
-  { id: "business", name: "Business" },
-  { id: "technology", name: "Technology" },
-  { id: "creative", name: "Creative" },
-  { id: "education", name: "Education" },
-  { id: "health", name: "Health" },
-  { id: "home", name: "Home" },
-  { id: "events", name: "Events" },
-  { id: "automotive", name: "Automotive" },
-  { id: "legal", name: "Legal" },
-  { id: "financial", name: "Financial" },
-]
-
-const subcategories = {
-  business: ["Consulting", "Marketing", "Administrative", "Accounting", "HR Services"],
-  technology: ["Web Development", "App Development", "IT Support", "Data Analysis", "Cloud Services"],
-  creative: ["Graphic Design", "Photography", "Video Production", "Writing", "Music"],
-  education: ["Tutoring", "Language Learning", "Test Preparation", "Skills Training", "Coaching"],
-  health: ["Fitness Training", "Nutrition", "Therapy", "Wellness", "Medical Services"],
-  home: ["Cleaning", "Repairs", "Gardening", "Interior Design", "Security"],
-  events: ["Planning", "Catering", "Entertainment", "Photography", "Venue Services"],
-  automotive: ["Repairs", "Detailing", "Towing", "Driving Lessons", "Rental"],
-  legal: ["Consultation", "Document Preparation", "Representation", "Mediation", "Notary"],
-  financial: ["Accounting", "Tax Preparation", "Financial Planning", "Bookkeeping", "Investment Advice"],
-}
-
-// Experience levels relevant to Ethiopia
-const experienceLevels = [
-  { value: "beginner", label: "Beginner (0-1 years)" },
-  { value: "intermediate", label: "Intermediate (1-3 years)" },
-  { value: "experienced", label: "Experienced (3-5 years)" },
-  { value: "expert", label: "Expert (5+ years)" },
-  { value: "certified", label: "Certified Professional" },
-  { value: "traditional", label: "Traditional Craftsperson" },
-  { value: "self_taught", label: "Self-taught" },
-]
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { SimplifiedImageUploader } from "../simplified-image-uploader"
+import { saveDraft, getDraft } from "@/lib/post-storage"
+import { ActionButtons } from "../shared/action-buttons"
+import { uploadServiceImages, createService } from "@/lib/api-client"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Loader2, ArrowLeft } from "lucide-react"
+import { toast } from "@/components/ui/use-toast"
+import { getCurrentUser } from "@/lib/auth-utils"
+import { Button } from "@/components/ui/button"
+import { serviceCategories, getSubcategories, type SubcategoryOption } from "@/lib/category-data"
 
 const formSchema = z.object({
-  title: z
-    .string()
-    .min(5, {
-      message: "Title must be at least 5 characters.",
-    })
-    .max(100, {
-      message: "Title must not exceed 100 characters.",
-    }),
-  category: z.string({
-    required_error: "Please select a category.",
+  title: z.string().min(5, {
+    message: "Title must be at least 5 characters.",
   }),
-  subcategory: z.string().optional(),
-  description: z
-    .string()
-    .min(20, {
-      message: "Description must be at least 20 characters.",
-    })
-    .max(1000, {
-      message: "Description must not exceed 1000 characters.",
-    }),
-  experience: z.string({
-    required_error: "Please select your experience level.",
+  description: z.string().min(20, {
+    message: "Description must be at least 20 characters.",
   }),
-  city: z.string().min(2, {
-    message: "City is required.",
+  category: z.string().min(1, {
+    message: "Please select a category.",
   }),
-  subcity: z.string().min(2, {
-    message: "Subcity/Area is required.",
+  subcategory: z.string().min(1, {
+    message: "Please select a subcategory.",
   }),
-  images: z.array(z.string()).optional().default([]),
+  price: z.string().refine((val) => !isNaN(Number(val)), {
+    message: "Price must be a number.",
+  }),
+  city: z.string().min(1, {
+    message: "Please enter your city.",
+  }),
+  subcity: z.string().optional(),
+  phone: z.string().min(10, {
+    message: "Please enter a valid phone number.",
+  }),
+  email: z.string().email({
+    message: "Please enter a valid email address.",
+  }),
+  preferredContactMethod: z.enum(["phone", "email"], {
+    required_error: "Please select a preferred contact method.",
+  }),
 })
 
-interface ServiceBasicInfoFormProps {
-  onSaveDraft: (data: any) => void
-  onContinue: (data: any) => void
-  isLoading: boolean
-  initialData?: any
-}
-
-export function ServiceBasicInfoForm({ onSaveDraft, onContinue, isLoading, initialData }: ServiceBasicInfoFormProps) {
+export function ServiceBasicInfoForm() {
   const router = useRouter()
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [categorySubcategories, setCategorySubcategories] = useState<string[]>([])
+  const [images, setImages] = useState<File[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([])
+  const [subcategories, setSubcategories] = useState<SubcategoryOption[]>([])
+  const [userData, setUserData] = useState<{
+    firstname?: string
+    lastname?: string
+    email?: string
+    phone?: string
+  } | null>(null)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: initialData?.title || "",
-      category: initialData?.category || "",
-      subcategory: initialData?.subcategory || "",
-      description: initialData?.description || "",
-      experience: initialData?.experience || "",
-      city: initialData?.city || "",
-      subcity: initialData?.subcity || "",
-      images: initialData?.images || [],
+      title: "",
+      description: "",
+      category: "",
+      subcategory: "",
+      price: "",
+      city: "",
+      subcity: "",
+      phone: "",
+      email: "",
+      preferredContactMethod: "phone",
     },
   })
 
+  // Load user data
   useEffect(() => {
-    // Set initial category and subcategories if available
-    if (initialData?.category) {
-      setSelectedCategory(initialData.category)
-      setCategorySubcategories(subcategories[initialData.category as keyof typeof subcategories] || [])
-    }
-  }, [initialData])
+    const loadUserData = async () => {
+      const user = await getCurrentUser()
+      if (user) {
+        setUserData({
+          firstname: (user as any).firstname ?? "",
+          lastname: (user as any).lastname ?? "",
+          email: user.email,
+          phone: user.phone,
+        })
 
-  // Update subcategories when category changes
+        // Pre-fill the form with user data
+        form.setValue("email", user.email)
+        if (user.phone) {
+          form.setValue("phone", user.phone)
+        }
+      }
+    }
+
+    loadUserData()
+  }, [form])
+
+  // Load draft data if available
   useEffect(() => {
-    const category = form.watch("category")
-    if (category) {
-      setSelectedCategory(category)
-      setCategorySubcategories(subcategories[category as keyof typeof subcategories] || [])
-      form.setValue("subcategory", "")
-    }
-  }, [form.watch("category"), form])
+    const draftData = getDraft("service")
+    if (draftData) {
+      form.reset({
+        title: draftData.title || "",
+        description: draftData.description || "",
+        category: draftData.category || "",
+        subcategory: draftData.subcategory || "",
+        price: draftData.price ? String(draftData.price) : "",
+        city: draftData.city || "",
+        subcity: draftData.subcity || "",
+        phone: draftData.contact_info?.phone || "",
+        email: draftData.contact_info?.email || "",
+        preferredContactMethod: (draftData.contact_info?.preferred_contact_method as "phone" | "email") || "phone",
+      })
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    // Call the onContinue callback with the form data
-    onContinue(values)
+      if (draftData.images && draftData.images.length > 0) {
+        setUploadedImageUrls(draftData.images)
+      }
+
+      // Load subcategories based on selected category
+      if (draftData.category) {
+        const subs = getSubcategories(draftData.category, "service")
+        setSubcategories(subs)
+      }
+    }
+  }, [form])
+
+  // Watch for category changes to update subcategories
+  const watchCategory = form.watch("category")
+  useEffect(() => {
+    if (watchCategory) {
+      const subs = getSubcategories(watchCategory, "service")
+      setSubcategories(subs)
+      form.setValue("subcategory", "") // Reset subcategory when category changes
+    }
+  }, [watchCategory, form])
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      setIsSubmitting(true)
+
+      // Upload images if there are any new ones (optional for services)
+      let imageUrls = [...uploadedImageUrls]
+      if (images.length > 0) {
+        const uploadedUrls = await uploadServiceImages(images)
+        imageUrls = [...imageUrls, ...uploadedUrls]
+      }
+
+      // Prepare service data
+      const serviceData = {
+        title: values.title,
+        description: values.description,
+        category: values.category,
+        subcategory: values.subcategory,
+        price: Number.parseFloat(values.price),
+        city: values.city,
+        subcity: values.subcity || "",
+        images: imageUrls,
+        service_details: {
+          service_type: values.subcategory,
+        },
+        contact_info: {
+          phone: values.phone,
+          email: values.email,
+          preferred_contact_method: values.preferredContactMethod,
+        },
+      }
+
+      // Save as draft first
+      saveDraft("service", serviceData)
+
+      // Create the service
+      const service = await createService({
+        ...serviceData,
+        status: "published",
+      })
+
+      if (service) {
+        // Clear the draft after successful submission
+        localStorage.removeItem("service_draft")
+        localStorage.setItem("post_submitted", "true")
+        toast({
+          title: "Success!",
+          description: "Your service has been published successfully.",
+          variant: "default",
+        })
+        router.push("/post/success")
+      } else {
+        throw new Error("Failed to create service")
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error)
+      toast({
+        title: "Error",
+        description: "There was a problem publishing your service. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleSaveDraft = () => {
     const values = form.getValues()
-    onSaveDraft(values)
+    const draftData = {
+      title: values.title,
+      description: values.description,
+      category: values.category,
+      subcategory: values.subcategory,
+      price: Number.parseFloat(values.price || "0"),
+      city: values.city,
+      subcity: values.subcity || "",
+      images: uploadedImageUrls,
+      service_details: {
+        service_type: values.subcategory,
+      },
+      contact_info: {
+        phone: values.phone,
+        email: values.email,
+        preferred_contact_method: values.preferredContactMethod,
+      },
+    }
+
+    saveDraft("service", draftData)
+    toast({
+      title: "Draft Saved",
+      description: "Your service draft has been saved successfully.",
+    })
+  }
+
+  const handleImagesChange = (files: File[]) => {
+    setImages(files)
+  }
+
+  const goBackToPostSelection = () => {
+    router.push("/post")
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="bg-white rounded-xl shadow-lg p-8"
-    >
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-[#00A693]">Service Information</h2>
-        <p className="text-gray-500 mt-2">Provide details about the service you're offering</p>
-      </div>
+    <div className="max-w-2xl mx-auto p-4">
+      <Button
+        variant="ghost"
+        className="mb-6 flex items-center text-gray-600 hover:text-gray-900"
+        onClick={goBackToPostSelection}
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Post Selection
+      </Button>
 
+      <h1 className="text-2xl font-bold mb-6 text-primary">Service Information</h1>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-base font-medium">
-                  Service Title <span className="text-red-500">*</span>
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="e.g., Professional Web Development Services"
-                    {...field}
-                    className="text-base py-6 border-gray-300"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+          <SimplifiedImageUploader
+            onChange={handleImagesChange}
+            maxImages={5}
+            existingImages={uploadedImageUrls}
+            required={false} // Images are optional for services
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
-              name="category"
+              name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base font-medium">
-                    Category <span className="text-red-500">*</span>
+                  <FormLabel>
+                    Service Title <span className="text-red-500">*</span>
                   </FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="text-base py-6 border-gray-300">
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {serviceCategories.map((category) => (
-                        <SelectItem key={category.id} value={category.id} className="py-3">
-                          <div className="flex items-center">
-                            <Briefcase className="h-5 w-5 mr-2" />
-                            <span>{category.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Input placeholder="Enter a title for your service" {...field} />
+                  </FormControl>
+                  <FormDescription>A clear title helps others find your service.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -206,36 +283,16 @@ export function ServiceBasicInfoForm({ onSaveDraft, onContinue, isLoading, initi
 
             <FormField
               control={form.control}
-              name="subcategory"
+              name="price"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base font-medium">Subcategory</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    disabled={!selectedCategory || categorySubcategories.length === 0}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="text-base py-6 border-gray-300">
-                        <SelectValue
-                          placeholder={
-                            !selectedCategory
-                              ? "Select a category first"
-                              : categorySubcategories.length === 0
-                                ? "No subcategories available"
-                                : "Select a subcategory"
-                          }
-                        />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categorySubcategories.map((subcategory) => (
-                        <SelectItem key={subcategory} value={subcategory} className="py-3">
-                          {subcategory}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>
+                    Price (ETB) <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="Enter price in ETB" {...field} />
+                  </FormControl>
+                  <FormDescription>Set a fair price for your service.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -247,46 +304,15 @@ export function ServiceBasicInfoForm({ onSaveDraft, onContinue, isLoading, initi
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-base font-medium">
+                <FormLabel>
                   Description <span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
-                  <Textarea
-                    placeholder="Describe your service in detail..."
-                    className="min-h-[150px] text-base border-gray-300"
-                    {...field}
-                  />
+                  <Textarea placeholder="Describe your service in detail" className="min-h-32" {...field} />
                 </FormControl>
                 <FormDescription>
-                  Include what you offer, your experience, and why clients should choose your service.
+                  Include what you offer, your experience, and what makes your service unique.
                 </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="experience"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-base font-medium">
-                  Experience Level <span className="text-red-500">*</span>
-                </FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger className="text-base py-6 border-gray-300">
-                      <SelectValue placeholder="Select your experience level" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {experienceLevels.map((level) => (
-                      <SelectItem key={level.value} value={level.value}>
-                        {level.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -295,15 +321,76 @@ export function ServiceBasicInfoForm({ onSaveDraft, onContinue, isLoading, initi
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Category <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {serviceCategories.map((category) => (
+                        <SelectItem key={category.value} value={category.value}>
+                          {category.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>Choose a category that best fits your service.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="subcategory"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Subcategory <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={subcategories.length === 0}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={subcategories.length === 0 ? "Select a category first" : "Select a subcategory"}
+                        />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {subcategories.map((subcategory) => (
+                        <SelectItem key={subcategory.value} value={subcategory.value}>
+                          {subcategory.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>Select a specific subcategory for your service.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
               name="city"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base font-medium">
+                  <FormLabel>
                     City <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Addis Ababa" {...field} className="text-base py-6 border-gray-300" />
+                    <Input placeholder="Enter your city" {...field} />
                   </FormControl>
+                  <FormDescription>The city where you offer your service.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -314,98 +401,98 @@ export function ServiceBasicInfoForm({ onSaveDraft, onContinue, isLoading, initi
               name="subcity"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base font-medium">
-                    Subcity/Area <span className="text-red-500">*</span>
-                  </FormLabel>
+                  <FormLabel>Subcity</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="e.g., Bole, Kirkos, etc."
-                      {...field}
-                      className="text-base py-6 border-gray-300"
-                    />
+                    <Input placeholder="Enter your subcity" {...field} />
                   </FormControl>
+                  <FormDescription>Specific subcity within the city.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
           </div>
 
-          <FormField
-            control={form.control}
-            name="images"
-            render={({ field }) => (
-              <FormItem className="mt-6">
-                <FormLabel className="text-base font-medium">Images</FormLabel>
-                <FormControl>
-                  <SimplifiedImageUploader value={field.value} onChange={field.onChange} maxImages={5} />
-                </FormControl>
-                <FormDescription>
-                  Upload images that showcase your service. This helps potential clients understand what you offer.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="border-t pt-6 mt-6">
+            <h2 className="text-xl font-semibold mb-4 text-primary">Contact Information</h2>
 
-          <div className="flex justify-between pt-6 border-t mt-8">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push("/post/selection")}
-              className="px-6 py-6 text-base border-gray-300 hover:bg-gray-50"
-            >
-              Cancel
-            </Button>
-            <div className="space-x-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleSaveDraft}
-                className="px-6 py-6 text-base border-[#00A693] text-[#00A693] hover:bg-[#00A693]/10"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Save Draft
-              </Button>
-              <Button
-                type="submit"
-                className="bg-[#00A693] hover:bg-[#008F7F] px-8 py-6 text-base shadow-md"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <svg
-                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    Submit
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Phone Number <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your phone number" {...field} />
+                    </FormControl>
+                    <FormDescription>Your phone number for interested parties to contact you.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </Button>
+              />
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Email Address <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your email address" {...field} />
+                    </FormControl>
+                    <FormDescription>Your email for interested parties to contact you.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
+
+            <FormField
+              control={form.control}
+              name="preferredContactMethod"
+              render={({ field }) => (
+                <FormItem className="mt-4">
+                  <FormLabel>
+                    Preferred Contact Method <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select preferred contact method" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="phone">Phone</SelectItem>
+                      <SelectItem value="email">Email</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>How would you prefer to be contacted?</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
+
+          <ActionButtons
+            onSaveDraft={handleSaveDraft}
+            isSubmitting={isSubmitting}
+            submitLabel={
+              isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Publishing...
+                </>
+              ) : (
+                "Publish Service"
+              )
+            }
+          />
         </form>
       </Form>
-    </motion.div>
+    </div>
   )
 }

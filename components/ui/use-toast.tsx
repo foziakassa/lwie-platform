@@ -1,15 +1,20 @@
-import { useCallback } from 'react';
+// Simplified toast component
+import { toast as sonnerToast } from "sonner"
 
-interface ToastOptions {
-  title: string;
-  description?: string;
-  variant?: 'default' | 'destructive';
-  duration?: number;
+type ToastProps = {
+  title?: string
+  description?: string
+  variant?: "default" | "destructive"
 }
 
-export function toast({ title, description, variant = 'default', duration = 3000 }: ToastOptions) {
-  // For simplicity, use alert as placeholder
-  alert(`${title}${description ? ': ' + description : ''}`);
-}
+export function toast({ title, description, variant }: ToastProps) {
+  if (variant === "destructive") {
+    return sonnerToast.error(title, {
+      description,
+    })
+  }
 
-export default toast;
+  return sonnerToast(title, {
+    description,
+  })
+}

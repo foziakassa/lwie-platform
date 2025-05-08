@@ -1,122 +1,56 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { SpecificationsForm } from "@/components/post/item/specifications-form"
-import { PostProgressIndicator } from "@/components/post/post-progress-indicator"
-import { getDraftPost, saveDraftPost } from "@/lib/post-storage"
-import { toast } from "@/components/ui/use-toast"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { ArrowLeft, ArrowRight } from "lucide-react"
+import { getDraft } from "@/lib/post-storage"
+import { useEffect, useState } from "react"
 
 export default function ItemSpecificationsPage() {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [draftData, setDraftData] = useState<any>(null)
+  const [hasDraft, setHasDraft] = useState(false)
 
   useEffect(() => {
-    // Get the existing draft
-    const draft = getDraftPost("item")
-    if (!draft) {
-      // Redirect to basic info if no draft exists
-      router.push("/post/item/basic-info")
-      return
-    }
-    setDraftData(draft)
-  }, [router])
-
-  const handleSaveDraft = (data: any) => {
-    try {
-      // Get the existing draft
-      const draft = getDraftPost("item")
-      if (!draft) {
-        toast({
-          title: "Error",
-          description: "No draft found. Please start from the beginning.",
-          variant: "destructive",
-        })
-        router.push("/post/item/basic-info")
-        return
-      }
-
-      // Update with new data
-      const updatedDraft = {
-        ...draft,
-        ...data,
-        updatedAt: new Date().toISOString(),
-      }
-
-      // Save the updated draft
-      saveDraftPost(updatedDraft)
-
-      toast({
-        title: "Draft saved",
-        description: "Your post has been saved as a draft",
-      })
-
-      // Navigate to home
-      router.push("/")
-    } catch (error) {
-      console.error("Error saving draft:", error)
-      toast({
-        title: "Error",
-        description: "Failed to save draft",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleContinue = async (formData: any) => {
-    try {
-      setIsLoading(true)
-      if (draftData) {
-        const updatedDraft = {
-          ...draftData,
-          ...formData,
-          updatedAt: new Date().toISOString(),
-        }
-        saveDraftPost(updatedDraft)
-        router.push("/post/item/trade-preferences")
-      }
-    } catch (error) {
-      console.error("Error saving form data:", error)
-      toast({
-        title: "Error",
-        description: "There was a problem saving your information. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
+    // Check if there's a draft
+    const draft = getDraft("item")
+    setHasDraft(!!draft)
+  }, [])
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      <PostProgressIndicator
-        steps={[
-          { label: "Basic Info", completed: true },
-          { label: "Specifications", completed: false },
-          { label: "Trade Preferences", completed: false },
-          { label: "Location", completed: false },
-          { label: "Review & Submit", completed: false },
-        ]}
-        currentStep={1}
-      />
+    <div className="container mx-auto px-4 py-12 max-w-4xl">
+      <Button variant="ghost" className="mb-4" onClick={() => router.push("/post/item/create")}>
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Basic Info
+      </Button>
 
-      <Card className="w-full max-w-4xl mx-auto mt-6">
+      <h1 className="text-3xl font-bold text-center mb-8">Item Specifications</h1>
+
+      <Card className="mb-8">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">Item Specifications</CardTitle>
+          <CardTitle>Trade Preferences</CardTitle>
+          <CardDescription>Specify how you'd like to trade or sell your item</CardDescription>
         </CardHeader>
         <CardContent>
-          {draftData && (
-            <SpecificationsForm
-              initialData={draftData}
-              onSaveDraft={handleSaveDraft}
-              onContinue={handleContinue}
-              isLoading={isLoading}
-            />
-          )}
+          <p className="text-gray-500">
+            This feature is coming soon. For now, you can continue with publishing your item.
+          </p>
         </CardContent>
+        <CardFooter className="flex justify-end">
+          <Button className="bg-primary hover:bg-primary/90" onClick={() => router.push("/post/item/create")}>
+            Continue to Publish
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </CardFooter>
       </Card>
+
+      {hasDraft && (
+        <div className="text-center">
+          <Button variant="outline" onClick={() => router.push("/post/item/create")}>
+            Return to Basic Info
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

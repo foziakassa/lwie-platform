@@ -1,128 +1,153 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Package, Briefcase, ArrowRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { motion } from "framer-motion"
+import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import { ArrowRight, Package, Briefcase, CheckCircle2 } from "lucide-react"
 
-export default function PostPage() {
-  const router = useRouter()
+export default function PostSelectionPage() {
   const [selectedType, setSelectedType] = useState<"item" | "service" | null>(null)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  const handleContinue = () => {
-    if (selectedType === "item") {
-      router.push("/post/item/basic-info")
-    } else if (selectedType === "service") {
-      router.push("/post/service/basic-info")
-    }
-  }
-
-  if (!mounted) return null
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="container mx-auto py-8 px-4 max-w-6xl">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8"
-        >
-          <h1 className="text-3xl md:text-4xl font-bold mb-4 text-[#00796B]">Create a New Post</h1>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Choose what you'd like to post on the LWIE platform.
-          </p>
-        </motion.div>
+    <div className="min-h-screen bg-gray-50 py-12">
+      <div className="container mx-auto px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-10">
+            <h1 className="text-3xl font-bold text-gray-900 mb-3">What would you like to post?</h1>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Choose the type of listing you want to create. You can post items you want to swap or services you can
+              offer to others.
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className={`relative overflow-hidden rounded-xl cursor-pointer transition-all duration-300 ${
-              selectedType === "item"
-                ? "ring-2 ring-[#00796B] shadow-lg"
-                : "border border-gray-200 shadow-sm hover:shadow-md hover:border-[#B2DFDB]"
-            }`}
-            onClick={() => setSelectedType("item")}
-          >
-            <div className="p-6">
-              <div className="flex items-start space-x-4">
-                <div className={`p-3 rounded-lg ${selectedType === "item" ? "bg-[#E0F2F1]" : "bg-gray-100"}`}>
-                  <Package className={`h-6 w-6 ${selectedType === "item" ? "text-[#00796B]" : "text-gray-600"}`} />
-                </div>
-                <div className="flex-1">
-                  <h2
-                    className={`text-xl font-semibold mb-2 ${selectedType === "item" ? "text-[#00796B]" : "text-gray-800"}`}
-                  >
-                    Post an Item
-                  </h2>
-                  <p className="text-gray-600 mb-4">List physical items you want to swap or trade with others.</p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className={`relative overflow-hidden rounded-xl cursor-pointer transition-all duration-300 ${
-              selectedType === "service"
-                ? "ring-2 ring-[#00796B] shadow-lg"
-                : "border border-gray-200 shadow-sm hover:shadow-md hover:border-[#B2DFDB]"
-            }`}
-            onClick={() => setSelectedType("service")}
-          >
-            <div className="p-6">
-              <div className="flex items-start space-x-4">
-                <div className={`p-3 rounded-lg ${selectedType === "service" ? "bg-[#E0F2F1]" : "bg-gray-100"}`}>
-                  <Briefcase className={`h-6 w-6 ${selectedType === "service" ? "text-[#00796B]" : "text-gray-600"}`} />
-                </div>
-                <div className="flex-1">
-                  <h2
-                    className={`text-xl font-semibold mb-2 ${selectedType === "service" ? "text-[#00796B]" : "text-gray-800"}`}
-                  >
-                    Offer a Service
-                  </h2>
-                  <p className="text-gray-600 mb-4">Share your skills and expertise with others.</p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {selectedType && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="flex justify-center mb-12"
-          >
-            <Button
-              onClick={handleContinue}
-              className="bg-[#00796B] hover:bg-[#00695C] text-white px-6 py-2 rounded-md flex items-center shadow-sm"
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+            {/* Item Card */}
+            <div
+              className={`bg-white rounded-xl shadow-sm border-2 transition-all duration-200 overflow-hidden ${
+                selectedType === "item"
+                  ? "border-teal-500 ring-2 ring-teal-200"
+                  : "border-transparent hover:border-gray-200"
+              }`}
+              onClick={() => setSelectedType("item")}
             >
-              Continue
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </motion.div>
-        )}
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="bg-teal-50 p-3 rounded-full">
+                    <Package className="h-6 w-6 text-teal-600" />
+                  </div>
+                  {selectedType === "item" && <CheckCircle2 className="h-6 w-6 text-teal-500" />}
+                </div>
+                <h2 className="text-xl font-bold mb-2">Post an Item</h2>
+                <p className="text-gray-600 mb-4">
+                  List physical items you own and want to swap with others. Perfect for electronics, clothing,
+                  furniture, and more.
+                </p>
+                <ul className="space-y-2 mb-6">
+                  <li className="flex items-center text-sm text-gray-600">
+                    <span className="bg-teal-100 rounded-full p-1 mr-2">
+                      <CheckCircle2 className="h-3 w-3 text-teal-600" />
+                    </span>
+                    Upload multiple photos
+                  </li>
+                  <li className="flex items-center text-sm text-gray-600">
+                    <span className="bg-teal-100 rounded-full p-1 mr-2">
+                      <CheckCircle2 className="h-3 w-3 text-teal-600" />
+                    </span>
+                    Specify condition and details
+                  </li>
+                  <li className="flex items-center text-sm text-gray-600">
+                    <span className="bg-teal-100 rounded-full p-1 mr-2">
+                      <CheckCircle2 className="h-3 w-3 text-teal-600" />
+                    </span>
+                    Set trade preferences
+                  </li>
+                </ul>
+                <div className="relative h-40 rounded-lg overflow-hidden">
+                  <Image
+                    src="/placeholder.svg?height=300&width=500&text=Items+for+swap"
+                    alt="Items for swap"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </div>
+            </div>
 
-        <div className="mt-8 text-center">
-          <p className="text-gray-500 text-sm">
-            By posting on LWIE, you agree to our{" "}
-            <Link href="/terms" className="text-[#00796B] hover:underline">
-              Terms of Service
-            </Link>
-          </p>
+            {/* Service Card */}
+            <div
+              className={`bg-white rounded-xl shadow-sm border-2 transition-all duration-200 overflow-hidden ${
+                selectedType === "service"
+                  ? "border-teal-500 ring-2 ring-teal-200"
+                  : "border-transparent hover:border-gray-200"
+              }`}
+              onClick={() => setSelectedType("service")}
+            >
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="bg-teal-50 p-3 rounded-full">
+                    <Briefcase className="h-6 w-6 text-teal-600" />
+                  </div>
+                  {selectedType === "service" && <CheckCircle2 className="h-6 w-6 text-teal-500" />}
+                </div>
+                <h2 className="text-xl font-bold mb-2">Post a Service</h2>
+                <p className="text-gray-600 mb-4">
+                  Offer your skills and services to others. Great for professional services, creative work, tutoring,
+                  and more.
+                </p>
+                <ul className="space-y-2 mb-6">
+                  <li className="flex items-center text-sm text-gray-600">
+                    <span className="bg-teal-100 rounded-full p-1 mr-2">
+                      <CheckCircle2 className="h-3 w-3 text-teal-600" />
+                    </span>
+                    Describe your expertise
+                  </li>
+                  <li className="flex items-center text-sm text-gray-600">
+                    <span className="bg-teal-100 rounded-full p-1 mr-2">
+                      <CheckCircle2 className="h-3 w-3 text-teal-600" />
+                    </span>
+                    Set availability and duration
+                  </li>
+                  <li className="flex items-center text-sm text-gray-600">
+                    <span className="bg-teal-100 rounded-full p-1 mr-2">
+                      <CheckCircle2 className="h-3 w-3 text-teal-600" />
+                    </span>
+                    Showcase previous work
+                  </li>
+                </ul>
+                <div className="relative h-40 rounded-lg overflow-hidden">
+                  <Image
+                    src="/placeholder.svg?height=300&width=500&text=Services+to+offer"
+                    alt="Services to offer"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            {selectedType === "item" ? (
+              <Link href="/post/item/create">
+                <Button className="bg-teal-600 hover:bg-teal-700 px-8 py-6 text-lg flex items-center gap-2">
+                  Continue to Item Form
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+              </Link>
+            ) : selectedType === "service" ? (
+              <Link href="/post/service/create">
+                <Button className="bg-teal-600 hover:bg-teal-700 px-8 py-6 text-lg flex items-center gap-2">
+                  Continue to Service Form
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+              </Link>
+            ) : (
+              <Button disabled className="bg-gray-300 text-gray-600 px-8 py-6 text-lg cursor-not-allowed">
+                Select a post type to continue
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

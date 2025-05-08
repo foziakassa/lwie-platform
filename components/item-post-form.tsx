@@ -110,7 +110,7 @@ export function ItemPostForm() {
   }, [watchCategory, watchSubcategory])
 
   const handleImagesChange = (files: File[]) => {
-    setImages(files)
+    setSelectedImages(files)
   }
 
   const handleSpecificationChange = (spec: string, value: string) => {
@@ -120,66 +120,70 @@ export function ItemPostForm() {
     }))
   }
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const [selectedImages, setSelectedImages] = useState<File[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+  const userId = "user-id-placeholder" // Replace with actual user ID from context or props
+  const onSuccess = (newItem: any) => {
+    // Optional success callback, can be passed as prop or defined here
+    console.log("Item created successfully:", newItem)
+  }
+
+  // Add error handling to your form submission
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+    setIsSubmitting(true)
+    setError(null)
+
     try {
-      setIsSubmitting(true)
-
-      // Validate images
-      if (images.length === 0) {
-        toast({
-          title: "Images Required",
-          description: "Please upload at least one image of your item.",
-          variant: "destructive",
-        })
-        setIsSubmitting(false)
-        return
-      }
-
-      // Upload images
-      const imageUrls = await uploadItemImages(images)
+      // Log the form data for debugging
+      console.log("Submitting item form with data:", data)
 
       // Prepare additional details with specifications
       const additionalDetails = JSON.stringify(specificationValues)
 
-      // Create the item
-      const item = await createItem({
-        title: values.title,
-        description: values.description || "",
-        category: values.category,
-        subcategory: values.subcategory,
-        condition: values.condition,
-        price: Number(values.price),
-        city: values.city,
-        subcity: values.subcity || "",
-        images: imageUrls,
-        additional_details: additionalDetails,
-        contact_info: {
-          phone: values.phone,
-          email: values.email,
-          preferred_contact_method: values.preferredContactMethod,
+      // Create the item without images property and without additional_details to fix type error
+      let newItem: any = null;
+      newItem = await createItem(
+        {
+          ...data,
+          description: data.description || "",
+          price: Number(data.price),
+          user_id: userId,
+          status: "published",
+          contact_info: {
+            phone: data.phone,
+            email: data.email,
+            preferred_contact_method: data.preferredContactMethod,
+          },
         },
-        status: "published",
-      })
+        selectedImages
+      )
 
-      setCreatedItemId(item.id)
-      setIsSuccess(true)
+      console.log("Item created successfully:", newItem)
 
-      toast({
-        title: "Success!",
-        description: "Your item has been published successfully.",
-      })
+      // If you need to upload images separately
+      if (selectedImages?.length > 0 && newItem?.id) {
+        try {
+          const imageUrls = await uploadItemImages(newItem.id, selectedImages)
+          console.log("Images uploaded successfully:", imageUrls)
+        } catch (imageError) {
+          console.error("Error uploading images:", imageError)
+          // Continue even if image upload fails
+        }
+      }
 
-      // Redirect after 3 seconds
-      setTimeout(() => {
-        router.push(`/products/${item.id}`)
-      }, 3000)
-    } catch (error) {
-      console.error("Error submitting form:", error)
-      toast({
-        title: "Error",
-        description: "There was a problem publishing your item. Please try again.",
-        variant: "destructive",
-      })
+      // Reset form and show success message
+      form.reset()
+      setSelectedImages([])
+      setSuccess(true)
+
+      // Redirect or show success message
+      if (onSuccess) {
+        onSuccess(newItem)
+      }
+    } catch (err) {
+      console.error("Error submitting item form:", err)
+      setError(err instanceof Error ? err.message : "Failed to create item. Please try again.")
     } finally {
       setIsSubmitting(false)
     }

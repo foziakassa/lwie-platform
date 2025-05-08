@@ -1,0 +1,5 @@
+.backgroundDot {
+  position: absolute;
+  border-radius: 9999px; /* rounded-full */
+  background-color: white;
+}

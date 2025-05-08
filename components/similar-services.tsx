@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { fetchServices } from "@/lib/api-client"
-import type { Post } from "@/lib/types"
+import { fetchServices } from "lib/api-client"
+import type { Post } from "lib/types"
 
 export function SimilarServices({ currentId }: { currentId: string }) {
   const [services, setServices] = useState<Post[]>([])
@@ -13,7 +13,7 @@ export function SimilarServices({ currentId }: { currentId: string }) {
       try {
         const items = await fetchServices({})
         // Filter out the current service and limit to 4
-        const filteredItems = items.filter((item) => item.id !== currentId).slice(0, 4)
+        const filteredItems = items.results.filter((item: Post) => item.id !== currentId).slice(0, 4)
         setServices(filteredItems)
       } catch (error) {
         console.error("Error loading similar services:", error)

@@ -64,19 +64,21 @@ export default function Home() {
     try {
       setLoading(true)
 
-      const category = selectedCategory !== "All" ? selectedCategory : undefined
-      const city = selectedCity !== "All Cities" && selectedCity !== "" ? selectedCity : undefined
-      const query = searchQuery !== "" ? searchQuery : undefined
+      // PaginationParams type does not include category, city, query, so we need to remove them or cast to any
+      const params: any = {};
+      if (selectedCategory !== "All") params.category = selectedCategory;
+      if (selectedCity !== "All Cities" && selectedCity !== "") params.city = selectedCity;
+      if (searchQuery !== "") params.query = searchQuery;
 
-      let data: Post[]
+      let data: any
 
       if (activeTab === "items") {
-        data = await fetchItems({ category, city, query })
+        data = await fetchItems(params)
       } else {
-        data = await fetchServices({ category, city, query })
+        data = await fetchServices(params)
       }
 
-      setListings(data)
+      setListings(data.results || [])
     } catch (error) {
       console.error("Error loading listings:", error)
       toast({

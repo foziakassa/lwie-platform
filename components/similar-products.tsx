@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { fetchItems } from "@/lib/api-client"
-import type { Post } from "@/lib/types"
+import { fetchItems } from "lib/api-client"
+import type { Post } from "lib/types"
 
 export function SimilarProducts({ currentId }: { currentId: string }) {
   const [products, setProducts] = useState<Post[]>([])
@@ -13,7 +13,7 @@ export function SimilarProducts({ currentId }: { currentId: string }) {
       try {
         const items = await fetchItems({})
         // Filter out the current product and limit to 4
-        const filteredItems = items.filter((item) => item.id !== currentId).slice(0, 4)
+        const filteredItems = items.results.filter((item: Post) => item.id !== currentId).slice(0, 4)
         setProducts(filteredItems)
       } catch (error) {
         console.error("Error loading similar products:", error)

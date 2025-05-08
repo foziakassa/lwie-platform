@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Button } from "components/ui/button"
+import { Badge } from "components/ui/badge"
 import { X, Mail, Phone, Star, Clock, Sparkles, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { cn } from "@/lib/utils"
+import { cn } from "lib/utils"
+import styles from "./3d-advertisement-carousel.module.css"
 
 interface AdvertisementBannerProps {
   companyName?: string
@@ -58,19 +59,16 @@ export default function AdvertisementBanner({
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-0 left-0 w-full h-full">
-          {Array.from({ length: 20 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute rounded-full bg-white"
-              style={{
-                width: `${Math.random() * 10 + 5}px`,
-                height: `${Math.random() * 10 + 5}px`,
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                opacity: Math.random() * 0.5 + 0.3,
-              }}
-            />
-          ))}
+          {Array.from({ length: 20 }).map((_, i) => {
+            const style = {
+              width: `${Math.random() * 10 + 5}px`,
+              height: `${Math.random() * 10 + 5}px`,
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              opacity: Math.random() * 0.5 + 0.3,
+            }
+            return <div key={i} className={styles.backgroundDot} style={style} />
+          })}
         </div>
       </div>
 

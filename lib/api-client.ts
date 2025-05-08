@@ -1,9 +1,9 @@
 // Enhanced API client for the Swap Trade Platform with TypeScript types
-import type {
-  User,
-  Post,
-  SwapRequest,
-  Notification
+import type { 
+  User, 
+  Post, 
+  SwapRequest, 
+  Notification 
 } from "./types";
 
 // Additional types needed for the API client
@@ -155,7 +155,7 @@ const handleResponse = async (response: Response): Promise<any> => {
       throw new Error(`API request failed with status ${response.status}`);
     }
   }
-
+  
   // For successful responses, parse and return the JSON
   return response.json();
 };
@@ -164,14 +164,14 @@ const handleResponse = async (response: Response): Promise<any> => {
 const fetchAPI = async (endpoint: string, options: FetchOptions = {}): Promise<any> => {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
-
+    
     // Default options
     const defaultOptions: FetchOptions = {
       headers: {
         'Content-Type': 'application/json',
       },
     };
-
+    
     // Merge options
     const fetchOptions: FetchOptions = {
       ...defaultOptions,
@@ -181,18 +181,18 @@ const fetchAPI = async (endpoint: string, options: FetchOptions = {}): Promise<a
         ...options.headers,
       },
     };
-
+    
     // Add request timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
+    
     const response = await fetch(url, {
       ...fetchOptions,
       signal: controller.signal,
     });
-
+    
     clearTimeout(timeoutId);
-
+    
     return handleResponse(response);
   } catch (error: unknown) {
     // Handle abort errors specifically
@@ -211,25 +211,25 @@ const userAPI = {
       body: JSON.stringify(credentials),
     });
   },
-
+  
   register: async (userData: RegisterData): Promise<User> => {
     return fetchAPI('/api/users', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
   },
-
+  
   getUser: async (userId: string): Promise<User> => {
     return fetchAPI(`/api/users/${userId}`);
   },
-
+  
   updateUser: async (userId: string, userData: UpdateUserData): Promise<User> => {
     return fetchAPI(`/api/users/${userId}`, {
       method: 'PUT',
       body: JSON.stringify(userData),
     });
   },
-
+  
   changePassword: async (userId: string, passwordData: PasswordChangeData): Promise<{ message: string }> => {
     return fetchAPI(`/api/users/${userId}/password`, {
       method: 'PUT',
@@ -245,15 +245,15 @@ const itemsAPI = {
     const queryString = new URLSearchParams(params as Record<string, string>).toString();
     return fetchAPI(`/api/items${queryString ? `?${queryString}` : ''}`);
   },
-
+  
   getItem: async (itemId: string): Promise<Post> => {
     return fetchAPI(`/api/items/${itemId}`);
   },
-
+  
   createItem: async (itemData: ItemData, images?: File[]): Promise<Post> => {
     // Handle form data with images
     const formData = new FormData();
-
+    
     // Add item data
     Object.keys(itemData).forEach(key => {
       // Handle nested objects by stringifying them
@@ -263,14 +263,14 @@ const itemsAPI = {
         formData.append(key, String(itemData[key as keyof ItemData]));
       }
     });
-
+    
     // Add images
     if (images && images.length) {
       images.forEach(image => {
         formData.append('images', image);
       });
     }
-
+    
     return fetchAPI('/api/items', {
       method: 'POST',
       headers: {
@@ -279,11 +279,11 @@ const itemsAPI = {
       body: formData,
     });
   },
-
+  
   updateItem: async (itemId: string, itemData: Partial<ItemData>, images?: File[]): Promise<Post> => {
     // Handle form data with images
     const formData = new FormData();
-
+    
     // Add item data
     Object.keys(itemData).forEach(key => {
       // Handle nested objects by stringifying them
@@ -293,14 +293,14 @@ const itemsAPI = {
         formData.append(key, String(itemData[key as keyof ItemData]));
       }
     });
-
+    
     // Add images
     if (images && images.length) {
       images.forEach(image => {
         formData.append('images', image);
       });
     }
-
+    
     return fetchAPI(`/api/items/${itemId}`, {
       method: 'PUT',
       headers: {
@@ -309,15 +309,42 @@ const itemsAPI = {
       body: formData,
     });
   },
-
+  
   deleteItem: async (itemId: string): Promise<{ message: string }> => {
     return fetchAPI(`/api/items/${itemId}`, {
       method: 'DELETE',
     });
   },
-
+  
   getUserItems: async (userId: string): Promise<Post[]> => {
     return fetchAPI(`/api/items/user/${userId}`);
+  },
+  
+  uploadImages: async (itemId: string, images: File[]): Promise<string[]> => {
+    if (!images || images.length === 0) {
+      return [];
+    }
+    
+    const formData = new FormData();
+    
+    // Add the item ID
+    formData.append('item_id', itemId);
+    
+    // Add images
+    images.forEach(image => {
+      formData.append('images', image);
+    });
+    
+    // Make the request to upload images
+    const response = await fetchAPI(`/api/items/${itemId}/images`, {
+      method: 'POST',
+      headers: {
+        // Don't set Content-Type when using FormData, browser will set it with boundary
+      },
+      body: formData,
+    });
+    
+    return response.image_urls || [];
   },
 };
 
@@ -328,15 +355,15 @@ const servicesAPI = {
     const queryString = new URLSearchParams(params as Record<string, string>).toString();
     return fetchAPI(`/api/services${queryString ? `?${queryString}` : ''}`);
   },
-
+  
   getService: async (serviceId: string): Promise<Post> => {
     return fetchAPI(`/api/services/${serviceId}`);
   },
-
+  
   createService: async (serviceData: ServiceData, images?: File[]): Promise<Post> => {
     // Handle form data with images
     const formData = new FormData();
-
+    
     // Add service data
     Object.keys(serviceData).forEach(key => {
       // Handle nested objects by stringifying them
@@ -346,14 +373,14 @@ const servicesAPI = {
         formData.append(key, String(serviceData[key as keyof ServiceData]));
       }
     });
-
+    
     // Add images
     if (images && images.length) {
       images.forEach(image => {
         formData.append('images', image);
       });
     }
-
+    
     return fetchAPI('/api/services', {
       method: 'POST',
       headers: {
@@ -362,11 +389,11 @@ const servicesAPI = {
       body: formData,
     });
   },
-
+  
   updateService: async (serviceId: string, serviceData: Partial<ServiceData>, images?: File[]): Promise<Post> => {
     // Handle form data with images
     const formData = new FormData();
-
+    
     // Add service data
     Object.keys(serviceData).forEach(key => {
       // Handle nested objects by stringifying them
@@ -376,14 +403,14 @@ const servicesAPI = {
         formData.append(key, String(serviceData[key as keyof ServiceData]));
       }
     });
-
+    
     // Add images
     if (images && images.length) {
       images.forEach(image => {
         formData.append('images', image);
       });
     }
-
+    
     return fetchAPI(`/api/services/${serviceId}`, {
       method: 'PUT',
       headers: {
@@ -392,15 +419,42 @@ const servicesAPI = {
       body: formData,
     });
   },
-
+  
   deleteService: async (serviceId: string): Promise<{ message: string }> => {
     return fetchAPI(`/api/services/${serviceId}`, {
       method: 'DELETE',
     });
   },
-
+  
   getUserServices: async (userId: string): Promise<Post[]> => {
     return fetchAPI(`/api/services/user/${userId}`);
+  },
+  
+  uploadImages: async (serviceId: string, images: File[]): Promise<string[]> => {
+    if (!images || images.length === 0) {
+      return [];
+    }
+    
+    const formData = new FormData();
+    
+    // Add the service ID
+    formData.append('service_id', serviceId);
+    
+    // Add images
+    images.forEach(image => {
+      formData.append('images', image);
+    });
+    
+    // Make the request to upload images
+    const response = await fetchAPI(`/api/services/${serviceId}/images`, {
+      method: 'POST',
+      headers: {
+        // Don't set Content-Type when using FormData, browser will set it with boundary
+      },
+      body: formData,
+    });
+    
+    return response.image_urls || [];
   },
 };
 
@@ -411,29 +465,29 @@ const swapRequestsAPI = {
     const queryString = new URLSearchParams(params as Record<string, string>).toString();
     return fetchAPI(`/api/swap-requests${queryString ? `?${queryString}` : ''}`);
   },
-
+  
   getSwapRequest: async (requestId: string): Promise<SwapRequest> => {
     return fetchAPI(`/api/swap-requests/${requestId}`);
   },
-
+  
   createSwapRequest: async (requestData: SwapRequestData): Promise<SwapRequest> => {
     return fetchAPI('/api/swap-requests', {
       method: 'POST',
       body: JSON.stringify(requestData),
     });
   },
-
+  
   updateSwapRequest: async (requestId: string, requestData: Partial<SwapRequestData>): Promise<SwapRequest> => {
     return fetchAPI(`/api/swap-requests/${requestId}`, {
       method: 'PUT',
       body: JSON.stringify(requestData),
     });
   },
-
+  
   getUserSwapRequests: async (userId: string): Promise<SwapRequest[]> => {
     return fetchAPI(`/api/swap-requests/user/${userId}`);
   },
-
+  
   getReceivedSwapRequests: async (userId: string): Promise<SwapRequest[]> => {
     return fetchAPI(`/api/swap-requests/received/${userId}`);
   },
@@ -444,20 +498,20 @@ const messagesAPI = {
   getMessages: async (swapRequestId: string): Promise<Message[]> => {
     return fetchAPI(`/api/messages/swap-request/${swapRequestId}`);
   },
-
+  
   sendMessage: async (messageData: MessageData): Promise<Message> => {
     return fetchAPI('/api/messages', {
       method: 'POST',
       body: JSON.stringify(messageData),
     });
   },
-
+  
   markAsRead: async (messageId: string): Promise<Message> => {
     return fetchAPI(`/api/messages/${messageId}/read`, {
       method: 'PUT',
     });
   },
-
+  
   getUserUnreadCount: async (userId: string): Promise<{ count: number }> => {
     return fetchAPI(`/api/messages/unread-count/${userId}`);
   },
@@ -468,13 +522,13 @@ const notificationsAPI = {
   getNotifications: async (userId: string): Promise<Notification[]> => {
     return fetchAPI(`/api/notifications/user/${userId}`);
   },
-
+  
   markAsRead: async (notificationId: string): Promise<Notification> => {
     return fetchAPI(`/api/notifications/${notificationId}/read`, {
       method: 'PUT',
     });
   },
-
+  
   markAllAsRead: async (userId: string): Promise<{ message: string }> => {
     return fetchAPI(`/api/notifications/user/${userId}/read-all`, {
       method: 'PUT',
@@ -506,7 +560,7 @@ const analyticsAPI = {
   }> => {
     return fetchAPI('/api/analytics/stats');
   },
-
+  
   getUserActivity: async (userId: string): Promise<{
     posts: {
       total_posts: number;
@@ -537,14 +591,14 @@ const favoritesAPI = {
   getUserFavorites: async (userId: string): Promise<(Favorite & Post)[]> => {
     return fetchAPI(`/api/favorites/user/${userId}`);
   },
-
+  
   addToFavorites: async (favoriteData: FavoriteData): Promise<Favorite> => {
     return fetchAPI('/api/favorites', {
       method: 'POST',
       body: JSON.stringify(favoriteData),
     });
   },
-
+  
   removeFromFavorites: async (userId: string, postId: string): Promise<{ message: string }> => {
     return fetchAPI(`/api/favorites/${userId}/${postId}`, {
       method: 'DELETE',
@@ -594,6 +648,10 @@ export const deleteItem = async (itemId: string): Promise<{ message: string }> =
   return apiClient.items.deleteItem(itemId);
 };
 
+export const uploadItemImages = async (itemId: string, images: File[]): Promise<string[]> => {
+  return apiClient.items.uploadImages(itemId, images);
+};
+
 // Services compatibility functions
 export const fetchServices = async (params?: PaginationParams): Promise<PaginatedResponse<Post>> => {
   return apiClient.services.getServices(params);
@@ -617,6 +675,10 @@ export const updateService = async (serviceId: string, serviceData: Partial<Serv
 
 export const deleteService = async (serviceId: string): Promise<{ message: string }> => {
   return apiClient.services.deleteService(serviceId);
+};
+
+export const uploadServiceImages = async (serviceId: string, images: File[]): Promise<string[]> => {
+  return apiClient.services.uploadImages(serviceId, images);
 };
 
 // User compatibility functions

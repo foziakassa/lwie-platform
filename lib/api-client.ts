@@ -1,659 +1,568 @@
-import type { Post, Notification, SwapRequest, User } from "./types"
+// Enhanced API client for the Swap Trade Platform with TypeScript types
+import type {
+  User,
+  Post,
+  SwapRequest,
+  Notification
+} from "./types";
 
-// Mock data for items
-const mockItems: Post[] = [
-  {
-    id: "comfortable-leather-sofa",
-    user_id: "user123",
-    type: "item",
-    title: "Comfortable Leather Sofa",
-    description: "A beautiful and comfortable leather sofa in excellent condition. Perfect for any living room.",
-    price: 20500,
-    condition: "Used",
-    category: "Furniture",
-    city: "Addis Ababa",
-    subcity: null,
-    images: ["/brown-leather-sofa.png"],
-    contact_info: {
-      phone: "555-123-4567",
-      email: "user@example.com",
-      preferred_contact_method: "email",
-    },
-    status: "published",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    brand: "Ashley",
-    model: "Signature Design",
-  },
-  {
-    id: "1",
-    user_id: "user123",
-    type: "item",
-    title: "Comfortable Leather Sofa",
-    description: "A beautiful and comfortable leather sofa in excellent condition. Perfect for any living room.",
-    price: 20500,
-    condition: "Used",
-    category: "Furniture",
-    city: "Addis Ababa",
-    subcity: null,
-    images: ["/brown-leather-sofa.png"],
-    contact_info: {
-      phone: "555-123-4567",
-      email: "user@example.com",
-      preferred_contact_method: "email",
-    },
-    status: "published",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    brand: "Ashley",
-    model: "Signature Design",
-  },
-  {
-    id: "2",
-    user_id: "user456",
-    type: "item",
-    title: "Toyota SUV",
-    description: "2018 Toyota SUV in excellent condition with low mileage. Well maintained and serviced regularly.",
-    price: 2300000,
-    condition: "Used",
-    category: "Vehicles",
-    city: "Addis Ababa",
-    subcity: null,
-    images: ["/white-toyota-suv.png"],
-    contact_info: {
-      phone: "555-987-6543",
-      email: "sarah@example.com",
-      preferred_contact_method: "phone",
-    },
-    status: "published",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    brand: "Toyota",
-    model: "RAV4",
-  },
-  {
-    id: "3",
-    user_id: "user789",
-    type: "item",
-    title: "iPhone 13 Pro",
-    description: "iPhone 13 Pro in like new condition. Comes with original box and accessories.",
-    price: 55000,
-    condition: "Like New",
-    category: "Electronics",
-    city: "Dire Dawa",
-    subcity: null,
-    images: ["/iphone-13-pro.png"],
-    contact_info: {
-      phone: "555-555-5555",
-      email: "michael@example.com",
-      preferred_contact_method: "email",
-    },
-    status: "published",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    brand: "Apple",
-    model: "iPhone 13 Pro",
-  },
-  {
-    id: "4",
-    user_id: "user101",
-    type: "item",
-    title: "Mountain Bike",
-    description: "High-quality mountain bike in good condition. Perfect for off-road adventures.",
-    price: 14000,
-    condition: "Used",
-    category: "Sports",
-    city: "Hawassa",
-    subcity: null,
-    images: ["/mountain-bike-trail.png"],
-    contact_info: {
-      phone: "555-111-2222",
-      email: "emily@example.com",
-      preferred_contact_method: "phone",
-    },
-    status: "published",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    brand: "Trek",
-    model: "X-Caliber",
-  },
-  {
-    id: "leather-armchair",
-    user_id: "user123",
-    type: "item",
-    title: "Leather Armchair",
-    description: "Comfortable leather armchair in excellent condition.",
-    price: 4500,
-    condition: "Used",
-    category: "Furniture",
-    city: "Addis Ababa",
-    subcity: null,
-    images: ["/placeholder.svg?height=200&width=200&text=Leather+Armchair"],
-    contact_info: {
-      phone: "555-123-4567",
-      email: "user@example.com",
-      preferred_contact_method: "email",
-    },
-    status: "published",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    brand: "Ashley",
-    model: "Signature Design",
-  },
-  {
-    id: "coffee-table",
-    user_id: "user123",
-    type: "item",
-    title: "Coffee Table",
-    description: "Elegant coffee table for your living room.",
-    price: 3200,
-    condition: "Used",
-    category: "Furniture",
-    city: "Addis Ababa",
-    subcity: null,
-    images: ["/placeholder.svg?height=200&width=200&text=Coffee+Table"],
-    contact_info: {
-      phone: "555-123-4567",
-      email: "user@example.com",
-      preferred_contact_method: "email",
-    },
-    status: "published",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    brand: "IKEA",
-    model: "LACK",
-  },
-  {
-    id: "floor-lamp",
-    user_id: "user123",
-    type: "item",
-    title: "Floor Lamp",
-    description: "Modern floor lamp with adjustable brightness.",
-    price: 1800,
-    condition: "New",
-    category: "Furniture",
-    city: "Addis Ababa",
-    subcity: null,
-    images: ["/placeholder.svg?height=200&width=200&text=Floor+Lamp"],
-    contact_info: {
-      phone: "555-123-4567",
-      email: "user@example.com",
-      preferred_contact_method: "email",
-    },
-    status: "published",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    brand: "Philips",
-    model: "Hue",
-  },
-]
-
-// Mock data for services
-const mockServices: Post[] = [
-  {
-    id: "5",
-    user_id: "user123",
-    type: "service",
-    title: "Professional Photography",
-    description: "Professional photography services for events, portraits, and product photography.",
-    price: 5000,
-    condition: null,
-    category: "Professional",
-    subcategory: "Photography",
-    city: "Addis Ababa",
-    subcity: "Bole",
-    images: ["/professional-camera.png"],
-    service_details: {
-      service_type: "Photography",
-      availability: ["Weekends", "Evenings"],
-      duration: "2-4 hours",
-    },
-    contact_info: {
-      phone: "555-222-3333",
-      email: "david@example.com",
-      preferred_contact_method: "email",
-    },
-    status: "published",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: "6",
-    user_id: "user456",
-    type: "service",
-    title: "Home Cleaning Service",
-    description: "Professional home cleaning service. We provide all cleaning supplies and equipment.",
-    price: 1500,
-    condition: null,
-    category: "Home",
-    subcategory: "Cleaning",
-    city: "Addis Ababa",
-    subcity: "Kirkos",
-    images: ["/assorted-cleaning-supplies.png"],
-    service_details: {
-      service_type: "Cleaning",
-      availability: ["Weekdays", "Weekends"],
-      duration: "3-5 hours",
-    },
-    contact_info: {
-      phone: "555-444-5555",
-      email: "lisa@example.com",
-      preferred_contact_method: "phone",
-    },
-    status: "published",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-]
-
-// Mock notifications
-const mockNotifications: Notification[] = [
-  {
-    id: "1",
-    user_id: "user123",
-    type: "swap_request",
-    title: "New swap request",
-    message: "John wants to swap his iPhone for your laptop",
-    is_read: false,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    user_id: "user123",
-    type: "swap_accepted",
-    title: "Swap accepted",
-    message: "Sarah accepted your swap request for the mountain bike",
-    is_read: true,
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: "3",
-    user_id: "user123",
-    type: "new_message",
-    title: "New message",
-    message: "You have a new message from David about your camera",
-    is_read: false,
-    created_at: new Date(Date.now() - 172800000).toISOString(),
-  },
-]
-
-// Saved items
-const savedItems = new Set<string>()
-
-// Mock user data
-const MOCK_USER: User = {
-  id: "user123",
-  name: "John Doe",
-  email: "john@example.com",
-  phone: "+1234567890",
-  avatar_url: "",
-  created_at: new Date().toISOString(),
+// Additional types needed for the API client
+interface Message {
+  id: string;
+  swap_request_id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  is_read: boolean;
+  created_at: string;
 }
 
-// Helper function to simulate API delay
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
-// Get current user
-export async function getCurrentUser(): Promise<User> {
-  // Simulate API delay
-  await sleep(500)
-  return MOCK_USER
+interface Favorite {
+  id: string;
+  user_id: string;
+  post_id: string;
+  created_at: string;
 }
 
-// Get current user ID
-export function getCurrentUserId(): string {
-  return MOCK_USER.id
+interface PaginationParams {
+  limit?: number;
+  offset?: number;
 }
 
-// Fetch items with optional filtering
-export async function fetchItems({
-  query,
-  category,
-  city,
-  limit,
-}: {
-  query?: string
-  category?: string
-  city?: string
-  limit?: number
-} = {}): Promise<Post[]> {
-  // Simulate API delay
-  await sleep(500)
-
-  let filteredItems = [...mockItems]
-
-  if (query) {
-    const lowerQuery = query.toLowerCase()
-    filteredItems = filteredItems.filter(
-      (item) =>
-        item.title.toLowerCase().includes(lowerQuery) ||
-        (item.description && item.description.toLowerCase().includes(lowerQuery)),
-    )
-  }
-
-  if (category && category !== "All") {
-    filteredItems = filteredItems.filter((item) => item.category === category)
-  }
-
-  if (city) {
-    filteredItems = filteredItems.filter((item) => item.city === city)
-  }
-
-  if (limit) {
-    filteredItems = filteredItems.slice(0, limit)
-  }
-
-  return filteredItems
+interface SearchParams extends PaginationParams {
+  q?: string;
+  type?: 'item' | 'service';
+  category?: string;
+  min_price?: number;
+  max_price?: number;
+  condition?: string;
+  location?: string;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
 }
 
-// Fetch services with optional filtering
-export async function fetchServices({
-  query,
-  category,
-  city,
-}: {
-  query?: string
-  category?: string
-  city?: string
-} = {}): Promise<Post[]> {
-  // Simulate API delay
-  await sleep(500)
-
-  let filteredServices = [...mockServices]
-
-  if (query) {
-    const lowerQuery = query.toLowerCase()
-    filteredServices = filteredServices.filter(
-      (service) =>
-        service.title.toLowerCase().includes(lowerQuery) ||
-        (service.description && service.description.toLowerCase().includes(lowerQuery)),
-    )
-  }
-
-  if (category && category !== "All" && category !== "Services") {
-    filteredServices = filteredServices.filter((service) => service.category === category)
-  }
-
-  if (city) {
-    filteredServices = filteredServices.filter((service) => service.city === city)
-  }
-
-  return filteredServices
+interface PaginatedResponse<T> {
+  results: T[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    has_more: boolean;
+  };
 }
 
-// Fetch a specific item by ID
-export async function fetchItemById(id: string): Promise<Post> {
-  // Simulate API delay
-  await sleep(500)
+interface ApiError {
+  error: string;
+  message?: string;
+  details?: string | string[];
+  stack?: string;
+}
 
-  const item = mockItems.find((item) => item.id === id)
+interface LoginCredentials {
+  Email: string;
+  Password: string;
+}
 
-  if (!item) {
-    throw new Error(`Item with ID ${id} not found`)
+interface RegisterData {
+  Firstname: string;
+  Lastname: string;
+  Email: string;
+  Password: string;
+  Role?: string;
+}
+
+interface UpdateUserData {
+  Firstname?: string;
+  Lastname?: string;
+  Email?: string;
+}
+
+interface PasswordChangeData {
+  currentPassword: string;
+  newPassword: string;
+}
+
+interface ItemData {
+  user_id: string;
+  title: string;
+  description: string;
+  category: string;
+  subcategory?: string;
+  price?: number;
+  condition?: string;
+  city?: string;
+  subcity?: string;
+  location?: string;
+  item_details?: Record<string, any>;
+  trade_preferences?: Record<string, any>;
+  contact_info?: Record<string, any>;
+  status?: string;
+  image_urls?: string[] | string;
+}
+
+interface ServiceData {
+  user_id: string;
+  title: string;
+  description: string;
+  category: string;
+  subcategory?: string;
+  city?: string;
+  subcity?: string;
+  location?: string;
+  service_details?: Record<string, any>;
+  trade_preferences?: Record<string, any>;
+  contact_info?: Record<string, any>;
+  status?: string;
+  image_urls?: string[] | string;
+}
+
+interface SwapRequestData {
+  post_id: string;
+  requester_id: string;
+  message: string;
+  status?: 'pending' | 'accepted' | 'rejected' | 'completed' | 'cancelled';
+}
+
+interface MessageData {
+  swap_request_id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+}
+
+interface FavoriteData {
+  user_id: string;
+  post_id: string;
+}
+
+interface FetchOptions extends RequestInit {
+  headers?: Record<string, string>;
+}
+
+// Base API URL - using your environment variable
+const API_BASE_URL = process.env.NEXT_PUBLIC_APP_API || 'https://liwedoc.vercel.app/';
+
+// Helper function to handle API responses
+const handleResponse = async (response: Response): Promise<any> => {
+  // First check if the response is ok (status in the range 200-299)
+  if (!response.ok) {
+    // Try to parse the error response as JSON
+    try {
+      const errorData: ApiError = await response.json();
+      throw new Error(errorData.error || errorData.message || 'API request failed');
+    } catch (e) {
+      // If parsing fails, throw a generic error with the status
+      throw new Error(`API request failed with status ${response.status}`);
+    }
   }
 
-  return item
-}
+  // For successful responses, parse and return the JSON
+  return response.json();
+};
 
-// Fetch a specific service by ID
-export async function fetchServiceById(id: string): Promise<Post> {
-  // Simulate API delay
-  await sleep(500)
-
-  const service = mockServices.find((service) => service.id === id)
-
-  if (!service) {
-    throw new Error(`Service with ID ${id} not found`)
-  }
-
-  return service
-}
-
-// Check if an item is saved
-export async function isPostSaved(id: string): Promise<boolean> {
-  // Simulate API delay
-  await sleep(200)
-
-  return savedItems.has(id)
-}
-
-// Toggle save status for an item
-export async function toggleSavePost(id: string): Promise<{ saved: boolean }> {
-  // Simulate API delay
-  await sleep(300)
-
-  if (savedItems.has(id)) {
-    savedItems.delete(id)
-    return { saved: false }
-  } else {
-    savedItems.add(id)
-    return { saved: true }
-  }
-}
-
-// Get notifications
-export async function getNotifications(): Promise<Notification[]> {
-  // Simulate API delay
-  await sleep(300)
-
-  return mockNotifications
-}
-
-// Submit a swap request
-export async function submitSwapRequest(data: {
-  itemId: string
-  swapType: "item" | "money"
-  itemToSwap: string
-  itemDescription: string
-  itemValue: number
-  message: string
-  images?: string[]
-  contact_info?: {
-    phone?: string
-    email?: string
-  }
-}): Promise<{ success: boolean; message: string }> {
+// Generic fetch function with error handling
+const fetchAPI = async (endpoint: string, options: FetchOptions = {}): Promise<any> => {
   try {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    const url = `${API_BASE_URL}${endpoint}`;
 
-    // In a real app, this would send the data to the server
-    console.log("Swap request submitted:", data)
+    // Default options
+    const defaultOptions: FetchOptions = {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
 
-    // Create a notification for the item owner
-    const targetItem = mockItems.find((item) => item.id === data.itemId)
-    if (!targetItem) {
-      return {
-        success: false,
-        message: "Item not found",
+    // Merge options
+    const fetchOptions: FetchOptions = {
+      ...defaultOptions,
+      ...options,
+      headers: {
+        ...defaultOptions.headers,
+        ...options.headers,
+      },
+    };
+
+    // Add request timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+    const response = await fetch(url, {
+      ...fetchOptions,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    return handleResponse(response);
+  } catch (error: unknown) {
+    // Handle abort errors specifically
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timed out');
+    }
+    throw error;
+  }
+};
+
+// User API functions
+const userAPI = {
+  login: async (credentials: LoginCredentials): Promise<User> => {
+    return fetchAPI('/api/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+  },
+
+  register: async (userData: RegisterData): Promise<User> => {
+    return fetchAPI('/api/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  },
+
+  getUser: async (userId: string): Promise<User> => {
+    return fetchAPI(`/api/users/${userId}`);
+  },
+
+  updateUser: async (userId: string, userData: UpdateUserData): Promise<User> => {
+    return fetchAPI(`/api/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+  },
+
+  changePassword: async (userId: string, passwordData: PasswordChangeData): Promise<{ message: string }> => {
+    return fetchAPI(`/api/users/${userId}/password`, {
+      method: 'PUT',
+      body: JSON.stringify(passwordData),
+    });
+  },
+};
+
+// Items API functions
+const itemsAPI = {
+  getItems: async (params: PaginationParams = {}): Promise<PaginatedResponse<Post>> => {
+    // Convert params object to query string
+    const queryString = new URLSearchParams(params as Record<string, string>).toString();
+    return fetchAPI(`/api/items${queryString ? `?${queryString}` : ''}`);
+  },
+
+  getItem: async (itemId: string): Promise<Post> => {
+    return fetchAPI(`/api/items/${itemId}`);
+  },
+
+  createItem: async (itemData: ItemData, images?: File[]): Promise<Post> => {
+    // Handle form data with images
+    const formData = new FormData();
+
+    // Add item data
+    Object.keys(itemData).forEach(key => {
+      // Handle nested objects by stringifying them
+      if (typeof itemData[key as keyof ItemData] === 'object' && itemData[key as keyof ItemData] !== null && !(itemData[key as keyof ItemData] instanceof File)) {
+        formData.append(key, JSON.stringify(itemData[key as keyof ItemData]));
+      } else {
+        formData.append(key, String(itemData[key as keyof ItemData]));
       }
+    });
+
+    // Add images
+    if (images && images.length) {
+      images.forEach(image => {
+        formData.append('images', image);
+      });
     }
 
-    // Add notification to the mock notifications
-    const newNotification: Notification = {
-      id: `notif-${Date.now()}`,
-      user_id: targetItem.user_id,
-      type: "swap_request",
-      title: "New swap request",
-      message: `Someone wants to ${data.swapType === "item" ? "swap their " + data.itemToSwap : "offer ETB " + data.itemValue} for your ${targetItem.title}`,
-      is_read: false,
-      created_at: new Date().toISOString(),
-    }
-
-    mockNotifications.unshift(newNotification)
-
-    return {
-      success: true,
-      message: "Swap request submitted successfully",
-    }
-  } catch (error) {
-    console.error("Error submitting swap request:", error)
-    return {
-      success: false,
-      message: "An error occurred while submitting your request",
-    }
-  }
-}
-
-// Get user listings
-export async function getUserListings(type: "item" | "service"): Promise<Post[]> {
-  // Simulate API delay
-  await sleep(500)
-
-  if (type === "item") {
-    return mockItems.filter((item) => item.user_id === MOCK_USER.id)
-  } else {
-    return mockServices.filter((service) => service.user_id === MOCK_USER.id)
-  }
-}
-
-// Get received swap requests
-export async function getReceivedSwapRequests(): Promise<SwapRequest[]> {
-  // Simulate API delay
-  await sleep(500)
-
-  // Return mock swap requests
-  return [
-    {
-      id: "1",
-      post_id: "1",
-      requester_id: "user456",
-      message: "I'm interested in swapping my iPhone for your sofa.",
-      contact_info: {
-        phone: "123-456-7890",
-        email: "user@example.com",
+    return fetchAPI('/api/items', {
+      method: 'POST',
+      headers: {
+        // Don't set Content-Type when using FormData, browser will set it with boundary
       },
-      status: "pending",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      post: mockItems[0],
-      users: {
-        id: "user456",
-        name: "Jane Smith",
-        email: "jane@example.com",
-        avatar_url: "",
-        created_at: new Date().toISOString(),
+      body: formData,
+    });
+  },
+
+  updateItem: async (itemId: string, itemData: Partial<ItemData>, images?: File[]): Promise<Post> => {
+    // Handle form data with images
+    const formData = new FormData();
+
+    // Add item data
+    Object.keys(itemData).forEach(key => {
+      // Handle nested objects by stringifying them
+      if (typeof itemData[key as keyof ItemData] === 'object' && itemData[key as keyof ItemData] !== null && !(itemData[key as keyof ItemData] instanceof File)) {
+        formData.append(key, JSON.stringify(itemData[key as keyof ItemData]));
+      } else if (itemData[key as keyof ItemData] !== undefined) {
+        formData.append(key, String(itemData[key as keyof ItemData]));
+      }
+    });
+
+    // Add images
+    if (images && images.length) {
+      images.forEach(image => {
+        formData.append('images', image);
+      });
+    }
+
+    return fetchAPI(`/api/items/${itemId}`, {
+      method: 'PUT',
+      headers: {
+        // Don't set Content-Type when using FormData, browser will set it with boundary
       },
-    },
-  ]
-}
+      body: formData,
+    });
+  },
 
-  // Get user swap requests
-  export async function getUserSwapRequests(): Promise<SwapRequest[]> {
-    // Simulate API delay
-    await sleep(500)
+  deleteItem: async (itemId: string): Promise<{ message: string }> => {
+    return fetchAPI(`/api/items/${itemId}`, {
+      method: 'DELETE',
+    });
+  },
 
-    // Return mock swap requests
-    return [
-      {
-        id: "2",
-        post_id: "3",
-        requester_id: MOCK_USER.id,
-        message: "I'd like to swap my laptop for your iPhone.",
-        contact_info: {
-          phone: "987-654-3210",
-          email: "current@example.com",
-        },
-        status: "accepted",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+  getUserItems: async (userId: string): Promise<Post[]> => {
+    return fetchAPI(`/api/items/user/${userId}`);
+  },
+};
+
+// Services API functions
+const servicesAPI = {
+  getServices: async (params: PaginationParams = {}): Promise<PaginatedResponse<Post>> => {
+    // Convert params object to query string
+    const queryString = new URLSearchParams(params as Record<string, string>).toString();
+    return fetchAPI(`/api/services${queryString ? `?${queryString}` : ''}`);
+  },
+
+  getService: async (serviceId: string): Promise<Post> => {
+    return fetchAPI(`/api/services/${serviceId}`);
+  },
+
+  createService: async (serviceData: ServiceData, images?: File[]): Promise<Post> => {
+    // Handle form data with images
+    const formData = new FormData();
+
+    // Add service data
+    Object.keys(serviceData).forEach(key => {
+      // Handle nested objects by stringifying them
+      if (typeof serviceData[key as keyof ServiceData] === 'object' && serviceData[key as keyof ServiceData] !== null && !(serviceData[key as keyof ServiceData] instanceof File)) {
+        formData.append(key, JSON.stringify(serviceData[key as keyof ServiceData]));
+      } else {
+        formData.append(key, String(serviceData[key as keyof ServiceData]));
+      }
+    });
+
+    // Add images
+    if (images && images.length) {
+      images.forEach(image => {
+        formData.append('images', image);
+      });
+    }
+
+    return fetchAPI('/api/services', {
+      method: 'POST',
+      headers: {
+        // Don't set Content-Type when using FormData, browser will set it with boundary
       },
-    ]
-  }
+      body: formData,
+    });
+  },
 
-// Update swap request status
-export async function updateSwapRequestStatus(requestId: string, status: "accepted" | "rejected"): Promise<boolean> {
-  // Simulate API delay
-  await sleep(500)
+  updateService: async (serviceId: string, serviceData: Partial<ServiceData>, images?: File[]): Promise<Post> => {
+    // Handle form data with images
+    const formData = new FormData();
 
-  console.log(`Updating request ${requestId} to ${status}`)
-  return true
-}
+    // Add service data
+    Object.keys(serviceData).forEach(key => {
+      // Handle nested objects by stringifying them
+      if (typeof serviceData[key as keyof ServiceData] === 'object' && serviceData[key as keyof ServiceData] !== null && !(serviceData[key as keyof ServiceData] instanceof File)) {
+        formData.append(key, JSON.stringify(serviceData[key as keyof ServiceData]));
+      } else if (serviceData[key as keyof ServiceData] !== undefined) {
+        formData.append(key, String(serviceData[key as keyof ServiceData]));
+      }
+    });
 
-// Upload item images
-export async function uploadItemImages(files: File[]): Promise<string[]> {
-  await sleep(500)
-  return files.map((_, index) => `item-${index}`)
-}
+    // Add images
+    if (images && images.length) {
+      images.forEach(image => {
+        formData.append('images', image);
+      });
+    }
 
-// Upload service images
-export async function uploadServiceImages(files: File[]): Promise<string[]> {
-  await sleep(500)
-  return files.map((_, index) => `service-${index}`)
-}
+    return fetchAPI(`/api/services/${serviceId}`, {
+      method: 'PUT',
+      headers: {
+        // Don't set Content-Type when using FormData, browser will set it with boundary
+      },
+      body: formData,
+    });
+  },
 
-// Create a new item
-export async function createItem(itemData: Partial<Post>): Promise<Post> {
-  await sleep(500)
+  deleteService: async (serviceId: string): Promise<{ message: string }> => {
+    return fetchAPI(`/api/services/${serviceId}`, {
+      method: 'DELETE',
+    });
+  },
 
-  const newItem: Post = {
-    id: `item-${Date.now()}`,
-    user_id: MOCK_USER.id,
-    type: "item",
-    title: itemData.title || "New Item",
-    description: itemData.description || "",
-    category: itemData.category || "",
-    subcategory: itemData.subcategory || "",
-    condition: itemData.condition || "",
-    price: itemData.price || null,
-    brand: itemData.brand || "",
-    model: itemData.model || "",
-    additional_details: itemData.additional_details || "",
-    city: itemData.city || "",
-    subcity: itemData.subcity || "",
-    location: itemData.location || "",
-    images: itemData.images || [],
-    trade_preferences: itemData.trade_preferences || {},
-    contact_info: itemData.contact_info || {},
-    status: "published",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  }
+  getUserServices: async (userId: string): Promise<Post[]> => {
+    return fetchAPI(`/api/services/user/${userId}`);
+  },
+};
 
-  // Add to mock items
-  mockItems.unshift(newItem)
-  return newItem
-}
+// Swap Requests API functions
+const swapRequestsAPI = {
+  getSwapRequests: async (params: PaginationParams = {}): Promise<PaginatedResponse<SwapRequest>> => {
+    // Convert params object to query string
+    const queryString = new URLSearchParams(params as Record<string, string>).toString();
+    return fetchAPI(`/api/swap-requests${queryString ? `?${queryString}` : ''}`);
+  },
 
-// Create a new service
-export async function createService(serviceData: Partial<Post>): Promise<Post> {
-  await sleep(500)
+  getSwapRequest: async (requestId: string): Promise<SwapRequest> => {
+    return fetchAPI(`/api/swap-requests/${requestId}`);
+  },
 
-  const newService: Post = {
-    id: `service-${Date.now()}`,
-    user_id: MOCK_USER.id,
-    type: "service",
-    title: serviceData.title || "New Service",
-    description: serviceData.description || "",
-    category: serviceData.category || "",
-    subcategory: serviceData.subcategory || "",
-    price: serviceData.price || null,
-    city: serviceData.city || "",
-    subcity: serviceData.subcity || "",
-    location: serviceData.location || "",
-    images: serviceData.images || [],
-    service_details: serviceData.service_details || {},
-    contact_info: serviceData.contact_info || {},
-    status: "published",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  }
+  createSwapRequest: async (requestData: SwapRequestData): Promise<SwapRequest> => {
+    return fetchAPI('/api/swap-requests', {
+      method: 'POST',
+      body: JSON.stringify(requestData),
+    });
+  },
 
-  // Add to mock services
-  mockServices.unshift(newService)
-  return newService
-}
+  updateSwapRequest: async (requestId: string, requestData: Partial<SwapRequestData>): Promise<SwapRequest> => {
+    return fetchAPI(`/api/swap-requests/${requestId}`, {
+      method: 'PUT',
+      body: JSON.stringify(requestData),
+    });
+  },
 
-// Mark notification as read
-export async function markNotificationAsRead(notificationId: string): Promise<{ success: boolean }> {
-  // Simulate API delay
-  await sleep(500)
+  getUserSwapRequests: async (userId: string): Promise<SwapRequest[]> => {
+    return fetchAPI(`/api/swap-requests/user/${userId}`);
+  },
 
-  const notification = mockNotifications.find((n) => n.id === notificationId)
-  if (notification) {
-    notification.is_read = true
-    return { success: true }
-  } else {
-    return { success: false }
-  }
-}
+  getReceivedSwapRequests: async (userId: string): Promise<SwapRequest[]> => {
+    return fetchAPI(`/api/swap-requests/received/${userId}`);
+  },
+};
+
+// Messages API functions
+const messagesAPI = {
+  getMessages: async (swapRequestId: string): Promise<Message[]> => {
+    return fetchAPI(`/api/messages/swap-request/${swapRequestId}`);
+  },
+
+  sendMessage: async (messageData: MessageData): Promise<Message> => {
+    return fetchAPI('/api/messages', {
+      method: 'POST',
+      body: JSON.stringify(messageData),
+    });
+  },
+
+  markAsRead: async (messageId: string): Promise<Message> => {
+    return fetchAPI(`/api/messages/${messageId}/read`, {
+      method: 'PUT',
+    });
+  },
+
+  getUserUnreadCount: async (userId: string): Promise<{ count: number }> => {
+    return fetchAPI(`/api/messages/unread-count/${userId}`);
+  },
+};
+
+// Notifications API functions
+const notificationsAPI = {
+  getNotifications: async (userId: string): Promise<Notification[]> => {
+    return fetchAPI(`/api/notifications/user/${userId}`);
+  },
+
+  markAsRead: async (notificationId: string): Promise<Notification> => {
+    return fetchAPI(`/api/notifications/${notificationId}/read`, {
+      method: 'PUT',
+    });
+  },
+
+  markAllAsRead: async (userId: string): Promise<{ message: string }> => {
+    return fetchAPI(`/api/notifications/user/${userId}/read-all`, {
+      method: 'PUT',
+    });
+  },
+};
+
+// Search API functions
+const searchAPI = {
+  search: async (params: SearchParams = {}): Promise<PaginatedResponse<Post>> => {
+    // Convert params object to query string
+    const queryString = new URLSearchParams(params as Record<string, string>).toString();
+    return fetchAPI(`/api/search${queryString ? `?${queryString}` : ''}`);
+  },
+};
+
+// Analytics API functions
+const analyticsAPI = {
+  getStats: async (): Promise<{
+    stats: {
+      total_items: number;
+      total_services: number;
+      total_users: number;
+      total_swap_requests: number;
+      completed_swaps: number;
+    };
+    categories: { category: string; count: number }[];
+    recent_activity: any[];
+  }> => {
+    return fetchAPI('/api/analytics/stats');
+  },
+
+  getUserActivity: async (userId: string): Promise<{
+    posts: {
+      total_posts: number;
+      total_items: number;
+      total_services: number;
+      last_post_date: string;
+    };
+    swap_requests: {
+      total_requests: number;
+      pending_requests: number;
+      accepted_requests: number;
+      completed_swaps: number;
+    };
+    received_requests: {
+      total_received: number;
+      pending_received: number;
+      accepted_received: number;
+      completed_received: number;
+    };
+    popular_posts: Post[];
+  }> => {
+    return fetchAPI(`/api/analytics/user/${userId}`);
+  },
+};
+
+// Favorites API functions
+const favoritesAPI = {
+  getUserFavorites: async (userId: string): Promise<(Favorite & Post)[]> => {
+    return fetchAPI(`/api/favorites/user/${userId}`);
+  },
+
+  addToFavorites: async (favoriteData: FavoriteData): Promise<Favorite> => {
+    return fetchAPI('/api/favorites', {
+      method: 'POST',
+      body: JSON.stringify(favoriteData),
+    });
+  },
+
+  removeFromFavorites: async (userId: string, postId: string): Promise<{ message: string }> => {
+    return fetchAPI(`/api/favorites/${userId}/${postId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Export all API functions
+const apiClient = {
+  user: userAPI,
+  items: itemsAPI,
+  services: servicesAPI,
+  swapRequests: swapRequestsAPI,
+  messages: messagesAPI,
+  notifications: notificationsAPI,
+  search: searchAPI,
+  analytics: analyticsAPI,
+  favorites: favoritesAPI,
+};
+
+export default apiClient;

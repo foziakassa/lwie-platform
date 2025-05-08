@@ -565,4 +565,110 @@ const apiClient = {
   favorites: favoritesAPI,
 };
 
+// ==========================================
+// COMPATIBILITY LAYER FOR EXISTING CODE
+// ==========================================
+
+// Items compatibility functions
+export const fetchItems = async (params?: PaginationParams): Promise<PaginatedResponse<Post>> => {
+  return apiClient.items.getItems(params);
+};
+
+export const fetchItemById = async (id: string): Promise<Post> => {
+  return apiClient.items.getItem(id);
+};
+
+export const fetchUserItems = async (userId: string): Promise<Post[]> => {
+  return apiClient.items.getUserItems(userId);
+};
+
+export const createItem = async (itemData: ItemData, images?: File[]): Promise<Post> => {
+  return apiClient.items.createItem(itemData, images);
+};
+
+export const updateItem = async (itemId: string, itemData: Partial<ItemData>, images?: File[]): Promise<Post> => {
+  return apiClient.items.updateItem(itemId, itemData, images);
+};
+
+export const deleteItem = async (itemId: string): Promise<{ message: string }> => {
+  return apiClient.items.deleteItem(itemId);
+};
+
+// Services compatibility functions
+export const fetchServices = async (params?: PaginationParams): Promise<PaginatedResponse<Post>> => {
+  return apiClient.services.getServices(params);
+};
+
+export const fetchServiceById = async (id: string): Promise<Post> => {
+  return apiClient.services.getService(id);
+};
+
+export const fetchUserServices = async (userId: string): Promise<Post[]> => {
+  return apiClient.services.getUserServices(userId);
+};
+
+export const createService = async (serviceData: ServiceData, images?: File[]): Promise<Post> => {
+  return apiClient.services.createService(serviceData, images);
+};
+
+export const updateService = async (serviceId: string, serviceData: Partial<ServiceData>, images?: File[]): Promise<Post> => {
+  return apiClient.services.updateService(serviceId, serviceData, images);
+};
+
+export const deleteService = async (serviceId: string): Promise<{ message: string }> => {
+  return apiClient.services.deleteService(serviceId);
+};
+
+// User compatibility functions
+export const fetchUser = async (userId: string): Promise<User> => {
+  return apiClient.user.getUser(userId);
+};
+
+export const loginUser = async (credentials: LoginCredentials): Promise<User> => {
+  return apiClient.user.login(credentials);
+};
+
+export const registerUser = async (userData: RegisterData): Promise<User> => {
+  return apiClient.user.register(userData);
+};
+
+export const updateUser = async (userId: string, userData: UpdateUserData): Promise<User> => {
+  return apiClient.user.updateUser(userId, userData);
+};
+
+export const changePassword = async (userId: string, passwordData: PasswordChangeData): Promise<{ message: string }> => {
+  return apiClient.user.changePassword(userId, passwordData);
+};
+
+// Swap requests compatibility functions
+export const fetchSwapRequests = async (params?: PaginationParams): Promise<PaginatedResponse<SwapRequest>> => {
+  return apiClient.swapRequests.getSwapRequests(params);
+};
+
+export const fetchSwapRequestById = async (id: string): Promise<SwapRequest> => {
+  return apiClient.swapRequests.getSwapRequest(id);
+};
+
+export const fetchUserSwapRequests = async (userId: string): Promise<SwapRequest[]> => {
+  return apiClient.swapRequests.getUserSwapRequests(userId);
+};
+
+export const fetchReceivedSwapRequests = async (userId: string): Promise<SwapRequest[]> => {
+  return apiClient.swapRequests.getReceivedSwapRequests(userId);
+};
+
+export const createSwapRequest = async (requestData: SwapRequestData): Promise<SwapRequest> => {
+  return apiClient.swapRequests.createSwapRequest(requestData);
+};
+
+export const updateSwapRequest = async (requestId: string, requestData: Partial<SwapRequestData>): Promise<SwapRequest> => {
+  return apiClient.swapRequests.updateSwapRequest(requestId, requestData);
+};
+
+// Search compatibility functions
+export const searchPosts = async (params: SearchParams): Promise<PaginatedResponse<Post>> => {
+  return apiClient.search.search(params);
+};
+
+// Export the default client
 export default apiClient;

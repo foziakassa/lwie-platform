@@ -26,6 +26,29 @@ const mockItems: Post[] = [
     model: "Signature Design",
   },
   {
+    id: "1",
+    user_id: "user123",
+    type: "item",
+    title: "Comfortable Leather Sofa",
+    description: "A beautiful and comfortable leather sofa in excellent condition. Perfect for any living room.",
+    price: 20500,
+    condition: "Used",
+    category: "Furniture",
+    city: "Addis Ababa",
+    subcity: null,
+    images: ["/brown-leather-sofa.png"],
+    contact_info: {
+      phone: "555-123-4567",
+      email: "user@example.com",
+      preferred_contact_method: "email",
+    },
+    status: "published",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    brand: "Ashley",
+    model: "Signature Design",
+  },
+  {
     id: "2",
     user_id: "user456",
     type: "item",
@@ -515,28 +538,28 @@ export async function getReceivedSwapRequests(): Promise<SwapRequest[]> {
   ]
 }
 
-// Get user swap requests
-export async function getUserSwapRequests(): Promise<SwapRequest[]> {
-  // Simulate API delay
-  await sleep(500)
+  // Get user swap requests
+  export async function getUserSwapRequests(): Promise<SwapRequest[]> {
+    // Simulate API delay
+    await sleep(500)
 
-  // Return mock swap requests
-  return [
-    {
-      id: "2",
-      post_id: "3",
-      requester_id: MOCK_USER.id,
-      message: "I'd like to swap my laptop for your iPhone.",
-      contact_info: {
-        phone: "987-654-3210",
-        email: "current@example.com",
+    // Return mock swap requests
+    return [
+      {
+        id: "2",
+        post_id: "3",
+        requester_id: MOCK_USER.id,
+        message: "I'd like to swap my laptop for your iPhone.",
+        contact_info: {
+          phone: "987-654-3210",
+          email: "current@example.com",
+        },
+        status: "accepted",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
-      status: "accepted",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-  ]
-}
+    ]
+  }
 
 // Update swap request status
 export async function updateSwapRequestStatus(requestId: string, status: "accepted" | "rejected"): Promise<boolean> {
@@ -634,5 +657,3 @@ export async function markNotificationAsRead(notificationId: string): Promise<{ 
     return { success: false }
   }
 }
-
-

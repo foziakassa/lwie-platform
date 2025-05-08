@@ -12,9 +12,9 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ImageUploader } from "@/components/image-uploader"
 import { serviceCategories, getSubcategories } from "@/lib/category-data"
-import { Loader2, ArrowLeft, CheckCircle } from "lucide-react"
+import { Loader2, ArrowLeft, CheckCircle } from 'lucide-react'
 import { toast } from "@/components/ui/use-toast"
-import { createService, uploadServiceImages } from "@/lib/api-client"
+import { createService, uploadServiceImages, updateService } from "@/lib/api-client"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 const formSchema = z.object({
@@ -59,6 +59,14 @@ export function ServicePostForm() {
   const [createdServiceId, setCreatedServiceId] = useState<string | null>(null)
   const [subcategories, setSubcategories] = useState<{ value: string; label: string }[]>([])
 
+  // TODO: Import and use your authentication hook here to get the user ID
+  // Example:
+  // import { useAuth } from 'your-auth-library-or-context'
+  // const { user } = useAuth()
+  // const userId = user?.id || ''
+
+  const userId = "replace-with-actual-user-id"
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -94,22 +102,15 @@ export function ServicePostForm() {
     try {
       setIsSubmitting(true)
 
-      // Upload images if any (optional for services)
-      let imageUrls: string[] = []
-      if (images.length > 0) {
-        imageUrls = await uploadServiceImages(images)
-      }
-
-      // Create the service
+      // First create the service without images
       const service = await createService({
+        user_id: userId,
         title: values.title,
         description: values.description,
         category: values.category,
         subcategory: values.subcategory,
-        price: Number(values.price),
         city: values.city,
         subcity: values.subcity || "",
-        images: imageUrls,
         service_details: {
           service_type: values.subcategory,
           experience_level: values.experience,
@@ -121,6 +122,27 @@ export function ServicePostForm() {
         },
         status: "published",
       })
+
+      // Then upload images if any
+      if (images && images.length > 0) {
+        try {
+          const imageUrls = await uploadServiceImages(service.id, images)
+          
+          // Update the service with image URLs if needed
+          if (imageUrls.length > 0) {
+            await updateService(service.id, {
+              image_urls: imageUrls
+            })
+          }
+        } catch (imageError) {
+          console.error("Error uploading images:", imageError)
+          toast({
+            title: "Warning",
+            description: "Service was created but there was a problem uploading images.",
+            variant: "destructive",
+          })
+        }
+      }
 
       setCreatedServiceId(service.id)
       setIsSuccess(true)

@@ -1,0 +1,58 @@
+.carouselContainer {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.carouselContent {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.carouselLeft,
+.carouselMiddle,
+.carouselRight {
+  flex: 1;
+  padding: 0 1rem;
+}
+
+.carouselLeft {
+  max-width: 150px;
+}
+
+.carouselMiddle {
+  flex: 2;
+}
+
+.carouselRight {
+  max-width: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.backgroundPattern {
+  position: absolute;
+  inset: 0;
+  opacity: 0.1;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.closeButton {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: color 0.3s ease;
+  z-index: 20;
+}
+
+.closeButton:hover {
+  color: white;
+}

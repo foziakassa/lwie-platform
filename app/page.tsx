@@ -129,7 +129,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="container mx-auto px-4 py-8">
-        <ThreeDAdvertisement />
+        <div className="border-4 border-red-500" style={{ minHeight: '150px' }}>
+          <ThreeDAdvertisement />
+        </div>
         <ApprovedAdvertisement />
 
         <div className="container mx-auto px-4 py-6">

@@ -9,6 +9,7 @@ import Link from "next/link"
 import { cn } from "lib/utils"
 import styles from "./3d-advertisement-carousel.module.css"
 
+
 interface AdvertisementBannerProps {
   companyName?: string
   email?: string
@@ -38,12 +39,32 @@ export default function AdvertisementBanner({
   const [highlightIndex, setHighlightIndex] = useState(0)
   const highlights = ["Premium Quality", "24/7 Support", "Best Value"]
 
+  // Generate random styles for background pattern circles
+  const [circleStyles, setCircleStyles] = useState<React.CSSProperties[]>([])
+
   useEffect(() => {
     const interval = setInterval(() => {
       setHighlightIndex((prev) => (prev + 1) % highlights.length)
     }, 3000)
     return () => clearInterval(interval)
   }, [highlights.length])
+
+  useEffect(() => {
+    const stylesArray: React.CSSProperties[] = []
+    for (let i = 0; i < 20; i++) {
+      stylesArray.push({
+        width: `${Math.random() * 10 + 5}px`,
+        height: `${Math.random() * 10 + 5}px`,
+        top: `${Math.random() * 100}%`,
+        left: `${Math.random() * 100}%`,
+        opacity: Math.random() * 0.5 + 0.3,
+        position: 'absolute',
+        borderRadius: '50%',
+        backgroundColor: 'white',
+      })
+    }
+    setCircleStyles(stylesArray)
+  }, [])
 
   const handleClose = () => {
     setIsVisible(false)
@@ -54,31 +75,24 @@ export default function AdvertisementBanner({
 
   return (
     <div
-      className={cn("relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500", className)}
+      className={cn(styles.carouselContainer, "relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500", className)}
     >
       {/* Background pattern */}
-      <div className="absolute inset-0 opacity-10">
+      <div className={styles.backgroundPattern}>
         <div className="absolute top-0 left-0 w-full h-full">
-          {Array.from({ length: 20 }).map((_, i) => (
+          {circleStyles.map((style, i) => (
             <div
               key={i}
-              className="absolute rounded-full bg-white"
-              style={{
-                width: `${Math.random() * 10 + 5}px`,
-                height: `${Math.random() * 10 + 5}px`,
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                opacity: Math.random() * 0.5 + 0.3,
-              }}
+              style={style}
             />
           ))}
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-4 sm:py-6 relative z-10">
+      <div className={`container mx-auto px-4 py-4 sm:py-6 relative z-10 ${styles.carouselContent}`}>
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           {/* Left side with image and company info */}
-          <div className="flex items-center gap-4 flex-shrink-0">
+          <div className={`flex items-center gap-4 flex-shrink-0 ${styles.carouselLeft}`}>
             <div className="relative h-16 w-16 md:h-20 md:w-20 rounded-full overflow-hidden border-2 border-white/30 shadow-lg">
               <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent z-10 rounded-full" />
               <Image
@@ -101,7 +115,7 @@ export default function AdvertisementBanner({
           </div>
 
           {/* Middle section with description and highlights */}
-          <div className="flex-grow text-center md:text-left">
+          <div className={`flex-grow text-center md:text-left ${styles.carouselMiddle}`}>
             <p className="text-white text-sm md:text-base max-w-xl">{description}</p>
 
             <div className="mt-2 flex flex-wrap items-center gap-3 justify-center md:justify-start">
@@ -137,7 +151,7 @@ export default function AdvertisementBanner({
           </div>
 
           {/* Right side with CTA */}
-          <div className="flex items-center gap-3">
+          <div className={`flex items-center gap-3 ${styles.carouselRight}`}>
             {showBadge && (
               <Badge className="bg-yellow-400 text-yellow-900 hover:bg-yellow-300 px-2 py-1 text-xs font-semibold animate-pulse">
                 {badgeText}
@@ -156,7 +170,7 @@ export default function AdvertisementBanner({
       {/* Close button */}
       <button
         onClick={handleClose}
-        className="absolute top-2 right-2 text-white/70 hover:text-white transition-colors"
+        className={styles.closeButton}
         aria-label="Close advertisement"
       >
         <X className="h-5 w-5" />

@@ -8,8 +8,9 @@ interface ProductPageProps {
   }
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
+export default async function ProductPage(props: ProductPageProps) {
   try {
+    const params = await props.params;
     const product = await fetchItemById(params.id)
 
     if (!product) {

@@ -4,15 +4,15 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import ApprovedAdvertisement from "./ad/page";
+
 import { motion } from "framer-motion";
 import { Filter, MapPin, Heart, Share2, Search, Loader2, Gift } from "lucide-react";
-import ApprovedAdvertisement from "./ad/page";
 import ThreeDAdvertisement from "../components/3d-advertisement-carousel";
 import { toast } from "components/ui/use-toast";
 import { Button } from "components/ui/button";
 import { Input } from "components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "components/ui/select";
-import { Badge } from "components/ui/badge";
 
 // API call to fetch items
 const fetchItems = async (params: Record<string, string>) => {
@@ -98,12 +98,10 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="container mx-auto px-4 py-8">
-        {/* <div className="border-4 border-red-500" style={{ minHeight: '150px' }}> */}
+{/* <div className="border-4 border-red-500" style={{ minHeight: '150px' }}> */}
           <ThreeDAdvertisement />
         {/* </div> */}
-        {/* <ApprovedAdvertisement /> */}
-
-        <div className="container mx-auto px-4 py-6">
+        {/* <ApprovedAdvertisement /> */}        <div className="container mx-auto px-4 py-6">
           <div className="bg-white rounded-lg shadow-sm p-4 my-6">
             <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">
@@ -192,7 +190,7 @@ export default function Home() {
             </div>
           )}
         </div>
-        <section className="mb-12">
+         <section className="mb-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -248,6 +246,7 @@ export default function Home() {
             </div>
           </motion.div>
         </section>
+ 
       </main>
     </div>
   );

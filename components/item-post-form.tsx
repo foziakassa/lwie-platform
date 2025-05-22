@@ -14,36 +14,41 @@ import { ImageUploader } from "@/components/image-uploader"
 import { itemCategories, getSubcategories, getSpecifications, getSpecificationOptions } from "@/lib/category-data"
 import { Loader2, ArrowLeft, CheckCircle } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
-import { createItem, uploadItemImages } from "@/lib/api-client"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import Cookies from "js-cookie"
+
+
+// API call to create an item
+const createItem = async (itemData: { price: number; user_id: string; status: string; contact_info: { phone: string; email: string; preferred_contact_method: "phone" | "email" }; title: string; category: string; subcategory: string; condition: string; city: string; phone: string; email: string; preferredContactMethod: "phone" | "email"; description?: string | undefined; subcity?: string | undefined }) => {
+  const response = await fetch("https://liwedoc.vercel.app/api/items", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(itemData),
+  });
+
+  if (!response.ok) {
+    // throw new Error("Failed to create item");
+    console.log('ggg')
+  }
+
+  return await response.json();
+};
 
 const formSchema = z.object({
-  title: z.string().min(5, {
-    message: "Title must be at least 5 characters.",
-  }),
+  title: z.string().min(5, "Title must be at least 5 characters."),
   description: z.string().optional(),
-  category: z.string().min(1, {
-    message: "Please select a category.",
-  }),
-  subcategory: z.string().min(1, {
-    message: "Please select a subcategory.",
-  }),
-  condition: z.string().min(1, {
-    message: "Please select a condition.",
-  }),
+  category: z.string().min(1, "Please select a category."),
+  subcategory: z.string().min(1, "Please select a subcategory."),
+  condition: z.string().min(1, "Please select a condition."),
   price: z.string().refine((val) => !isNaN(Number(val)), {
     message: "Price must be a number.",
   }),
-  city: z.string().min(1, {
-    message: "Please enter your city.",
-  }),
+  city: z.string().min(1, "Please enter your city."),
   subcity: z.string().optional(),
-  phone: z.string().min(10, {
-    message: "Please enter a valid phone number.",
-  }),
-  email: z.string().email({
-    message: "Please enter a valid email address.",
-  }),
+  phone: z.string().min(10, "Please enter a valid phone number."),
+  email: z.string().email("Please enter a valid email address."),
   preferredContactMethod: z.enum(["phone", "email"], {
     required_error: "Please select a preferred contact method.",
   }),
@@ -123,83 +128,67 @@ export function ItemPostForm() {
   const [selectedImages, setSelectedImages] = useState<File[]>([])
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+      // const tokenString = Cookies.get("authToken")
+  
 
-  // NOTE: Import statements must be at the top of the file, not inside the component.
-  // Please move the following import to the top of this file:
-  // import { useAuth } from "path-to-auth-context" // Adjust import path as needed
+  // const userId = "replace-with-actual-user-id" // Replace with actual user ID logic
+type FormData = z.infer<typeof formSchema>;
 
-  // Then use the hook here:
-  // const { user } = useAuth()
-  // const userId = user?.id || ""
+const tokenString = Cookies.get("authToken");
 
-  // For now, keep the placeholder userId until you add the import and hook usage correctly.
-  const userId = "replace-with-actual-user-id"
-  const onSuccess = (newItem: any) => {
-    // Optional success callback, can be passed as prop or defined here
-    console.log("Item created successfully:", newItem)
+let userId = null;
+if (tokenString) {
+  try {
+    const parsedToken = JSON.parse(tokenString);
+    userId = parsedToken.id;
+  } catch (error) {
+    console.error("Failed to parse authToken cookie:", error);
   }
+}
 
-  // Add error handling to your form submission
-  const onSubmit = async (data: z.infer<typeof formSchema>) => {
-    setIsSubmitting(true)
-    setError(null)
+const onSubmit = async (data: FormData) => {
+  setIsSubmitting(true);
+  setError(null);
 
-    try {
-      // Log the form data for debugging
-      console.log("Submitting item form with data:", data)
-
-      // Prepare additional details with specifications
-      const additionalDetails = JSON.stringify(specificationValues)
-
-      // Create the item without images property and without additional_details to fix type error
-      let newItem: any = null;
-      newItem = await createItem(
-        {
-          ...data,
-          description: data.description || "",
-          price: Number(data.price),
-          user_id: userId,
-          status: "published",
-          contact_info: {
-            phone: data.phone,
-            email: data.email,
-            preferred_contact_method: data.preferredContactMethod,
-          },
-        },
-        selectedImages
-      )
-
-      console.log("Item created successfully:", newItem)
-
-      // If you need to upload images separately
-      if (selectedImages?.length > 0 && newItem?.id) {
-        try {
-          const imageUrls = await uploadItemImages(newItem.id, selectedImages)
-          console.log("Images uploaded successfully:", imageUrls)
-        } catch (imageError) {
-          console.error("Error uploading images:", imageError)
-          // Continue even if image upload fails
-        }
-      }
-
-      // Reset form and show success message
-      form.reset()
-      setSelectedImages([])
-      setSuccess(true)
-
-      // Redirect or show success message
-      if (onSuccess) {
-        onSuccess(newItem)
-      }
-      // Navigate back to home page to refresh listings
-      router.push("/")
-    } catch (err) {
-      console.error("Error submitting item form:", err)
-      setError(err instanceof Error ? err.message : "Failed to create item. Please try again.")
-    } finally {
-      setIsSubmitting(false)
+  try {
+    let imageUrl = null;
+    if (selectedImages.length > 0) {
+      const formData = new FormData();
+      formData.append('image_urls', selectedImages[0]);
+      const response = await fetch('https://liwedoc.vercel.app/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) throw new Error('Failed to upload image');
+      const result = await response.json();
+      imageUrl = result.url;
     }
+
+    const itemData = {
+      ...data,
+      price: Number(data.price),
+      user_id: userId, // <-- Here!
+      status: "published",
+      contact_info: {
+        phone: data.phone,
+        email: data.email,
+        preferred_contact_method: data.preferredContactMethod,
+      },
+      image_urls: imageUrl ? [imageUrl] : [],
+    };
+
+    const newItem = await createItem(itemData);
+    setIsSuccess(true);
+    setCreatedItemId(newItem.itemId);
+
+  } catch (err) {
+    setError(err instanceof Error ? err.message : "Failed to create item. Please try again.");
+  } finally {
+    setIsSubmitting(false);
   }
+};
+
+
 
   const goBack = () => {
     router.push("/post")
@@ -207,7 +196,9 @@ export function ItemPostForm() {
 
   const viewItem = () => {
     if (createdItemId) {
-      router.push(`/products/${createdItemId}`)
+      // router.push(`/products/${createdItemId}`)
+      router.push(`/`)
+
     }
   }
 
@@ -531,8 +522,7 @@ export function ItemPostForm() {
           <Alert className="bg-blue-50 border-blue-200">
             <AlertTitle className="text-blue-800">Before you publish</AlertTitle>
             <AlertDescription className="text-blue-700">
-              Make sure all information is accurate. Once published, your item will be visible to all users of the
-              platform.
+              Make sure all information is accurate. Once published, your item will be visible to all users of the platform.
             </AlertDescription>
           </Alert>
 

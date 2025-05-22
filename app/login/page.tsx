@@ -44,6 +44,7 @@ export default function LoginPage() {
       
       // Create an object with the safe user data (avoid storing sensitive info like password)
       const userData = {
+        id: responseData.id,
         email: responseData.Email,
         firstName: responseData.Firstname,
         lastName: responseData.lastname, 

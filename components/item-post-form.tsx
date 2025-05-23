@@ -1,5 +1,4 @@
 "use client"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -151,36 +150,39 @@ const onSubmit = async (data: FormData) => {
   setError(null);
 
   try {
-    let imageUrl = null;
-    if (selectedImages.length > 0) {
-      const formData = new FormData();
-      formData.append('image_urls', selectedImages[0]);
-      const response = await fetch('https://liwedoc.vercel.app/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      if (!response.ok) throw new Error('Failed to upload image');
-      const result = await response.json();
-      imageUrl = result.url;
-    }
+    // Prepare form data for multiple image uploads
+    const formData = new FormData();
+    selectedImages.forEach((image) => {
+      formData.append('image_urls', image); // Append each image to FormData
+    });
 
+    // Upload images to your API route and get URLs
+    const response = await fetch('https://liwedoc.vercel.app/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) throw new Error('Failed to upload images');
+    const result = await response.json();
+
+    // Prepare item data for submission
     const itemData = {
       ...data,
       price: Number(data.price),
-      user_id: userId, // <-- Here!
+      user_id: userId,
       status: "published",
       contact_info: {
         phone: data.phone,
         email: data.email,
         preferred_contact_method: data.preferredContactMethod,
       },
-      image_urls: imageUrl ? [imageUrl] : [],
+      image_urls: result.urls || [], // Use the returned URLs
     };
 
     const newItem = await createItem(itemData);
     setIsSuccess(true);
     setCreatedItemId(newItem.itemId);
-
+    
   } catch (err) {
     setError(err instanceof Error ? err.message : "Failed to create item. Please try again.");
   } finally {

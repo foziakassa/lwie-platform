@@ -128,23 +128,23 @@ export function ProductDetail({ product, similarProducts }: ProductDetailProps) 
   }
 
   // Categories for the navigation bar
-  const categories = [
-    "All",
-    "Electronics",
-    "Home Appliances",
-    "Toys and Games",
-    "Sport",
-    "Health and Beauty",
-    "Clothing",
-    "Pet Supplies",
-    "Medical Instrument",
-    "Travel Gear",
-  ]
+  // const categories = [
+  //   "All",
+  //   "Electronics",
+  //   "Home Appliances",
+  //   "Toys and Games",
+  //   "Sport",
+  //   "Health and Beauty",
+  //   "Clothing",
+  //   "Pet Supplies",
+  //   "Medical Instrument",
+  //   "Travel Gear",
+  // ]
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Category Navigation */}
-      <div className="bg-white shadow-sm overflow-x-auto">
+      {/* <div className="bg-white shadow-sm overflow-x-auto">
         <div className="flex items-center space-x-6 px-4 py-2 max-w-7xl mx-auto">
           {categories.map((category, index) => (
             <Link
@@ -156,7 +156,7 @@ export function ProductDetail({ product, similarProducts }: ProductDetailProps) 
             </Link>
           ))}
         </div>
-      </div>
+      </div> */}
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Back Button */}

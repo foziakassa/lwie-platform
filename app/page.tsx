@@ -482,7 +482,7 @@ export default function Home() {
         {/* Items Listing - Show when activeTab is "all" or "items" */}
         {(activeTab === "all" || activeTab === "items") && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold">Items Listings</h2>
+            <h2 className="text-2xl font-bold text-teal-800 pb-3 ">Items Listings</h2>
             {loading ? (
               <div className="flex justify-center items-center py-12">
                 <Loader2 className="animate-spin h-12 w-12 text-teal-500" />
@@ -556,7 +556,7 @@ export default function Home() {
         {/* Services Listing - Show when activeTab is "all" or "services" */}
         {(activeTab === "all" || activeTab === "services") && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold">Services Listings</h2>
+            <h2 className="text-2xl font-bold text-teal-800 pb-3" >Services Listings</h2>
             {loading ? (
               <div className="flex justify-center items-center py-12">
                 <Loader2 className="animate-spin h-12 w-12 text-teal-500" />

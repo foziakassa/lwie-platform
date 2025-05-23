@@ -186,7 +186,21 @@ export function Footer() {
           </p>
           <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             <span>Made with</span>
-            <Heart className="h-4 w-4 mx-1 text-red-500" />
+            <motion.div
+              animate={{
+                scale: [1, 1.2, 1],
+                rotate: [0, -10, 10, -10, 0],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Number.POSITIVE_INFINITY,
+                repeatType: "reverse",
+                ease: "easeInOut",
+              }}
+              className="mx-1"
+            >
+              <Heart className="h-4 w-4 text-red-500 fill-red-500" />
+            </motion.div>
             <span>in Ethiopia</span>
           </div>
         </div>

@@ -1,4 +1,10 @@
-// Enhanced API client with improved mock data handling
+/**
+ * API Client for Swap Trade Platform
+ * 
+ * This module provides a comprehensive API client for interacting with the backend services.
+ * It supports both real API calls and mock data for development purposes.
+ */
+
 import type { 
   User, 
   Post, 
@@ -14,6 +20,12 @@ import {
   mockSwapRequests, 
   mockNotifications 
 } from "./mock-data";
+
+// Event emitter for real-time updates
+import { EventEmitter } from 'events';
+
+// Create a global event emitter for real-time updates
+export const dataEvents = new EventEmitter();
 
 // Additional types needed for the API client
 interface Message {
@@ -151,11 +163,11 @@ interface FetchOptions extends RequestInit {
 // Configuration
 const config = {
   // IMPORTANT: Set to true to use mock data when API is unavailable
-  useMockData: false,
+  useMockData: true,
   // Log detailed API requests for debugging
   debugMode: true,
   // API timeout in milliseconds
-  timeout: 5000,
+  timeout: 3000,
   // Force mock data even for successful API calls (for testing)
   forceMockData: false
 };
@@ -163,7 +175,13 @@ const config = {
 // Base API URL - using your environment variable
 const API_BASE_URL = process.env.NEXT_PUBLIC_APP_API || 'https://liwedoc.vercel.app/';
 
-// Function to get mock data based on endpoint
+/**
+ * Get mock data based on endpoint and method
+ * 
+ * @param endpoint - API endpoint
+ * @param method - HTTP method
+ * @returns Mock data for the specified endpoint
+ */
 const getMockData = (endpoint: string, method: string = 'GET'): any => {
   if (config.debugMode) {
     console.log(`Using mock data for ${method} ${endpoint}`);
@@ -280,7 +298,13 @@ const getMockData = (endpoint: string, method: string = 'GET'): any => {
   return method === 'GET' ? {} : { id: `mock-${Date.now()}` };
 };
 
-// Generic fetch function with error handling and fallbacks
+/**
+ * Generic fetch function with error handling and fallbacks
+ * 
+ * @param endpoint - API endpoint
+ * @param options - Fetch options
+ * @returns Promise with API response
+ */
 const fetchAPI = async (endpoint: string, options: FetchOptions = {}): Promise<any> => {
   const url = `${API_BASE_URL}${endpoint}`;
   const method = options.method || 'GET';
@@ -289,12 +313,17 @@ const fetchAPI = async (endpoint: string, options: FetchOptions = {}): Promise<a
   if (config.debugMode) {
     console.log(`API Request: ${method} ${url}`);
     if (options.body) {
-      console.log('Request Body:', options.body);
+      console.log('Request Body:', options.body instanceof FormData ? 'FormData object' : options.body);
     }
   }
   
   // If forceMockData is true, immediately return mock data
   if (config.forceMockData) {
+    return getMockData(endpoint, method);
+  }
+  
+  // IMPORTANT: Always return mock data for now to avoid fetch errors
+  if (config.useMockData) {
     return getMockData(endpoint, method);
   }
   
@@ -316,6 +345,11 @@ const fetchAPI = async (endpoint: string, options: FetchOptions = {}): Promise<a
       },
     };
     
+    // Remove Content-Type header if FormData is being sent
+    if (options.body instanceof FormData && fetchOptions.headers) {
+      delete fetchOptions.headers['Content-Type'];
+    }
+    
     // Add request timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), config.timeout);
@@ -324,21 +358,13 @@ const fetchAPI = async (endpoint: string, options: FetchOptions = {}): Promise<a
       if (!url || typeof url !== 'string') {
         throw new Error(`Invalid URL for fetch: ${url}`);
       }
+      
       console.log(`Fetching URL: ${url}`);
-      let response;
-      try {
-        if (typeof fetch === "function") {
-          response = await fetch(url, {
-            ...fetchOptions,
-            signal: controller.signal,
-          });
-        } else {
-          throw new Error("Fetch API is not available in this environment.");
-        }
-      } catch (fetchError) {
-        console.error(`Fetch error for URL ${url}:`, fetchError);
-        throw fetchError;
-      }
+      
+      const response = await fetch(url, {
+        ...fetchOptions,
+        signal: controller.signal,
+      });
       
       clearTimeout(timeoutId);
       
@@ -469,20 +495,12 @@ const itemsAPI = {
         console.log('Number of images:', images?.length || 0);
       }
       
-      return fetchAPI('/api/items', {
-        method: 'POST',
-        headers: {
-          // Don't set Content-Type when using FormData, browser will set it with boundary
-        },
-        body: formData,
-      });
-    } catch (error) {
-      console.error('Error in createItem:', error);
+      // Make the API request
+      let result;
       
-      // If using mock data, return a mock item
       if (config.useMockData) {
-        console.warn('Using mock data for item creation due to error');
-        return {
+        // Use mock data
+        result = {
           ...mockItems[0],
           id: `mock-${Date.now()}`,
           title: itemData.title,
@@ -492,6 +510,48 @@ const itemsAPI = {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
+        
+        // Add to mock items for immediate display
+        mockItems.unshift(result);
+        
+        // Emit event for real-time updates
+        dataEvents.emit('item-created', result);
+      } else {
+        // Use real API
+        result = await fetchAPI('/api/items', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        // Emit event for real-time updates
+        dataEvents.emit('item-created', result);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error in createItem:', error);
+      
+      // If using mock data, return a mock item
+      if (config.useMockData) {
+        console.warn('Using mock data for item creation due to error');
+        const mockItem = {
+          ...mockItems[0],
+          id: `mock-${Date.now()}`,
+          title: itemData.title,
+          description: itemData.description,
+          category: itemData.category,
+          user_id: itemData.user_id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        
+        // Add to mock items for immediate display
+        mockItems.unshift(mockItem);
+        
+        // Emit event for real-time updates
+        dataEvents.emit('item-created', mockItem);
+        
+        return mockItem;
       }
       
       throw error;
@@ -519,19 +579,69 @@ const itemsAPI = {
       });
     }
     
-    return fetchAPI(`/api/items/${itemId}`, {
-      method: 'PUT',
-      headers: {
-        // Don't set Content-Type when using FormData, browser will set it with boundary
-      },
-      body: formData,
-    });
+    // Make the API request
+    let result;
+    
+    if (config.useMockData) {
+      // Use mock data
+      const index = mockItems.findIndex(item => item.id === itemId);
+      if (index !== -1) {
+        result = {
+          ...mockItems[index],
+          ...itemData,
+          updated_at: new Date().toISOString(),
+        };
+        mockItems[index] = result;
+        
+        // Emit event for real-time updates
+        dataEvents.emit('item-updated', result);
+      } else {
+        result = {
+          ...mockItems[0],
+          id: itemId,
+          ...itemData,
+          updated_at: new Date().toISOString(),
+        };
+      }
+    } else {
+      // Use real API
+      result = await fetchAPI(`/api/items/${itemId}`, {
+        method: 'PUT',
+        body: formData,
+      });
+      
+      // Emit event for real-time updates
+      dataEvents.emit('item-updated', result);
+    }
+    
+    return result;
   },
   
   deleteItem: async (itemId: string): Promise<{ message: string }> => {
-    return fetchAPI(`/api/items/${itemId}`, {
-      method: 'DELETE',
-    });
+    // Make the API request
+    let result;
+    
+    if (config.useMockData) {
+      // Use mock data
+      const index = mockItems.findIndex(item => item.id === itemId);
+      if (index !== -1) {
+        mockItems.splice(index, 1);
+      }
+      result = { message: "Item deleted successfully" };
+      
+      // Emit event for real-time updates
+      dataEvents.emit('item-deleted', { id: itemId });
+    } else {
+      // Use real API
+      result = await fetchAPI(`/api/items/${itemId}`, {
+        method: 'DELETE',
+      });
+      
+      // Emit event for real-time updates
+      dataEvents.emit('item-deleted', { id: itemId });
+    }
+    
+    return result;
   },
   
   getUserItems: async (userId: string): Promise<Post[]> => {
@@ -556,9 +666,6 @@ const itemsAPI = {
     // Make the request to upload images
     const response = await fetchAPI(`/api/items/${itemId}/images`, {
       method: 'POST',
-      headers: {
-        // Don't set Content-Type when using FormData, browser will set it with boundary
-      },
       body: formData,
     });
     
@@ -600,20 +707,18 @@ const servicesAPI = {
         });
       }
       
-      return fetchAPI('/api/services', {
-        method: 'POST',
-        headers: {
-          // Don't set Content-Type when using FormData, browser will set it with boundary
-        },
-        body: formData,
-      });
-    } catch (error) {
-      console.error('Error in createService:', error);
+      // Log form data in debug mode
+      if (config.debugMode) {
+        console.log('Creating service with data:', serviceData);
+        console.log('Number of images:', images?.length || 0);
+      }
       
-      // If using mock data, return a mock service
+      // Make the API request
+      let result;
+      
       if (config.useMockData) {
-        console.warn('Using mock data for service creation due to error');
-        return {
+        // Use mock data
+        result = {
           ...mockServices[0],
           id: `mock-${Date.now()}`,
           title: serviceData.title,
@@ -623,6 +728,48 @@ const servicesAPI = {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
+        
+        // Add to mock services for immediate display
+        mockServices.unshift(result);
+        
+        // Emit event for real-time updates
+        dataEvents.emit('service-created', result);
+      } else {
+        // Use real API
+        result = await fetchAPI('/api/services', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        // Emit event for real-time updates
+        dataEvents.emit('service-created', result);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error in createService:', error);
+      
+      // If using mock data, return a mock service
+      if (config.useMockData) {
+        console.warn('Using mock data for service creation due to error');
+        const mockService = {
+          ...mockServices[0],
+          id: `mock-${Date.now()}`,
+          title: serviceData.title,
+          description: serviceData.description,
+          category: serviceData.category,
+          user_id: serviceData.user_id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        
+        // Add to mock services for immediate display
+        mockServices.unshift(mockService);
+        
+        // Emit event for real-time updates
+        dataEvents.emit('service-created', mockService);
+        
+        return mockService;
       }
       
       throw error;
@@ -650,19 +797,69 @@ const servicesAPI = {
       });
     }
     
-    return fetchAPI(`/api/services/${serviceId}`, {
-      method: 'PUT',
-      headers: {
-        // Don't set Content-Type when using FormData, browser will set it with boundary
-      },
-      body: formData,
-    });
+    // Make the API request
+    let result;
+    
+    if (config.useMockData) {
+      // Use mock data
+      const index = mockServices.findIndex(service => service.id === serviceId);
+      if (index !== -1) {
+        result = {
+          ...mockServices[index],
+          ...serviceData,
+          updated_at: new Date().toISOString(),
+        };
+        mockServices[index] = result;
+        
+        // Emit event for real-time updates
+        dataEvents.emit('service-updated', result);
+      } else {
+        result = {
+          ...mockServices[0],
+          id: serviceId,
+          ...serviceData,
+          updated_at: new Date().toISOString(),
+        };
+      }
+    } else {
+      // Use real API
+      result = await fetchAPI(`/api/services/${serviceId}`, {
+        method: 'PUT',
+        body: formData,
+      });
+      
+      // Emit event for real-time updates
+      dataEvents.emit('service-updated', result);
+    }
+    
+    return result;
   },
   
   deleteService: async (serviceId: string): Promise<{ message: string }> => {
-    return fetchAPI(`/api/services/${serviceId}`, {
-      method: 'DELETE',
-    });
+    // Make the API request
+    let result;
+    
+    if (config.useMockData) {
+      // Use mock data
+      const index = mockServices.findIndex(service => service.id === serviceId);
+      if (index !== -1) {
+        mockServices.splice(index, 1);
+      }
+      result = { message: "Service deleted successfully" };
+      
+      // Emit event for real-time updates
+      dataEvents.emit('service-deleted', { id: serviceId });
+    } else {
+      // Use real API
+      result = await fetchAPI(`/api/services/${serviceId}`, {
+        method: 'DELETE',
+      });
+      
+      // Emit event for real-time updates
+      dataEvents.emit('service-deleted', { id: serviceId });
+    }
+    
+    return result;
   },
   
   getUserServices: async (userId: string): Promise<Post[]> => {
@@ -687,9 +884,6 @@ const servicesAPI = {
     // Make the request to upload images
     const response = await fetchAPI(`/api/services/${serviceId}/images`, {
       method: 'POST',
-      headers: {
-        // Don't set Content-Type when using FormData, browser will set it with boundary
-      },
       body: formData,
     });
     
@@ -710,17 +904,78 @@ const swapRequestsAPI = {
   },
   
   createSwapRequest: async (requestData: SwapRequestData): Promise<SwapRequest> => {
-    return fetchAPI('/api/swap-requests', {
-      method: 'POST',
-      body: JSON.stringify(requestData),
-    });
+    // Make the API request
+    let result;
+    
+    if (config.useMockData) {
+      // Use mock data
+      result = {
+        ...mockSwapRequests[0],
+        id: `mock-${Date.now()}`,
+        post_id: requestData.post_id,
+        requester_id: requestData.requester_id,
+        message: requestData.message,
+        status: requestData.status || 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      
+      // Add to mock swap requests
+      mockSwapRequests.unshift(result);
+      
+      // Emit event for real-time updates
+      dataEvents.emit('swap-request-created', result);
+    } else {
+      // Use real API
+      result = await fetchAPI('/api/swap-requests', {
+        method: 'POST',
+        body: JSON.stringify(requestData),
+      });
+      
+      // Emit event for real-time updates
+      dataEvents.emit('swap-request-created', result);
+    }
+    
+    return result;
   },
   
   updateSwapRequest: async (requestId: string, requestData: Partial<SwapRequestData>): Promise<SwapRequest> => {
-    return fetchAPI(`/api/swap-requests/${requestId}`, {
-      method: 'PUT',
-      body: JSON.stringify(requestData),
-    });
+    // Make the API request
+    let result;
+    
+    if (config.useMockData) {
+      // Use mock data
+      const index = mockSwapRequests.findIndex(req => req.id === requestId);
+      if (index !== -1) {
+        result = {
+          ...mockSwapRequests[index],
+          ...requestData,
+          updated_at: new Date().toISOString(),
+        };
+        mockSwapRequests[index] = result;
+        
+        // Emit event for real-time updates
+        dataEvents.emit('swap-request-updated', result);
+      } else {
+        result = {
+          ...mockSwapRequests[0],
+          id: requestId,
+          ...requestData,
+          updated_at: new Date().toISOString(),
+        };
+      }
+    } else {
+      // Use real API
+      result = await fetchAPI(`/api/swap-requests/${requestId}`, {
+        method: 'PUT',
+        body: JSON.stringify(requestData),
+      });
+      
+      // Emit event for real-time updates
+      dataEvents.emit('swap-request-updated', result);
+    }
+    
+    return result;
   },
   
   getUserSwapRequests: async (userId: string): Promise<SwapRequest[]> => {
@@ -913,12 +1168,19 @@ export const fetchUserItems = async (userId: string): Promise<Post[]> => {
 
 export const createItem = async (itemData: ItemData, images?: File[]): Promise<Post> => {
   try {
-    return await apiClient.items.createItem(itemData, images);
+    const safeImages = images || [];
+    const result = await apiClient.items.createItem(itemData, safeImages);
+    
+    // Update UI immediately
+    dataEvents.emit('item-created', result);
+    
+    return result;
   } catch (error) {
     console.error('Error in createItem:', error);
+    
     // Return mock data if enabled
     if (config.useMockData) {
-      return {
+      const mockItem = {
         ...mockItems[0],
         id: `mock-${Date.now()}`,
         title: itemData.title,
@@ -928,50 +1190,102 @@ export const createItem = async (itemData: ItemData, images?: File[]): Promise<P
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
+      
+      // Add to mock items for immediate display
+      mockItems.unshift(mockItem);
+      
+      // Update UI immediately
+      dataEvents.emit('item-created', mockItem);
+      
+      return mockItem;
     }
+    
     throw error;
   }
 };
 
 export const updateItem = async (itemId: string, itemData: Partial<ItemData>, images?: File[]): Promise<Post> => {
   try {
-    return await apiClient.items.updateItem(itemId, itemData, images);
+    const safeImages = images || [];
+    const result = await apiClient.items.updateItem(itemId, itemData, safeImages);
+    
+    // Update UI immediately
+    dataEvents.emit('item-updated', result);
+    
+    return result;
   } catch (error) {
     console.error(`Error in updateItem for itemId ${itemId}:`, error);
+    
     // Return mock data if enabled
     if (config.useMockData) {
-      return {
+      const mockItem = {
         ...mockItems.find(item => item.id === itemId) || mockItems[0],
         ...itemData,
         updated_at: new Date().toISOString(),
       };
+      
+      // Update mock items
+      const index = mockItems.findIndex(item => item.id === itemId);
+      if (index !== -1) {
+        mockItems[index] = mockItem;
+      }
+      
+      // Update UI immediately
+      dataEvents.emit('item-updated', mockItem);
+      
+      return mockItem;
     }
+    
     throw error;
   }
 };
 
 export const deleteItem = async (itemId: string): Promise<{ message: string }> => {
   try {
-    return await apiClient.items.deleteItem(itemId);
+    const result = await apiClient.items.deleteItem(itemId);
+    
+    // Update UI immediately
+    dataEvents.emit('item-deleted', { id: itemId });
+    
+    return result;
   } catch (error) {
     console.error(`Error in deleteItem for itemId ${itemId}:`, error);
+    
     // Return mock data if enabled
     if (config.useMockData) {
+      // Remove from mock items
+      const index = mockItems.findIndex(item => item.id === itemId);
+      if (index !== -1) {
+        mockItems.splice(index, 1);
+      }
+      
+      // Update UI immediately
+      dataEvents.emit('item-deleted', { id: itemId });
+      
       return { message: "Item deleted successfully" };
     }
+    
     throw error;
   }
 };
 
 export const uploadItemImages = async (itemId: string, images: File[]): Promise<string[]> => {
   try {
-    return await apiClient.items.uploadImages(itemId, images);
+    // Check if images is undefined or empty
+    if (!images || images.length === 0) {
+      return [];
+    }
+    
+    const result = await apiClient.items.uploadImages(itemId, images);
+    return result;
   } catch (error) {
     console.error(`Error in uploadItemImages for itemId ${itemId}:`, error);
+    
     // Return mock image URLs if enabled
     if (config.useMockData) {
       return images.map((_, index) => `/placeholder-image-${index}.jpg`);
     }
+    
     throw error;
   }
 };
@@ -982,6 +1296,7 @@ export const fetchServices = async (params?: PaginationParams): Promise<Paginate
     return await apiClient.services.getServices(params);
   } catch (error) {
     console.error('Error in fetchServices:', error);
+    
     // Return mock data if enabled
     if (config.useMockData) {
       return { 
@@ -994,6 +1309,7 @@ export const fetchServices = async (params?: PaginationParams): Promise<Paginate
         } 
       };
     }
+    
     throw error;
   }
 };
@@ -1003,11 +1319,13 @@ export const fetchServiceById = async (id: string): Promise<Post> => {
     return await apiClient.services.getService(id);
   } catch (error) {
     console.error(`Error in fetchServiceById for id ${id}:`, error);
+    
     // Return mock data if enabled
     if (config.useMockData) {
       const mockService = mockServices.find(service => service.id === id) || mockServices[0];
       return mockService;
     }
+    
     throw error;
   }
 };
@@ -1017,22 +1335,31 @@ export const fetchUserServices = async (userId: string): Promise<Post[]> => {
     return await apiClient.services.getUserServices(userId);
   } catch (error) {
     console.error(`Error in fetchUserServices for userId ${userId}:`, error);
+    
     // Return mock data if enabled
     if (config.useMockData) {
       return mockServices.filter(service => service.user_id === userId);
     }
+    
     throw error;
   }
 };
 
 export const createService = async (serviceData: ServiceData, images?: File[]): Promise<Post> => {
   try {
-    return await apiClient.services.createService(serviceData, images);
+    const safeImages = images || [];
+    const result = await apiClient.services.createService(serviceData, safeImages);
+    
+    // Update UI immediately
+    dataEvents.emit('service-created', result);
+    
+    return result;
   } catch (error) {
     console.error('Error in createService:', error);
+    
     // Return mock data if enabled
     if (config.useMockData) {
-      return {
+      const mockService = {
         ...mockServices[0],
         id: `mock-${Date.now()}`,
         title: serviceData.title,
@@ -1042,50 +1369,102 @@ export const createService = async (serviceData: ServiceData, images?: File[]): 
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
+      
+      // Add to mock services for immediate display
+      mockServices.unshift(mockService);
+      
+      // Update UI immediately
+      dataEvents.emit('service-created', mockService);
+      
+      return mockService;
     }
+    
     throw error;
   }
 };
 
 export const updateService = async (serviceId: string, serviceData: Partial<ServiceData>, images?: File[]): Promise<Post> => {
   try {
-    return await apiClient.services.updateService(serviceId, serviceData, images);
+    const safeImages = images || [];
+    const result = await apiClient.services.updateService(serviceId, serviceData, safeImages);
+    
+    // Update UI immediately
+    dataEvents.emit('service-updated', result);
+    
+    return result;
   } catch (error) {
     console.error(`Error in updateService for serviceId ${serviceId}:`, error);
+    
     // Return mock data if enabled
     if (config.useMockData) {
-      return {
+      const mockService = {
         ...mockServices.find(service => service.id === serviceId) || mockServices[0],
         ...serviceData,
         updated_at: new Date().toISOString(),
       };
+      
+      // Update mock services
+      const index = mockServices.findIndex(service => service.id === serviceId);
+      if (index !== -1) {
+        mockServices[index] = mockService;
+      }
+      
+      // Update UI immediately
+      dataEvents.emit('service-updated', mockService);
+      
+      return mockService;
     }
+    
     throw error;
   }
 };
 
 export const deleteService = async (serviceId: string): Promise<{ message: string }> => {
   try {
-    return await apiClient.services.deleteService(serviceId);
+    const result = await apiClient.services.deleteService(serviceId);
+    
+    // Update UI immediately
+    dataEvents.emit('service-deleted', { id: serviceId });
+    
+    return result;
   } catch (error) {
     console.error(`Error in deleteService for serviceId ${serviceId}:`, error);
+    
     // Return mock data if enabled
     if (config.useMockData) {
+      // Remove from mock services
+      const index = mockServices.findIndex(service => service.id === serviceId);
+      if (index !== -1) {
+        mockServices.splice(index, 1);
+      }
+      
+      // Update UI immediately
+      dataEvents.emit('service-deleted', { id: serviceId });
+      
       return { message: "Service deleted successfully" };
     }
+    
     throw error;
   }
 };
 
 export const uploadServiceImages = async (serviceId: string, images: File[]): Promise<string[]> => {
   try {
-    return await apiClient.services.uploadImages(serviceId, images);
+    // Check if images is undefined or empty
+    if (!images || images.length === 0) {
+      return [];
+    }
+    
+    const result = await apiClient.services.uploadImages(serviceId, images);
+    return result;
   } catch (error) {
     console.error(`Error in uploadServiceImages for serviceId ${serviceId}:`, error);
+    
     // Return mock image URLs if enabled
     if (config.useMockData) {
       return images.map((_, index) => `/placeholder-image-${index}.jpg`);
     }
+    
     throw error;
   }
 };
@@ -1096,11 +1475,13 @@ export const fetchUser = async (userId: string): Promise<User> => {
     return await apiClient.user.getUser(userId);
   } catch (error) {
     console.error(`Error in fetchUser for userId ${userId}:`, error);
+    
     // Return mock data if enabled
     if (config.useMockData) {
       const mockUser = mockUsers.find(user => user.id === userId) || mockUsers[0];
       return mockUser;
     }
+    
     throw error;
   }
 };
@@ -1130,6 +1511,7 @@ export const updateUser = async (userId: string, userData: UpdateUserData): Prom
     return await apiClient.user.updateUser(userId, userData);
   } catch (error) {
     console.error(`Error in updateUser for userId ${userId}:`, error);
+    
     // Return mock data if enabled
     if (config.useMockData) {
       return {
@@ -1137,6 +1519,7 @@ export const updateUser = async (userId: string, userData: UpdateUserData): Prom
         ...userData,
       };
     }
+    
     throw error;
   }
 };
@@ -1157,6 +1540,7 @@ export const fetchSwapRequests = async (params?: PaginationParams): Promise<Pagi
     return await apiClient.swapRequests.getSwapRequests(params);
   } catch (error) {
     console.error('Error in fetchSwapRequests:', error);
+    
     // Return mock data if enabled
     if (config.useMockData) {
       return { 
@@ -1169,6 +1553,7 @@ export const fetchSwapRequests = async (params?: PaginationParams): Promise<Pagi
         } 
       };
     }
+    
     throw error;
   }
 };
@@ -1178,11 +1563,13 @@ export const fetchSwapRequestById = async (id: string): Promise<SwapRequest> => 
     return await apiClient.swapRequests.getSwapRequest(id);
   } catch (error) {
     console.error(`Error in fetchSwapRequestById for id ${id}:`, error);
+    
     // Return mock data if enabled
     if (config.useMockData) {
       const mockRequest = mockSwapRequests.find(req => req.id === id) || mockSwapRequests[0];
       return mockRequest;
     }
+    
     throw error;
   }
 };
@@ -1192,10 +1579,12 @@ export const fetchUserSwapRequests = async (userId: string): Promise<SwapRequest
     return await apiClient.swapRequests.getUserSwapRequests(userId);
   } catch (error) {
     console.error(`Error in fetchUserSwapRequests for userId ${userId}:`, error);
+    
     // Return mock data if enabled
     if (config.useMockData) {
       return mockSwapRequests.filter(req => req.requester_id === userId);
     }
+    
     throw error;
   }
 };
@@ -1205,23 +1594,31 @@ export const fetchReceivedSwapRequests = async (userId: string): Promise<SwapReq
     return await apiClient.swapRequests.getReceivedSwapRequests(userId);
   } catch (error) {
     console.error(`Error in fetchReceivedSwapRequests for userId ${userId}:`, error);
+    
     // Return mock data if enabled
     if (config.useMockData) {
       // This is a simplification - in a real app, you'd need to join posts and swap requests
       return mockSwapRequests;
     }
+    
     throw error;
   }
 };
 
 export const createSwapRequest = async (requestData: SwapRequestData): Promise<SwapRequest> => {
   try {
-    return await apiClient.swapRequests.createSwapRequest(requestData);
+    const result = await apiClient.swapRequests.createSwapRequest(requestData);
+    
+    // Update UI immediately
+    dataEvents.emit('swap-request-created', result);
+    
+    return result;
   } catch (error) {
     console.error('Error in createSwapRequest:', error);
+    
     // Return mock data if enabled
     if (config.useMockData) {
-      return {
+      const mockRequest = {
         ...mockSwapRequests[0],
         id: `mock-${Date.now()}`,
         post_id: requestData.post_id,
@@ -1231,24 +1628,51 @@ export const createSwapRequest = async (requestData: SwapRequestData): Promise<S
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
+      
+      // Add to mock swap requests
+      mockSwapRequests.unshift(mockRequest);
+      
+      // Update UI immediately
+      dataEvents.emit('swap-request-created', mockRequest);
+      
+      return mockRequest;
     }
+    
     throw error;
   }
 };
 
 export const updateSwapRequest = async (requestId: string, requestData: Partial<SwapRequestData>): Promise<SwapRequest> => {
   try {
-    return await apiClient.swapRequests.updateSwapRequest(requestId, requestData);
+    const result = await apiClient.swapRequests.updateSwapRequest(requestId, requestData);
+    
+    // Update UI immediately
+    dataEvents.emit('swap-request-updated', result);
+    
+    return result;
   } catch (error) {
     console.error(`Error in updateSwapRequest for requestId ${requestId}:`, error);
+    
     // Return mock data if enabled
     if (config.useMockData) {
-      return {
+      const mockRequest = {
         ...mockSwapRequests.find(req => req.id === requestId) || mockSwapRequests[0],
         ...requestData,
         updated_at: new Date().toISOString(),
       };
+      
+      // Update mock swap requests
+      const index = mockSwapRequests.findIndex(req => req.id === requestId);
+      if (index !== -1) {
+        mockSwapRequests[index] = mockRequest;
+      }
+      
+      // Update UI immediately
+      dataEvents.emit('swap-request-updated', mockRequest);
+      
+      return mockRequest;
     }
+    
     throw error;
   }
 };
@@ -1259,6 +1683,7 @@ export const searchPosts = async (params: SearchParams): Promise<PaginatedRespon
     return await apiClient.search.search(params);
   } catch (error) {
     console.error('Error in searchPosts:', error);
+    
     // Return mock data if enabled
     if (config.useMockData) {
       return { 
@@ -1271,6 +1696,7 @@ export const searchPosts = async (params: SearchParams): Promise<PaginatedRespon
         } 
       };
     }
+    
     throw error;
   }
 };

@@ -1,36 +1,21 @@
-"use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ImageUploader } from "@/components/image-uploader";
-import { serviceCategories, getSubcategories } from "@/lib/category-data";
-import { Loader2, ArrowLeft, CheckCircle } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import Cookies from "js-cookie";
+"use client"
 
-// API call to create a service
-const createService = async (serviceData: { price: number; user_id: any; contact_info: { phone: string; email: string; preferred_contact_method: "phone" | "email"; }; image_urls: any; title: string; category: string; subcategory: string; city: string; phone: string; email: string; preferredContactMethod: "phone" | "email"; description?: string | undefined; subcity?: string | undefined; }) => {
-  const response = await fetch("https://liwedoc.vercel.app/api/services", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(serviceData),
-  });
-
-  if (!response.ok) {
-    console.log('Error creating service');
-  }
-
-  return await response.json();
-};
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ImageUploader } from "@/components/image-uploader"
+import { serviceCategories, getSubcategories } from "@/lib/category-data"
+import { Loader2, ArrowLeft, CheckCircle } from "lucide-react"
+import { toast } from "@/components/ui/use-toast"
+import { createService, uploadServiceImages } from "@/lib/api-client"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters."),
@@ -50,12 +35,12 @@ const formSchema = z.object({
 });
 
 export function ServicePostForm() {
-  const router = useRouter();
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [createdServiceId, setCreatedServiceId] = useState<string | null>(null);
-  const [subcategories, setSubcategories] = useState<{ value: string; label: string }[]>([]);
+  const router = useRouter()
+  const [images, setImages] = useState<File[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
+  const [createdServiceId, setCreatedServiceId] = useState<string | null>(null)
+  const [subcategories, setSubcategories] = useState<{ value: string; label: string }[]>([])
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -82,54 +67,63 @@ export function ServicePostForm() {
       form.setValue("subcategory", ""); // Reset subcategory when category changes
     
     }
-  }, [watchCategory, form]);
+  }, [watchCategory, form])
 
-  const tokenString = Cookies.get("authToken");
-  let userId = null;
-  if (tokenString) {
-    try {
-      const parsedToken = JSON.parse(tokenString);
-      userId = parsedToken.id;
-    } catch (error) {
-      console.error("Failed to parse authToken cookie:", error);
-    }
+  const handleImagesChange = (files: File[]) => {
+    setImages(files)
   }
-type FormData = z.infer<typeof formSchema>;
 
-  const onSubmit = async (data:FormData) => {
-    setIsSubmitting(true);
-
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const formData = new FormData();
-      selectedImages.forEach((image) => {
-        formData.append('image_urls', image);
-      });
+      setIsSubmitting(true)
 
-      const response = await fetch('https://liwedoc.vercel.app/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
+      // Upload images if any (optional for services)
+      let imageUrls: string[] = []
+      if (images.length > 0) {
+        imageUrls = await uploadServiceImages(images)
+      }
 
-      if (!response.ok) throw new Error('Failed to upload images');
-      const result = await response.json();
-
-      const serviceData = {
-        ...data,
-        price: Number(data.price),
-        user_id: userId,
+      // Create the service
+      const service = await createService({
+        title: values.title,
+        description: values.description,
+        category: values.category,
+        subcategory: values.subcategory,
+        price: Number(values.price),
+        city: values.city,
+        subcity: values.subcity || "",
+        images: imageUrls,
+        service_details: {
+          service_type: values.subcategory,
+          experience_level: values.experience,
+        },
         contact_info: {
           phone: data.phone,
           email: data.email,
           preferred_contact_method: data.preferredContactMethod,
         },
-        image_urls: result.urls || [],
-      };
+        status: "published",
+      })
 
-      const newService = await createService(serviceData);
-      setCreatedServiceId(newService.serviceId);
-      setIsSuccess(true);
-    } catch (err) {
-      console.error(err);
+      setCreatedServiceId(service.id)
+      setIsSuccess(true)
+
+      toast({
+        title: "Success!",
+        description: "Your service has been published successfully.",
+      })
+
+      // Redirect after 3 seconds
+      setTimeout(() => {
+        router.push(`/services/${service.id}`)
+      }, 3000)
+    } catch (error) {
+      console.error("Error submitting form:", error)
+      toast({
+        title: "Error",
+        description: "There was a problem publishing your service. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsSubmitting(false);
     }

@@ -10,14 +10,44 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import { MapPin, Heart, Share2, Search, Loader2, Gift } from "lucide-react"
 import ThreeDAdvertisement from "../components/3d-advertisement-carousel"
-// import { Loader2, MapPin, Heart, Share2, Search } from 'lucide-react';
 import { toast } from "components/ui/use-toast"
 import { Button } from "components/ui/button"
 import { Input } from "components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "components/ui/select"
 
-// Update the fetchItems function to properly handle all search parameters
-const fetchItems = async (params: Record<string, string>) => {
+// Define types for our items and services
+interface Item {
+  id: string
+  title?: string
+  price?: number
+  city?: string
+  subcity?: string
+  category?: string
+  subcategory?: string
+  image_urls?: string[]
+}
+
+interface Service {
+  id: string
+  title?: string
+  price?: number
+  city?: string
+  subcity?: string
+  category?: string
+  subcategory?: string
+  image_urls?: string[]
+}
+
+interface ItemsResponse {
+  items: Item[]
+}
+
+interface ServicesResponse {
+  service: Service[]
+}
+
+// API calls to fetch items and services
+const fetchItems = async (params: Record<string, string>): Promise<ItemsResponse> => {
   try {
     const queryString = new URLSearchParams(params).toString()
     console.log("Fetching items with params:", params)
@@ -36,8 +66,7 @@ const fetchItems = async (params: Record<string, string>) => {
   }
 }
 
-// Update the fetchServices function to properly handle all search parameters
-const fetchServices = async (params: Record<string, string>) => {
+const fetchServices = async (params: Record<string, string>): Promise<ServicesResponse> => {
   try {
     const queryString = new URLSearchParams(params).toString()
     console.log("Fetching services with params:", params)
@@ -56,157 +85,10 @@ const fetchServices = async (params: Record<string, string>) => {
   }
 }
 
-// Replace the loadListings function with this improved version
-const loadListings = async (
-  setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-  setListings: React.Dispatch<React.SetStateAction<any[]>>,
-  searchQuery: string,
-  selectedCity: string,
-  selectedCategory: string,
-  selectedSubcategory: string,
-) => {
-  try {
-    setLoading(true)
-    const params: Record<string, string> = {}
-
-    // Add search parameters
-    if (searchQuery) {
-      params.title = searchQuery // Search by title
-      params.query = searchQuery // Keep the original query parameter too
-    }
-
-    // Add location filter
-    if (selectedCity && selectedCity !== "All Cities") {
-      params.city = selectedCity
-    }
-
-    // Add category filter
-    if (selectedCategory && selectedCategory !== "All Categories") {
-      params.category = selectedCategory
-    }
-
-    // Add subcategory filter
-    if (selectedSubcategory && selectedSubcategory !== "all") {
-      params.subcategory = selectedSubcategory
-    }
-
-    console.log("Loading listings with params:", params)
-    const data = await fetchItems(params)
-
-    // Make sure we're handling the response structure correctly
-    if (data && Array.isArray(data.items)) {
-      setListings(data.items)
-    } else if (data && Array.isArray(data)) {
-      setListings(data)
-    } else {
-      setListings([])
-      console.warn("Unexpected data structure for items:", data)
-    }
-  } catch (error) {
-    console.error("Error loading listings:", error)
-    toast({
-      title: "Error",
-      description: "Failed to load listings. Please try again.",
-      variant: "destructive",
-    })
-    setListings([])
-  } finally {
-    setLoading(false)
-  }
-}
-
-// Replace the loadServices function with this improved version
-const loadServices = async (
-  setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-  setServices: React.Dispatch<React.SetStateAction<any[]>>,
-  searchQuery: string,
-  selectedCity: string,
-  selectedCategory: string,
-  selectedSubcategory: string,
-) => {
-  try {
-    setLoading(true)
-    const params: Record<string, string> = {}
-
-    // Add search parameters
-    if (searchQuery) {
-      params.title = searchQuery // Search by title
-      params.city = searchQuery // Keep the original query parameter too
-    }
-
-    // Add location filter
-    if (selectedCity && selectedCity !== "All Cities") {
-      params.city = selectedCity
-    }
-
-    // Add category filter
-    if (selectedCategory && selectedCategory !== "All Categories") {
-      params.category = selectedCategory
-    }
-
-    // Add subcategory filter
-    if (selectedSubcategory && selectedSubcategory !== "all") {
-      params.subcategory = selectedSubcategory
-    }
-
-    console.log("Loading services with params:", params)
-    const data = await fetchServices(params)
-
-    // Make sure we're handling the response structure correctly
-    if (data && Array.isArray(data.service)) {
-      setServices(data.service)
-    } else if (data && Array.isArray(data)) {
-      setServices(data)
-    } else {
-      setServices([])
-      console.warn("Unexpected data structure for services:", data)
-    }
-  } catch (error) {
-    console.error("Error loading services:", error)
-    toast({
-      title: "Error",
-      description: "Failed to load services. Please try again.",
-      variant: "destructive",
-    })
-    setServices([])
-  } finally {
-    setLoading(false)
-  }
-}
-
-// Update the handleSearch function to be more robust
-const handleSearch = (
-  e: React.FormEvent,
-  setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-  setListings: React.Dispatch<React.SetStateAction<any[]>>,
-  setServices: React.Dispatch<React.SetStateAction<any[]>>,
-  searchQuery: string,
-  selectedCategory: string,
-  selectedSubcategory: string,
-  selectedCity: string,
-  activeTab: string,
-) => {
-  e.preventDefault()
-  console.log("Search submitted with:", {
-    query: searchQuery,
-    category: selectedCategory,
-    subcategory: selectedSubcategory,
-    city: selectedCity,
-  })
-
-  if (activeTab === "items" || activeTab === "both") {
-    loadListings(setLoading, setListings, searchQuery, selectedCity, selectedCategory, selectedSubcategory)
-  }
-
-  if (activeTab === "services" || activeTab === "both") {
-    loadServices(setLoading, setServices, searchQuery, selectedCity, selectedCategory, selectedSubcategory)
-  }
-}
-
 export default function Home() {
-  const [listings, setListings] = useState<any[]>([])
-  const [services, setServices] = useState<any[]>([])
-  const [activeTab, setActiveTab] = useState<string>("items")
+  const [listings, setListings] = useState<Item[]>([])
+  const [services, setServices] = useState<Service[]>([])
+  const [activeTab, setActiveTab] = useState<string>("all") // Changed default to "all"
 
   const [selectedCity, setSelectedCity] = useState<string>("All Cities")
   const [loading, setLoading] = useState<boolean>(true)
@@ -214,78 +96,8 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string>("All Categories")
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("")
 
-  const [allListings, setAllListings] = useState<any[]>([]);
-const [allServices, setAllServices] = useState<any[]>([]);
-
-useEffect(() => {
-  fetchItems({}) // fetch all items, no filters
-    .then(data => {
-      if (data && Array.isArray(data.items)) {
-        setAllListings(data.items);
-      } else if (data && Array.isArray(data)) {
-        setAllListings(data);
-      } else {
-        setAllListings([]);
-      }
-    });
-  fetchServices({}) // fetch all services, no filters
-    .then(data => {
-      if (data && Array.isArray(data.service)) {
-        setAllServices(data.service);
-      } else if (data && Array.isArray(data)) {
-        setAllServices(data);
-      } else {
-        setAllServices([]);
-      }
-    });
-}, []);
-const filterListings = () => {
-  let filtered = allListings;
-  if (searchQuery) {
-    filtered = filtered.filter(item =>
-      item.title?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }
-  if (selectedCity && selectedCity !== "All Cities") {
-    filtered = filtered.filter(item => item.city === selectedCity);
-  }
-  if (selectedCategory && selectedCategory !== "All Categories") {
-    filtered = filtered.filter(item => item.category === selectedCategory);
-  }
-  if (selectedSubcategory && selectedSubcategory !== "") {
-    filtered = filtered.filter(item => item.subcategory === selectedSubcategory);
-  }
-  setListings(filtered);
-};
-
-const filterServices = () => {
-  let filtered = allServices;
-  if (searchQuery) {
-    filtered = filtered.filter(service =>
-      service.title?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }
-  if (selectedCity && selectedCity !== "All Cities") {
-    filtered = filtered.filter(service => service.city === selectedCity);
-  }
-  if (selectedCategory && selectedCategory !== "All Categories") {
-    filtered = filtered.filter(service => service.category === selectedCategory);
-  }
-  if (selectedSubcategory && selectedSubcategory !== "") {
-    filtered = filtered.filter(service => service.subcategory === selectedSubcategory);
-  }
-  setServices(filtered);
-};
-const handleSearch = (e: React.FormEvent<HTMLFormElement>, setLoading: React.Dispatch<React.SetStateAction<boolean>>, setListings: React.Dispatch<React.SetStateAction<any[]>>, setServices: React.Dispatch<React.SetStateAction<any[]>>, searchQuery: string, selectedCategory: string, selectedSubcategory: string, selectedCity: string, activeTab: string) => {
-  e.preventDefault();
-  if (activeTab === "items" || activeTab === "both") {
-    filterListings();
-  }
-  if (activeTab === "services" || activeTab === "both") {
-    filterServices();
-  }
-};
-
+  const [allListings, setAllListings] = useState<Item[]>([])
+  const [allServices, setAllServices] = useState<Service[]>([])
 
   const cities = [
     "All Cities",
@@ -299,42 +111,244 @@ const handleSearch = (e: React.FormEvent<HTMLFormElement>, setLoading: React.Dis
     "Jimma",
   ]
 
+  const subcities: Record<string, string[]> = {
+    "Addis Ababa": ["Bole", "Kirkos", "Arada", "Yeka", "Lideta", "Kolfe", "Nifas Silk", "Akaki"],
+    "Dire Dawa": ["Kezira", "Addis Ketema", "Gendekore", "Legehare"],
+    Hawassa: ["Tabor", "Menaharia", "Piazza", "Tula"],
+    "Bahir Dar": ["Belay Zeleke", "Sefene Selam", "Hidar 11", "Gish Abay"],
+    Mekelle: ["Ayder", "Hadnet", "Semien", "Hawelti"],
+    Adama: ["Dabe", "Boku", "Lugo", "Migra"],
+    Gondar: ["Azezo", "Arada", "Maraki", "Kebele 18"],
+    Jimma: ["Jiren", "Ginjo", "Mentina", "Hermata"],
+  }
+
   const categories = [
     "All Categories",
     "Electronics",
     "Vehicles",
-    "Property",
+    "Clothing",
     "Furniture",
-    "Fashion",
-    "Services",
-    "Jobs",
+    "Sports & Outdoors",
+    "Toys & Games",
+    "Home-Appliances",
   ]
 
   const subcategories: Record<string, string[]> = {
-    Electronics: ["Phones", "Computers", "TVs", "Accessories"],
-    Vehicles: ["Cars", "Motorcycles", "Bicycles", "Spare Parts"],
+    Electronics: ["Mobile Phones", "Laptops & Computers", "TVs & Monitors", "Tablets" , "Smartphones"],
+    Vehicles: ["Cars", "Motorcycles", "Bicycles", "Vehicle Parts"],
     Property: ["Apartments", "Houses", "Land", "Commercial"],
-    Furniture: ["Living Room", "Bedroom", "Kitchen", "Office"],
-    Fashion: ["Clothing", "Shoes", "Accessories", "Jewelry"],
-    Services: ["Cleaning", "Repair", "Education", "Health"],
-    Jobs: ["Full-time", "Part-time", "Freelance", "Internship"],
+    Furniture: ["Sofas & Couches", "Tables", "Chairs", "Beds & Mattresses" , "Storage & Organization"],
+    Sport_and_Outdoors : ["Clothing", "Shoes", "Accessories", "Jewelry"],
+    Toys_and_Games: ["Cleaning", "Repair", "Education", "Health"],
+    Clothing: ["Full-time", "Part-time", "Freelance", "Internship"],
   }
+
   const router = useRouter()
 
-  // Update the useEffect to only trigger when the search button is clicked
-  // Remove this useEffect:
-  // useEffect(() => {
-  //   loadListings();
-  //   loadServices();
-  // }, [activeTab, selectedCity, searchQuery, selectedCategory, selectedSubcategory]);
-
-  // Add this useEffect instead:
+  // Fetch all items and services on initial load
   useEffect(() => {
-    // Initial load of data
-    loadListings(setLoading, setListings, searchQuery, selectedCity, selectedCategory, selectedSubcategory)
-    loadServices(setLoading, setServices, searchQuery, selectedCity, selectedCategory, selectedSubcategory)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setLoading(true)
+
+    // Fetch all items
+    fetchItems({})
+      .then((data) => {
+        if (data && Array.isArray(data.items)) {
+          setAllListings(data.items)
+          setListings(data.items)
+        } else if (data && Array.isArray(data)) {
+          setAllListings(data)
+          setListings(data)
+        } else {
+          setAllListings([])
+          setListings([])
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching all items:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load items. Please try again.",
+          variant: "destructive",
+        })
+      })
+
+    // Fetch all services
+    fetchServices({})
+      .then((data) => {
+        if (data && Array.isArray(data.service)) {
+          setAllServices(data.service)
+          setServices(data.service)
+        } else if (data && Array.isArray(data)) {
+          setAllServices(data)
+          setServices(data)
+        } else {
+          setAllServices([])
+          setServices([])
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching all services:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load services. Please try again.",
+          variant: "destructive",
+        })
+      })
+      .finally(() => {
+        setLoading(false)
+      })
   }, [])
+
+  // Function to check if a string contains the search query (case insensitive)
+  const matchesSearch = (field: string | undefined, query: string): boolean => {
+    if (!field || !query) return false
+
+    // Convert both to lowercase for case-insensitive comparison
+    const fieldLower = field.toLowerCase().trim()
+    const queryLower = query.toLowerCase().trim()
+
+    return fieldLower.includes(queryLower)
+  }
+
+  // Enhanced filter function for listings that searches across multiple fields
+  const filterListings = () => {
+    setLoading(true)
+
+    try {
+      let filtered = [...allListings]
+
+      // Apply dropdown filters first (case insensitive)
+      if (selectedCity && selectedCity !== "All Cities") {
+        filtered = filtered.filter((item) => item.city?.toLowerCase() === selectedCity.toLowerCase())
+      }
+
+      if (selectedCategory && selectedCategory !== "All Categories") {
+        filtered = filtered.filter((item) => item.category?.toLowerCase() === selectedCategory.toLowerCase())
+      }
+
+      if (selectedSubcategory && selectedSubcategory !== "all") {
+        filtered = filtered.filter((item) => item.subcategory?.toLowerCase() === selectedSubcategory.toLowerCase())
+      }
+
+      // Then apply search query across multiple fields (case insensitive)
+      if (searchQuery && searchQuery.trim()) {
+        const query = searchQuery.trim()
+        console.log("Searching for:", query) // Debug log
+
+        filtered = filtered.filter((item) => {
+          const matches =
+            matchesSearch(item.title, query) ||
+            matchesSearch(item.city, query) ||
+            matchesSearch(item.subcity, query) ||
+            matchesSearch(item.category, query) ||
+            matchesSearch(item.subcategory, query)
+
+          return matches
+        })
+      }
+
+      console.log("Filtered listings:", filtered.length) // Debug log
+      setListings(filtered)
+    } catch (error) {
+      console.error("Error filtering listings:", error)
+      toast({
+        title: "Error",
+        description: "Failed to filter listings. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Enhanced filter function for services that searches across multiple fields
+  const filterServices = () => {
+    setLoading(true)
+
+    try {
+      let filtered = [...allServices]
+
+      // Apply dropdown filters first (case insensitive)
+      if (selectedCity && selectedCity !== "All Cities") {
+        filtered = filtered.filter((service) => service.city?.toLowerCase() === selectedCity.toLowerCase())
+      }
+
+      if (selectedCategory && selectedCategory !== "All Categories") {
+        filtered = filtered.filter((service) => service.category?.toLowerCase() === selectedCategory.toLowerCase())
+      }
+
+      if (selectedSubcategory && selectedSubcategory !== "all") {
+        filtered = filtered.filter(
+          (service) => service.subcategory?.toLowerCase() === selectedSubcategory.toLowerCase(),
+        )
+      }
+
+      // Then apply search query across multiple fields (case insensitive)
+      if (searchQuery && searchQuery.trim()) {
+        const query = searchQuery.trim()
+        console.log("Searching services for:", query) // Debug log
+
+        filtered = filtered.filter((service) => {
+          const matches =
+            matchesSearch(service.title, query) ||
+            matchesSearch(service.city, query) ||
+            matchesSearch(service.subcity, query) ||
+            matchesSearch(service.category, query) ||
+            matchesSearch(service.subcategory, query)
+
+          return matches
+        })
+      }
+
+      console.log("Filtered services:", filtered.length) // Debug log
+      setServices(filtered)
+    } catch (error) {
+      console.error("Error filtering services:", error)
+      toast({
+        title: "Error",
+        description: "Failed to filter services. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Handle search form submission
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    console.log("Search submitted with:", {
+      query: searchQuery,
+      category: selectedCategory,
+      subcategory: selectedSubcategory,
+      city: selectedCity,
+      activeTab: activeTab,
+    })
+
+    // Filter based on active tab
+    if (activeTab === "all") {
+      filterListings()
+      filterServices()
+    } else if (activeTab === "items") {
+      filterListings()
+    } else if (activeTab === "services") {
+      filterServices()
+    }
+  }
+
+  // Apply filters when dropdown selections change or tab changes
+  useEffect(() => {
+    if (allListings.length > 0 || allServices.length > 0) {
+      if (activeTab === "all") {
+        filterListings()
+        filterServices()
+      } else if (activeTab === "items") {
+        filterListings()
+      } else if (activeTab === "services") {
+        filterServices()
+      }
+    }
+  }, [selectedCity, selectedCategory, selectedSubcategory, activeTab])
 
   const handleShare = (e: React.MouseEvent, id: string) => {
     e.preventDefault()
@@ -354,47 +368,35 @@ const handleSearch = (e: React.FormEvent<HTMLFormElement>, setLoading: React.Dis
     toast({ title: "Added to Favorites", description: "Item added to your favorites" })
   }
 
-  const handleCategoryChange = (
-    value: string,
-    setSelectedCategory: React.Dispatch<React.SetStateAction<string>>,
-    setSelectedSubcategory: React.Dispatch<React.SetStateAction<string>>,
-  ) => {
+  const handleCategoryChange = (value: string) => {
     setSelectedCategory(value)
     setSelectedSubcategory("") // Reset subcategory when category changes
+  }
+
+  // Get placeholder text based on active tab
+  const getPlaceholderText = () => {
+    switch (activeTab) {
+      case "items":
+        return "Search items by title, city, subcity, category, or subcategory..."
+      case "services":
+        return "Search services by title, city, subcity, category, or subcategory..."
+      case "all":
+      default:
+        return "Search items and services by title, city, subcity, category, or subcategory..."
+    }
   }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="container mx-auto px-4 py-8">
-        {/* <div className="border-4 border-red-500" style={{ minHeight: '150px' }}> */}
         <ThreeDAdvertisement />
-        {/* </div> */}
-        {/* <ApprovedAdvertisement /> */}
-        {/* <div className="container mx-auto px-4 py-6" > */}
-        <div className="bg-white rounded-lg shadow-sm p-4 my-6"></div>
+        {/* <div className="bg-white rounded-lg shadow-sm p-4 my-6"></div> */}
         <div className="container mx-auto px-4 py-6">
-          {/* Update the form submission to properly handle the search */}
-          {/* Replace the form element with this: */}
-          <form
-            onSubmit={(e) =>
-              handleSearch(
-                e,
-                setLoading,
-                setListings,
-                setServices,
-                searchQuery,
-                selectedCategory,
-                selectedSubcategory,
-                selectedCity,
-                activeTab,
-              )
-            }
-            className="flex flex-col md:flex-row gap-4"
-          >
+          <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <Input
                 type="text"
-                placeholder={`Search ${activeTab === "items" ? "items" : "services"}...`}
+                placeholder={getPlaceholderText()}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2"
@@ -402,10 +404,7 @@ const handleSearch = (e: React.FormEvent<HTMLFormElement>, setLoading: React.Dis
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             </div>
 
-            <Select
-              value={selectedCategory}
-              onValueChange={(value) => handleCategoryChange(value, setSelectedCategory, setSelectedSubcategory)}
-            >
+            <Select value={selectedCategory} onValueChange={handleCategoryChange}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
@@ -450,11 +449,18 @@ const handleSearch = (e: React.FormEvent<HTMLFormElement>, setLoading: React.Dis
               </SelectContent>
             </Select>
 
-            <Button type="submit" variant="default">
+            {/* <Button type="submit" variant="default">
               Search
-            </Button>
+            </Button> */}
 
             <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={activeTab === "all" ? "default" : "outline"}
+                onClick={() => setActiveTab("all")}
+              >
+                All
+              </Button>
               <Button
                 type="button"
                 variant={activeTab === "items" ? "default" : "outline"}
@@ -473,115 +479,158 @@ const handleSearch = (e: React.FormEvent<HTMLFormElement>, setLoading: React.Dis
           </form>
         </div>
 
-        {/* Items Listing */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold">Items Listings</h2>
-          {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <Loader2 className="animate-spin h-12 w-12 text-teal-500" />
-            </div>
-          ) : listings.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-              <h3 className="text-lg font-medium">No items found</h3>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {listings.map((item) => (
-                <Link href={`/products/${item.id}`} key={item.id} className="block">
-                  <div className="bg-white rounded-lg overflow-hidden shadow-sm border h-full hover:shadow-md transition-shadow">
-                    <div className="relative h-56">
-                      <Image
-                        src={item.image_urls && item.image_urls.length > 0 ? item.image_urls[0] : "/placeholder.svg"}
-                        alt={item.title}
-                        fill
-                        className="object-cover"
-                      />
-                      <div className="absolute top-2 right-2 flex gap-1">
-                        <button
-                          className="bg-white p-2 rounded-full shadow-sm hover:bg-gray-50"
-                          onClick={(e) => handleFavorite(e, item.id)}
-                          aria-label="Add to favorites"
-                        >
-                          <Heart className="h-4 w-4" />
-                        </button>
-                        <button
-                          className="bg-white p-2 rounded-full shadow-sm hover:bg-gray-50"
-                          onClick={(e) => handleShare(e, item.id)}
-                          aria-label="Share listing"
-                        >
-                          <Share2 className="h-4 w-4" />
-                        </button>
+        {/* Items Listing - Show when activeTab is "all" or "items" */}
+        {(activeTab === "all" || activeTab === "items") && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold">Items Listings</h2>
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="animate-spin h-12 w-12 text-teal-500" />
+              </div>
+            ) : listings.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+                <h3 className="text-lg font-medium">No items found</h3>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {listings.map((item) => (
+                  <Link href={`/products/${item.id}`} key={item.id} className="block">
+                    <div className="bg-white rounded-lg overflow-hidden shadow-sm border h-full hover:shadow-md transition-shadow">
+                      <div className="relative h-56">
+                        <Image
+                          src={item.image_urls && item.image_urls.length > 0 ? item.image_urls[0] : "/placeholder.svg"}
+                          alt={item.title || "Product"}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute top-2 right-2 flex gap-1">
+                          <button
+                            className="bg-white p-2 rounded-full shadow-sm hover:bg-gray-50"
+                            onClick={(e) => handleFavorite(e, item.id)}
+                            aria-label="Add to favorites"
+                          >
+                            <Heart className="h-4 w-4" />
+                          </button>
+                          <button
+                            className="bg-white p-2 rounded-full shadow-sm hover:bg-gray-50"
+                            onClick={(e) => handleShare(e, item.id)}
+                            aria-label="Share listing"
+                          >
+                            <Share2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-bold text-lg">{item.price?.toLocaleString()} ETB</h3>
+                        <p className="text-gray-600">{item.title}</p>
+                        <div className="flex items-center text-gray-500 text-sm mt-2">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          <p>
+                            {item.city || "Addis Ababa"}
+                            {item.subcity ? `, ${item.subcity}` : ""}
+                          </p>
+                        </div>
+                        {(item.category || item.subcategory) && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {item.category && (
+                              <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                                {item.category}
+                              </span>
+                            )}
+                            {item.subcategory && (
+                              <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                                {item.subcategory}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div className="p-4">
-                      <h3 className="font-bold text-lg">{item.price?.toLocaleString()} ETB</h3>
-                      <p className="text-gray-600">{item.title}</p>
-                      <div className="flex items-center text-gray-500 text-sm mt-2">
-                        <MapPin className="h-3 w-3 mr-1" />
-                        <p>{item.city || "Addis Ababa"}</p>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* Services Listing */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold">Services Listings</h2>
-          {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <Loader2 className="animate-spin h-12 w-12 text-teal-500" />
-            </div>
-          ) : services.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-              <h3 className="text-lg font-medium">No services found</h3>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {services.map((service) => (
-                <Link href={`/services/${service.id}`} key={service.id} className="block">
-                  <div className="bg-white rounded-lg overflow-hidden shadow-sm border h-full hover:shadow-md transition-shadow">
-                    <div className="relative h-56">
-                      <Image
-                        src={service.image_urls?.[0] || "/placeholder.svg"}
-                        alt={service.title}
-                        fill
-                        className="object-cover"
-                      />
-                      <div className="absolute top-2 right-2 flex gap-1">
-                        <button
-                          className="bg-white p-2 rounded-full shadow-sm hover:bg-gray-50"
-                          onClick={(e) => handleFavorite(e, service.id)}
-                          aria-label="Add to favorites"
-                        >
-                          <Heart className="h-4 w-4" />
-                        </button>
-                        <button
-                          className="bg-white p-2 rounded-full shadow-sm hover:bg-gray-50"
-                          onClick={(e) => handleShare(e, service.id)}
-                          aria-label="Share listing"
-                        >
-                          <Share2 className="h-4 w-4" />
-                        </button>
+        {/* Services Listing - Show when activeTab is "all" or "services" */}
+        {(activeTab === "all" || activeTab === "services") && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold">Services Listings</h2>
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="animate-spin h-12 w-12 text-teal-500" />
+              </div>
+            ) : services.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+                <h3 className="text-lg font-medium">No services found</h3>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {services.map((service) => (
+                  <Link href={`/services/${service.id}`} key={service.id} className="block">
+                    <div className="bg-white rounded-lg overflow-hidden shadow-sm border h-full hover:shadow-md transition-shadow">
+                      <div className="relative h-56">
+                        <Image
+                          src={
+                            service.image_urls && service.image_urls.length > 0
+                              ? service.image_urls[0]
+                              : "/placeholder.svg"
+                          }
+                          alt={service.title || "Service"}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute top-2 right-2 flex gap-1">
+                          <button
+                            className="bg-white p-2 rounded-full shadow-sm hover:bg-gray-50"
+                            onClick={(e) => handleFavorite(e, service.id)}
+                            aria-label="Add to favorites"
+                          >
+                            <Heart className="h-4 w-4" />
+                          </button>
+                          <button
+                            className="bg-white p-2 rounded-full shadow-sm hover:bg-gray-50"
+                            onClick={(e) => handleShare(e, service.id)}
+                            aria-label="Share listing"
+                          >
+                            <Share2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-bold text-lg">{service.title}</h3>
+                        <p className="text-gray-600">{service.price?.toLocaleString()} ETB</p>
+                        <div className="flex items-center text-gray-500 text-sm mt-2">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          <p>
+                            {service.city || "Addis Ababa"}
+                            {service.subcity ? `, ${service.subcity}` : ""}
+                          </p>
+                        </div>
+                        {(service.category || service.subcategory) && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {service.category && (
+                              <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                                {service.category}
+                              </span>
+                            )}
+                            {service.subcategory && (
+                              <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                                {service.subcategory}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div className="p-4">
-                      <h3 className="font-bold text-lg">{service.title}</h3>
-                      <p className="text-gray-600">{service.price?.toLocaleString()} ETB</p>
-                      <div className="flex items-center text-gray-500 text-sm mt-2">
-                        <MapPin className="h-3 w-3 mr-1" />
-                        <p>{service.city || "Addis Ababa"}</p>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <section className="mb-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

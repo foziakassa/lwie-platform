@@ -1,19 +1,66 @@
-import { fetchServiceById } from "@/lib/api-client"
-import { ServiceDetail } from "@/components/service-detail"
-import { notFound } from "next/navigation"
+import { fetchServiceById } from "@/lib/api-client"; // Ensure this function exists
+import { ServiceDetail } from "@/components/service-detail";
+import { notFound } from "next/navigation";
 
+// Define the interface for ServicePageProps
 interface ServicePageProps {
   params: {
-    id: string
-  }
+    id: string;
+  };
 }
 
-export default async function ServicePage({ params }: ServicePageProps) {
-  try {
-    const service = await fetchServiceById(params.id)
+// Function to fetch user details by user ID
+async function fetchUserById(userId: string) {
+  const res = await fetch(`https://liwedoc.vercel.app/users/${userId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 
-    if (!service) {
-      return notFound()
+  if (!res.ok) {
+    throw new Error("User not found");
+  }
+
+  return await res.json();
+}
+
+export default async function ServicePage(props: ServicePageProps) {
+  const { id } = props.params;
+  console.log("Fetching service with ID:", id);
+
+  try {
+    // Fetch service data
+    const serviceRes = await fetch(`https://liwedoc.vercel.app/api/services/${id}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!serviceRes.ok) {
+      console.warn("Service not found:", id);
+      return notFound();
+    }
+
+    const data = await serviceRes.json();
+
+    if (!data.success) {
+      console.warn("API response was not successful:", data);
+      return notFound();
+    }
+
+    const service = data.service;
+
+    // Fetch user information if user_id is available
+    let user = null;
+    if (service.user_id) {
+      try {
+        const userData = await fetchUserById(service.user_id);
+        user = userData; // Assume userData contains user details
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
     }
 
     // Mock similar services data
@@ -42,35 +89,41 @@ export default async function ServicePage({ params }: ServicePageProps) {
         image: "/placeholder.svg?height=300&width=300&text=Similar+Service+3",
         city: "Hawassa",
       },
-    ]
+    ];
 
     // Format the service data for the component
     const formattedService = {
-      ...service,
+      id: service.id,
+      title: service.title,
       description: service.description ?? "",
-      price: service.price ?? 0,
-      images: service.images ?? [],
+      price: parseFloat(service.price) || 0,
+      condition: service.condition ?? "",
       category: service.category ?? "",
+      subcategory: service.subcategory ?? "",
       city: service.city ?? "",
       subcity: service.subcity ?? undefined,
-      service_details: service.service_details ?? undefined,
+      additional_details: undefined, // Set as needed
+      images: service.image_urls ?? [],
       contact_info: {
-        phone: service.contact_info?.phone ?? "",
-        email: service.contact_info?.email ?? "",
-        preferred_contact_method: service.contact_info?.preferred_contact_method ?? "",
+        phone: service.phone ?? "",
+        email: service.email ?? "",
+        preferred_contact_method: service.preferred_contact_method ?? "phone",
       },
       user: {
-        id: service.user_id,
-        name: service.user_name || "Anonymous User",
-        avatar: "/placeholder.svg?height=100&width=100&text=User",
-        joined_date: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days ago
-        response_time: "2 hours",
+        id: user ? user.id : "Anonymous",
+        name: user ? `${user.Firstname} ${user.Lastname}` : "Anonymous User",
+        avatar: user && user.Image ? user.Image : "/placeholder.svg?height=100&width=100&text=User",
+        joined_date: user ? user.Createdat : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days ago
+        response_time: user ? "2 hours" : "N/A",
       },
-    }
+      created_at: service.createdat,
+    };
 
-    return <ServiceDetail service={formattedService} similarServices={similarServices} />
+    console.log("Fetched service:", formattedService);
+
+    return <ServiceDetail service={formattedService} similarServices={similarServices} />;
   } catch (error) {
-    console.error("Error fetching service:", error)
-    return notFound()
+    console.error("Error fetching service:", error);
+    return notFound();
   }
 }

@@ -122,23 +122,23 @@ export function ServiceDetail({ service, similarServices }: ServiceDetailProps) 
   }
 
   // Categories for the navigation bar
-  const categories = [
-    "All",
-    "Professional",
-    "Creative",
-    "Home",
-    "Education",
-    "Health",
-    "Tech",
-    "Events",
-    "Beauty",
-    "Automotive",
-  ]
+  // const categories = [
+  //   "All",
+  //   "Professional",
+  //   "Creative",
+  //   "Home",
+  //   "Education",
+  //   "Health",
+  //   "Tech",
+  //   "Events",
+  //   "Beauty",
+  //   "Automotive",
+  // ]
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Category Navigation */}
-      <div className="bg-white shadow-sm overflow-x-auto">
+      {/* <div className="bg-white shadow-sm overflow-x-auto">
         <div className="flex items-center space-x-6 px-4 py-2 max-w-7xl mx-auto">
           {categories.map((category, index) => (
             <Link
@@ -150,7 +150,7 @@ export function ServiceDetail({ service, similarServices }: ServiceDetailProps) 
             </Link>
           ))}
         </div>
-      </div>
+      </div> */}
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Back Button */}

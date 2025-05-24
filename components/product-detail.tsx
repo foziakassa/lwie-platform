@@ -1,85 +1,86 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Image from "next/image"
-import Link from "next/link"
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import {
   ArrowLeft,
-  Clock,
-  Phone,
-  Mail,
-  Heart,
-  Share2,
-  Flag,
-  ChevronLeft,
-  ChevronRight,
-  Shield,
   MapPin,
   Calendar,
   Tag,
   Info,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { SwapRequestForm } from "@/components/swap-request-form"
-import { toast } from "@/components/ui/use-toast"
-import { Separator } from "@/components/ui/separator"
+  Clock,
+  Phone,
+  Mail,
+  Shield,
+  Heart,
+  ChevronLeft,
+  ChevronRight,
+  Flag,
+  Share2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { SwapRequestForm } from "@/components/swap-request-form";
+import { toast } from "@/components/ui/use-toast";
+import { Separator } from "@/components/ui/separator";
+import Cookies from "js-cookie"; // Import js-cookie
 
 interface ProductDetailProps {
   product: {
-    id: string
-    title: string
-    description: string
-    price: number
-    condition: string
-    images: string[]
-    category: string
-    subcategory: string
-    city: string
-    subcity?: string
-    additional_details?: string
+    id: string;
+    title: string;
+    description: string;
+    price: number;
+    condition: string;
+    images: string[];
+    category: string;
+    subcategory: string;
+    city: string;
+    subcity?: string;
+    additional_details?: string;
     contact_info: {
-      phone: string
-      email: string
-      preferred_contact_method: string
-    }
-    created_at: string
+      phone: string;
+      email: string;
+      preferred_contact_method: string;
+    };
+    created_at: string;
     user: {
-      id: string
-      name: string
-      avatar?: string
-      joined_date: string
-      response_time?: string
-    }
-  }
+      id: string;
+      name: string;
+      avatar?: string;
+      joined_date: string;
+      response_time?: string;
+    };
+  };
   similarProducts: Array<{
-    id: string
-    title: string
-    price: number
-    condition: string
-    image: string
-    city: string
-  }>
+    id: string;
+    title: string;
+    price: number;
+    condition: string;
+    image: string;
+    city: string;
+  }>;
 }
 
 export function ProductDetail({ product, similarProducts }: ProductDetailProps) {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [showContactInfo, setShowContactInfo] = useState(false)
-  const [isSwapDialogOpen, setIsSwapDialogOpen] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showContactInfo, setShowContactInfo] = useState(false);
+  const [isSwapDialogOpen, setIsSwapDialogOpen] = useState(false);
 
   const handlePrevImage = () => {
-    setCurrentImageIndex((prev) => (prev === 0 ? product.images.length - 1 : prev - 1))
-  }
+    setCurrentImageIndex((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
+  };
 
   const handleNextImage = () => {
-    setCurrentImageIndex((prev) => (prev === product.images.length - 1 ? 0 : prev + 1))
-  }
+    setCurrentImageIndex((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
+  };
 
   const handleSendRequest = () => {
-    setIsSwapDialogOpen(true)
-  }
+    setIsSwapDialogOpen(true);
+  };
 
   const handleShare = () => {
     if (navigator.share) {
@@ -87,77 +88,48 @@ export function ProductDetail({ product, similarProducts }: ProductDetailProps) 
         title: product.title,
         text: `Check out this ${product.title} on LWIE`,
         url: window.location.href,
-      })
+      });
     } else {
-      navigator.clipboard.writeText(window.location.href)
+      navigator.clipboard.writeText(window.location.href);
       toast({
         title: "Link Copied",
         description: "Product link copied to clipboard",
-      })
+      });
     }
-  }
+  };
 
   const handleFavorite = () => {
     toast({
       title: "Added to Favorites",
       description: "This item has been added to your favorites",
-    })
-  }
+    });
+  };
 
   const handleReport = () => {
     toast({
       title: "Report Submitted",
       description: "Thank you for your report. We'll review this listing.",
-    })
-  }
+    });
+  };
 
   // Parse additional details if available
-  let additionalDetails = {}
+  let additionalDetails = {};
   if (product.additional_details) {
     try {
-      additionalDetails = JSON.parse(product.additional_details)
+      additionalDetails = JSON.parse(product.additional_details);
     } catch (e) {
-      console.error("Error parsing additional details:", e)
+      console.error("Error parsing additional details:", e);
     }
   }
 
   // Format date
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-  }
-
-  // Categories for the navigation bar
-  // const categories = [
-  //   "All",
-  //   "Electronics",
-  //   "Home Appliances",
-  //   "Toys and Games",
-  //   "Sport",
-  //   "Health and Beauty",
-  //   "Clothing",
-  //   "Pet Supplies",
-  //   "Medical Instrument",
-  //   "Travel Gear",
-  // ]
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Category Navigation */}
-      {/* <div className="bg-white shadow-sm overflow-x-auto">
-        <div className="flex items-center space-x-6 px-4 py-2 max-w-7xl mx-auto">
-          {categories.map((category, index) => (
-            <Link
-              key={index}
-              href={`/category/${category.toLowerCase().replace(/\s+/g, "-")}`}
-              className="text-sm whitespace-nowrap hover:text-teal-600 transition-colors"
-            >
-              {category}
-            </Link>
-          ))}
-        </div>
-      </div> */}
-
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Back Button */}
         <Link href="/" className="flex items-center text-gray-600 hover:text-teal-600 mb-4">
@@ -176,7 +148,6 @@ export function ProductDetail({ product, similarProducts }: ProductDetailProps) 
                   fill
                   className="object-contain"
                 />
-
                 {product.images.length > 1 && (
                   <>
                     <button
@@ -461,5 +432,5 @@ export function ProductDetail({ product, similarProducts }: ProductDetailProps) 
         </Dialog>
       </div>
     </div>
-  )
+  );
 }

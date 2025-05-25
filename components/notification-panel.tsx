@@ -21,17 +21,10 @@ interface NotificationPanelProps {
 
 export function NotificationPanel({ onClose }: NotificationPanelProps) {
   const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: "1",
-      title: "New Swap Request",
-      message: "John wants to swap their iPhone 13 for your camera",
-      timestamp: "2 hours ago",
-      is_read: false,
-      type: "swap_request",
-    },
+   
     {
       id: "2",
-      title: "Request Accepted",
+      title: "Request Accepted nnnn",
       message: "Sarah accepted your swap request for the mountain bike",
       timestamp: "1 day ago",
       is_read: true,

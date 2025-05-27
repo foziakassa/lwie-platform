@@ -99,6 +99,9 @@ export function Header() {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
         setShowProfileDropdown(false)
       }
+       if (cartRef.current && !cartRef.current.contains(event.target as Node)) {
+        setShowCartPreview(false); // Close cart preview on outside click
+      }
     }
 
     document.addEventListener("mousedown", handleClickOutside)

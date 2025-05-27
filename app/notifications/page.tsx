@@ -21,7 +21,8 @@ interface Notification {
   };
   actionUrl: string;
   read: boolean;
-  swapRequestStatus?: "pending" | "accepted" | "rejected"; // Added status field
+  item_id: string; // The ID of the item associated with the notification
+  offered_item_id: string; // The ID of the offered item
 }
 
 export default function NotificationsPage() {
@@ -29,7 +30,6 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Fetch notifications function moved outside useEffect for reuse
   const fetchNotifications = async () => {
     const tokenString = Cookies.get("authToken");
     const userId = tokenString ? JSON.parse(tokenString).id : null;
@@ -57,22 +57,45 @@ export default function NotificationsPage() {
     fetchNotifications();
   }, []);
 
-  // Mark notification as read locally
   const markAsRead = (id: string) => {
     setNotifications((prev) =>
       prev.map((notif) => (notif.id === id ? { ...notif, read: true } : notif))
     );
   };
 
-  // Remove notification locally after rejection
   const deleteNotification = (id: string) => {
     setNotifications((prev) => prev.filter((notif) => notif.id !== id));
   };
 
-  // Accept swap request by notification ID
-  const handleAccept = async (notificationId: string) => {
+  const fetchItemStatus = async (itemId: string) => {
     try {
-      const response = await fetch(`https://liwedoc.vercel.app/api/notifications/accept/${notificationId}`, {
+      const response = await fetch(`https://liwedoc.vercel.app/api/items/${itemId}`);
+      if (response.ok) {
+        const data = await response.json();
+        return data.item.status; // Get the item status from the response
+      } else {
+        console.error("Failed to fetch item status");
+        return null;
+      }
+    } catch (error) {
+      console.error("Error fetching item status:", error);
+      return null;
+    }
+  };
+
+  const handleAccept = async (notificationId: string) => {
+    const notification = notifications.find((notif) => notif.id === notificationId);
+    if (!notification) return;
+
+    const itemStatus = await fetchItemStatus(notification.item_id); // Fetch item status
+    if (itemStatus === "swapped") {
+      setSuccessMessage("This item has already been swapped.");
+      setTimeout(() => setSuccessMessage(null), 5000);
+      return; // Do not proceed if the item is already swapped
+    }
+
+    try {
+      const response = await fetch(`https://liwedoc.vercel.app/api/swap-requests/accept/${notificationId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -81,9 +104,8 @@ export default function NotificationsPage() {
       });
 
       if (response.ok) {
-        const data = await response.json();
         markAsRead(notificationId);
-        setSuccessMessage(data.message || "Swap request accepted successfully!");
+        setSuccessMessage("Swap request accepted successfully!");
         await fetchNotifications(); // Refresh notifications to update status
         setTimeout(() => setSuccessMessage(null), 5000);
       } else {
@@ -97,7 +119,6 @@ export default function NotificationsPage() {
     }
   };
 
-  // Reject swap request by notification ID
   const handleReject = async (notificationId: string) => {
     try {
       const response = await fetch(`https://liwedoc.vercel.app/api/notifications/reject/${notificationId}`, {
@@ -186,15 +207,13 @@ export default function NotificationsPage() {
                           <span className="text-gray-500 dark:text-gray-400 text-sm">No link available</span>
                         )}
                         <div className="flex space-x-1">
-                          {!notification.read && notification.swapRequestStatus === "pending" && (
-                            <button
-                              onClick={() => handleAccept(notification.id)}
-                              className="p-1.5 text-gray-500 hover:text-teal-600 dark:hover:text-teal-400 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
-                              title="Accept"
-                            >
-                              Accept
-                            </button>
-                          )}
+                          <button
+                            onClick={() => handleAccept(notification.id)}
+                            className="p-1.5 text-gray-500 hover:text-teal-600 dark:hover:text-teal-400 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
+                            title="Accept"
+                          >
+                            Accept
+                          </button>
                           <button
                             onClick={() => handleReject(notification.id)}
                             className="p-1.5 text-gray-500 hover:text-red-600 dark:hover:text-red-400 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"

@@ -19,7 +19,7 @@ interface Notification {
     title: string;
     image: string;
   };
-  actionUrl: string;
+  product_link: string;
   read: boolean;
   item_id: string; // The ID of the item associated with the notification
   offered_item_id: string; // The ID of the offered item
@@ -194,9 +194,9 @@ export default function NotificationsPage() {
                         <span className="text-xs text-gray-500 dark:text-gray-400">{notification.type}</span>
                       </div>
                       <div className="mt-4 flex justify-between items-center">
-                        {notification.actionUrl ? (
+                        {notification.product_link ? (
                           <Link
-                            href={notification.actionUrl}
+                            href={notification.product_link}
                             className="text-teal-600 dark:text-teal-400 text-sm font-medium hover:underline"
                             onClick={() => markAsRead(notification.id)}
                           >

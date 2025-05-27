@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, Check, Trash2, ChevronRight } from "lucide-react";
+import { Bell, ChevronRight } from "lucide-react";
 import Cookies from "js-cookie";
 
 interface Notification {
-  id: string;
+  id: string; // Notification ID
   message: string;
   created_at: string;
   type: string;
@@ -22,19 +21,25 @@ interface Notification {
   };
   actionUrl: string;
   read: boolean;
+  swapRequestStatus?: "pending" | "accepted" | "rejected"; // Added status field
 }
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      const tokenString = Cookies.get("authToken");
-      const userId = tokenString ? JSON.parse(tokenString).id : null;
+  // Fetch notifications function moved outside useEffect for reuse
+  const fetchNotifications = async () => {
+    const tokenString = Cookies.get("authToken");
+    const userId = tokenString ? JSON.parse(tokenString).id : null;
 
-      if (!userId) return; // Handle unauthenticated state
+    if (!userId) {
+      setLoading(false);
+      return; // User not authenticated
+    }
 
+    try {
       const response = await fetch(`https://liwedoc.vercel.app/api/notifications/${userId}`);
       if (response.ok) {
         const data = await response.json();
@@ -42,26 +47,89 @@ export default function NotificationsPage() {
       } else {
         console.error("Failed to fetch notifications");
       }
-      setLoading(false);
-    };
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+    setLoading(false);
+  };
 
+  useEffect(() => {
     fetchNotifications();
   }, []);
 
+  // Mark notification as read locally
   const markAsRead = (id: string) => {
     setNotifications((prev) =>
       prev.map((notif) => (notif.id === id ? { ...notif, read: true } : notif))
     );
   };
 
+  // Remove notification locally after rejection
   const deleteNotification = (id: string) => {
     setNotifications((prev) => prev.filter((notif) => notif.id !== id));
+  };
+
+  // Accept swap request by notification ID
+  const handleAccept = async (notificationId: string) => {
+    try {
+      const response = await fetch(`https://liwedoc.vercel.app/api/notifications/accept/${notificationId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Cookies.get("authToken")}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        markAsRead(notificationId);
+        setSuccessMessage(data.message || "Swap request accepted successfully!");
+        await fetchNotifications(); // Refresh notifications to update status
+        setTimeout(() => setSuccessMessage(null), 5000);
+      } else {
+        setSuccessMessage("Failed to accept swap request.");
+        setTimeout(() => setSuccessMessage(null), 5000);
+      }
+    } catch (error) {
+      console.error("Error accepting notification:", error);
+      setSuccessMessage("An error occurred while accepting the swap request.");
+      setTimeout(() => setSuccessMessage(null), 5000);
+    }
+  };
+
+  // Reject swap request by notification ID
+  const handleReject = async (notificationId: string) => {
+    try {
+      const response = await fetch(`https://liwedoc.vercel.app/api/notifications/reject/${notificationId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Cookies.get("authToken")}`,
+        },
+      });
+
+      if (response.ok) {
+        deleteNotification(notificationId);
+      } else {
+        console.error("Failed to reject notification");
+      }
+    } catch (error) {
+      console.error("Error rejecting notification:", error);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
       <div className="container mx-auto px-4">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Notifications</h1>
+
+        {/* Success message */}
+        {successMessage && (
+          <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-md border border-green-300">
+            {successMessage}
+          </div>
+        )}
+
         {loading ? (
           <p>Loading...</p>
         ) : (
@@ -98,11 +166,11 @@ export default function NotificationsPage() {
                           <h3 className="font-semibold text-gray-900 dark:text-white text-base">
                             {notification.message}
                           </h3>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(notification.created_at).toLocaleString()}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(notification.created_at).toLocaleString()}
+                          </p>
                         </div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {notification.type}
-                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{notification.type}</span>
                       </div>
                       <div className="mt-4 flex justify-between items-center">
                         {notification.actionUrl ? (
@@ -118,23 +186,21 @@ export default function NotificationsPage() {
                           <span className="text-gray-500 dark:text-gray-400 text-sm">No link available</span>
                         )}
                         <div className="flex space-x-1">
-                          {!notification.read && (
+                          {!notification.read && notification.swapRequestStatus === "pending" && (
                             <button
-                              onClick={() => markAsRead(notification.id)}
+                              onClick={() => handleAccept(notification.id)}
                               className="p-1.5 text-gray-500 hover:text-teal-600 dark:hover:text-teal-400 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
-                              title="Mark as read"
+                              title="Accept"
                             >
-                              accept
-                              {/* <Check className="h-4 w-4" /> */}
+                              Accept
                             </button>
                           )}
                           <button
-                            onClick={() => deleteNotification(notification.id)}
+                            onClick={() => handleReject(notification.id)}
                             className="p-1.5 text-gray-500 hover:text-red-600 dark:hover:text-red-400 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                            title="Delete notification"
+                            title="Ignore"
                           >
-                            {/* <Trash2 className="h-4 w-4" /> */}
-                            ignore
+                            Ignore
                           </button>
                         </div>
                       </div>

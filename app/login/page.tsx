@@ -47,7 +47,7 @@ export default function LoginPage() {
         id: responseData.id,
         email: responseData.Email,
         firstName: responseData.Firstname,
-        lastName: responseData.lastname, 
+        lastName: responseData.Lastname, 
         bio: responseData.Bio,
         phone: responseData.Phone,
         image: responseData.Image,

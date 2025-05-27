@@ -25,11 +25,25 @@ type Item = {
   price?: number
   status?: string
 }
-
 type ApiResponse = {
   success: boolean
   items: Item[]
 }
+
+type Swappeditem = {
+  id: number
+  title: string
+  image_urls: string[]
+  created_at?: string
+  price?: number
+  status?: string
+}
+type SwapeApiResponse = {
+  success: boolean
+  items: Swappeditem[]
+}
+
+
 
 // --- TypeScript types for service ---
 type Service = {
@@ -50,6 +64,8 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [myItems, setMyItems] = useState<Item[]>([])
   const [myServices, setMyServices] = useState<Service[]>([])
+  const [mySwape, setMySwape] = useState<Swappeditem[]>([])
+
   const [loadingItems, setLoadingItems] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -89,6 +105,30 @@ export default function ProfilePage() {
       })
       .catch(() => {
         setMyItems([])
+        setError("Failed to load items")
+      })
+      .finally(() => setLoadingItems(false))
+  }, [userId])
+   useEffect(() => {
+    if (!userId) {
+      setError("User not logged in")
+      setLoadingItems(false)
+      return
+    }
+    setLoadingItems(true)
+    fetch(`https://liwedoc.vercel.app/swappeditem/${userId}`)
+      .then((res) => res.json())
+      .then((data: SwapeApiResponse) => {
+        if (data.success) {
+          setMySwape(data.items)
+          setError(null)
+        } else {
+          setMySwape([])
+          setError("Failed to load items")
+        }
+      })
+      .catch(() => {
+        setMySwape([])
         setError("Failed to load items")
       })
       .finally(() => setLoadingItems(false))
@@ -328,6 +368,7 @@ export default function ProfilePage() {
                     )}
                   </div>
                 </TabsContent>
+                
                 <TabsContent value="services" className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">My Listed Services</h2>
@@ -385,8 +426,67 @@ export default function ProfilePage() {
                     )}
                   </div>
                 </TabsContent>
-
+                
                 <TabsContent value="swaps" className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">My Swape  Items</h2>
+                    {/* <Button className="bg-teal-500 hover:bg-teal-600 text-white transition-colors duration-200">
+                      <Camera className="h-4 w-4 mr-2" />
+                      Post New Item
+                    </Button> */}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {loadingItems ? (
+                      <div className="col-span-full text-center text-gray-500">Loading...</div>
+                    ) : error ? (
+                      <div className="col-span-full text-center text-red-500">{error}</div>
+                    ) : !mySwape || mySwape.length === 0 ? (
+                      <div className="col-span-full text-center text-gray-500">No items listed yet.</div>
+                    ) : (
+                      (mySwape || []).map((item) => (
+                        <Card
+                          key={item.id}
+                          className="overflow-hidden border border-gray-200 dark:border-gray-800 hover:shadow-md transition-all duration-200"
+                        >
+                          <div className="relative h-48 bg-gray-100 dark:bg-gray-800">
+                            <Image
+                              src={
+                                item.image_urls
+                                  ? item.image_urls.length > 0
+                                    ? item.image_urls[0]
+                                    : "/placeholder.svg"
+                                  : "/placeholder.svg"
+                              }
+                              alt={item.title}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          <CardContent className="p-4">
+                            <h3 className="font-medium text-gray-800 dark:text-gray-200">{item.title}</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              Listed on: {item.created_at ? new Date(item.created_at).toLocaleDateString() : "N/A"}
+                            </p>
+                            <div className="flex justify-between items-center mt-2">
+                              <Badge
+                                variant="outline"
+                                className="border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-800 dark:bg-teal-900/30 dark:text-teal-400"
+                              >
+                                {item.status || "For Swap"}
+                              </Badge>
+                              <span className="text-teal-600 dark:text-teal-400 font-medium">
+                                {item.price ? `${item.price} ETB` : ""}
+                              </span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
+
+
+                {/* <TabsContent value="swaps" className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">My Swaps</h2>
                   </div>
@@ -395,7 +495,7 @@ export default function ProfilePage() {
                       <p className="text-gray-500 dark:text-gray-400">No active swaps at the moment.</p>
                     </CardContent>
                   </Card>
-                </TabsContent>
+                </TabsContent> */}
 
                 <TabsContent value="settings" className="space-y-6">
                   <Card className="border border-gray-200 dark:border-gray-800 shadow-sm">

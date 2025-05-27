@@ -62,13 +62,13 @@ export function Header() {
   ]
 
   // Mock user data
-  const mockUserData = {
-    name: "Alex Johnson",
-    email: "alex@example.com",
-    itemsCount: 12,
-    swapsCount: 5,
-    avatar: "/placeholder.svg",
-  }
+  // const mockUserData = {
+  //   name: "Alex Johnson",
+  //   email: "alex@example.com",
+  //   itemsCount: 12,
+  //   swapsCount: 5,
+  //   avatar: "/placeholder.svg",
+  // }
 
   // Safely get and parse user info from cookies
   useEffect(() => {
@@ -402,7 +402,7 @@ export function Header() {
                             />
                           </div>
                           <div>
-                            <p className="font-bold text-white text-lg">{userInfo?.name || "User"}</p>
+                            <p className="font-bold text-white text-lg">{userInfo?.firstName  || "User"}</p>
                             <p className="text-teal-100 text-sm">{userInfo?.email || "user@example.com"}</p>
                           </div>
                         </div>

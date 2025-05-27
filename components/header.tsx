@@ -181,14 +181,15 @@ export function Header() {
       {/* Main Navigation */}
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
+           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <motion.div whileHover={{ rotate: -10 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-8 h-8 text-white">
-                <path d="M20 12H4m0 0l6-6m-6 6l6 6" />
-              </svg>
+            <motion.div
+              whileHover={{ scale: 1.05, rotate: -2 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              className="relative"
+            >
+              <Image src="/images/lwie.png" alt="LWIE Logo" width={68} height={10} className="object-contain" priority />
             </motion.div>
-            <span className="text-white text-xl font-bold ml-2">LWIE</span>
           </Link>
 
           {/* Search */}
@@ -494,7 +495,7 @@ export function Header() {
         </div>
       </div>
 
-      <CategoryNav />
+      {/* <CategoryNav /> */}
     </header>
   )
 }

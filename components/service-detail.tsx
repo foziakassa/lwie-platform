@@ -136,7 +136,7 @@ export function ServiceDetail({ service, similarServices }: ServiceDetailProps) 
   // ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50  dark:bg-gray-900">
       {/* Category Navigation */}
       {/* <div className="bg-white shadow-sm overflow-x-auto">
         <div className="flex items-center space-x-6 px-4 py-2 max-w-7xl mx-auto">
@@ -152,17 +152,17 @@ export function ServiceDetail({ service, similarServices }: ServiceDetailProps) 
         </div>
       </div> */}
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl  mx-auto px-4 py-6">
         {/* Back Button */}
         <Link href="/" className="flex items-center text-gray-600 hover:text-teal-600 mb-4">
           <ArrowLeft className="h-4 w-4 mr-1" />
           <span>Back to Home</span>
         </Link>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid  dark:bg-gray-900 grid-cols-1 md:grid-cols-3 gap-8">
           {/* Service Images */}
           <div className="md:col-span-2">
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+            <div className="bg-white  dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden mb-6">
               <div className="relative aspect-video">
                 <Image
                   src={service.images[currentImageIndex] || "/placeholder.svg"}
@@ -193,7 +193,7 @@ export function ServiceDetail({ service, similarServices }: ServiceDetailProps) 
 
               {/* Thumbnails */}
               {service.images.length > 1 && (
-                <div className="flex space-x-2 p-4 bg-white">
+                <div className="flex space-x-2 p-4 bg-white  dark:bg-gray-900">
                   {service.images.map((image, index) => (
                     <button
                       key={index}
@@ -215,7 +215,7 @@ export function ServiceDetail({ service, similarServices }: ServiceDetailProps) 
               )}
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div className="bg-white  dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
               <h1 className="text-2xl font-bold mb-2">{service.title}</h1>
               <div className="flex items-center text-gray-500 mb-4">
                 <MapPin className="h-4 w-4 mr-1" />
@@ -233,7 +233,7 @@ export function ServiceDetail({ service, similarServices }: ServiceDetailProps) 
 
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-3xl font-bold text-teal-700">{service.price.toLocaleString()} ETB</h2>
-                <Badge variant="outline" className="text-gray-700 px-3 py-1 text-sm">
+                <Badge variant="outline" className="text-gray-500 px-3 py-1 text-sm">
                   Available
                 </Badge>
               </div>
@@ -243,7 +243,7 @@ export function ServiceDetail({ service, similarServices }: ServiceDetailProps) 
               {/* Description */}
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-3">Description</h3>
-                <p className="text-gray-700 whitespace-pre-line">{service.description}</p>
+                <p className="text-gray-500 whitespace-pre-line">{service.description}</p>
               </div>
 
               <Separator className="my-6" />
@@ -313,7 +313,7 @@ export function ServiceDetail({ service, similarServices }: ServiceDetailProps) 
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Provider Information */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-white  dark:bg-gray-800 rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-semibold mb-4">Service Provider</h3>
               <div className="flex items-center mb-4">
                 <Avatar className="h-12 w-12 mr-4">
@@ -326,7 +326,7 @@ export function ServiceDetail({ service, similarServices }: ServiceDetailProps) 
                 </div>
               </div>
 
-              <div className="flex items-center text-sm text-gray-600 mb-4">
+              <div className="flex items-center text-sm text-gray-500 mb-4">
                 <Clock className="h-4 w-4 mr-2" />
                 <span>Usually responds within {service.user.response_time || "2 hours"}</span>
               </div>
@@ -346,7 +346,7 @@ export function ServiceDetail({ service, similarServices }: ServiceDetailProps) 
                 ) : (
                   <Button
                     variant="outline"
-                    className="w-full text-teal-600 border-teal-600 hover:bg-teal-50"
+                    className="w-full text-teal-600 border-teal-600 hover:bg-teal-700"
                     onClick={() => setShowContactInfo(true)}
                   >
                     Show Contact Info
@@ -356,12 +356,12 @@ export function ServiceDetail({ service, similarServices }: ServiceDetailProps) 
             </div>
 
             {/* Safety Tips */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-white  dark:bg-gray-800 rounded-lg shadow-sm p-6">
               <div className="flex items-center mb-4">
                 <Shield className="h-5 w-5 text-teal-600 mr-2" />
                 <h3 className="text-lg font-semibold">Safety Tips</h3>
               </div>
-              <ul className="space-y-2 text-sm text-gray-700">
+              <ul className="space-y-2 text-sm text-gray-600">
                 <li className="flex items-start">
                   <span className="mr-2 text-teal-500">•</span>
                   <span>Verify the service provider's credentials</span>
@@ -432,7 +432,7 @@ export function ServiceDetail({ service, similarServices }: ServiceDetailProps) 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {similarServices.map((item) => (
                 <Link key={item.id} href={`/services/${item.id}`} className="block">
-                  <div className="bg-white rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
+                  <div className="bg-white  dark:bg-gray-800 rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
                     <div className="relative aspect-square">
                       <Image src={item.image || "/placeholder.svg"} alt={item.title} fill className="object-cover" />
                     </div>

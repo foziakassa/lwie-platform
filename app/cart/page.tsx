@@ -167,7 +167,7 @@ export default function CartPage() {
                           exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                           layout
                         >
-                          <div className="flex flex-col sm:flex-row items-start gap-6 p-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                          <div className="flex flex-col sm:flex-row items-start gap-6 p-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                             <div className="h-28 w-28 relative flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
                               <Image
                                 src={item.image || "/placeholder.svg"}
@@ -236,8 +236,8 @@ export default function CartPage() {
                   </h2>
 
                   <Card className="bg-gray-50 dark:bg-gray-750 border-0 mb-6">
-                    <CardContent className="p-4">
-                      <div className="space-y-3">
+                    <CardContent className="p-4  dark:bg-gray-800 ">
+                      <div className="space-y-3  dark:bg-gray-800">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
                           <span className="font-medium">{formatPrice(subtotal)}</span>

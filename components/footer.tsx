@@ -27,29 +27,6 @@ export function Footer() {
   return (
     <footer className="bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border-t dark:border-gray-700">
       <div className="container mx-auto px-4 py-12">
-        {/* Newsletter Section */}
-        <div className="max-w-4xl mx-auto mb-12 bg-teal-50 dark:bg-teal-900/20 rounded-xl p-6 md:p-8 shadow-sm">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Stay in the loop</h3>
-              <p className="text-gray-600 dark:text-gray-300 text-sm">
-                Subscribe to our newsletter for updates, tips, and special offers.
-              </p>
-            </div>
-            <div className="w-full md:w-auto">
-              <div className="flex">
-                <input
-                  type="email"
-                  placeholder="Your email address"
-                  className="flex-1 px-4 py-2 rounded-l-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white"
-                />
-                <button className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-r-lg transition-colors">
-                  Subscribe
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Main Footer Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
@@ -61,8 +38,8 @@ export function Footer() {
               transition={{ duration: 0.5 }}
               className="flex flex-col items-center lg:items-start"
             >
-              <div className="mb-4 bg-white dark:bg-gray-700 p-3 rounded-xl shadow-sm">
-                <Image src="/images/logo.jpg" alt="Logo" width={150} height={50} className="object-contain" />
+              <div className="mb-4 p-3 rounded-xl ">
+                <Image src="/images/logo4.png" alt="Logo" width={140} height={50} className="object-contain" />
               </div>
               <p className="text-gray-600 dark:text-gray-300 text-sm text-center lg:text-left mb-4">
                 LWIE connects people to swap, donate, and find items they love while reducing waste.

@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-
+import { CategoryNav } from "components/category-nav"
 import { motion } from "framer-motion"
 import { MapPin, Heart, Share2, Search, Loader2, Gift } from "lucide-react"
 import ThreeDAdvertisement from "../components/3d-advertisement-carousel"
@@ -109,6 +109,9 @@ export default function Home() {
     "Adama",
     "Gondar",
     "Jimma",
+    "Desse",
+    "Debre Birhan",
+    "Sodo"
   ]
 
   const subcities: Record<string, string[]> = {
@@ -495,7 +498,7 @@ export default function Home() {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {listings.map((item) => (
                   <Link href={`/products/${item.id}`} key={item.id} className="block">
-                    <div className="bg-white rounded-lg overflow-hidden shadow-sm border h-full hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm border h-full hover:shadow-md transition-shadow">
                       <div className="relative h-56">
                         <Image
                           src={item.image_urls && item.image_urls.length > 0 ? item.image_urls[0] : "/placeholder.svg"}
@@ -569,7 +572,7 @@ export default function Home() {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {services.map((service) => (
                   <Link href={`/services/${service.id}`} key={service.id} className="block">
-                    <div className="bg-white rounded-lg overflow-hidden shadow-sm border h-full hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm border h-full hover:shadow-md transition-shadow">
                       <div className="relative h-56">
                         <Image
                           src={
@@ -686,8 +689,13 @@ export default function Home() {
               </motion.button>
             </div>
           </motion.div>
+          
         </section>
+        
       </main>
+    
     </div>
+    
   )
+  
 }

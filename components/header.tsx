@@ -180,7 +180,7 @@ export function Header() {
     <header className="bg-teal-700 dark:bg-teal-900 sticky top-0 z-50">
       {/* Main Navigation */}
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-18">
            {/* Logo */}
           <Link href="/" className="flex items-center">
             <motion.div
@@ -188,7 +188,7 @@ export function Header() {
               transition={{ type: "spring", stiffness: 400, damping: 10 }}
               className="relative"
             >
-              <Image src="/images/lwie.png" alt="LWIE Logo" width={68} height={10} className="object-contain" priority />
+              <Image src="/images/loogo.png" alt="LWIE Logo" width={68} height={10} className="object-contain" priority />
             </motion.div>
           </Link>
 

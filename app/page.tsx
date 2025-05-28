@@ -2,13 +2,27 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { CategoryNav } from "components/category-nav"
-import { motion } from "framer-motion"
-import { MapPin, Heart, Share2, Search, Loader2, Gift } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import {
+  MapPin,
+  Heart,
+  Share2,
+  Search,
+  Loader2,
+  Gift,
+  Facebook,
+  Twitter,
+  Linkedin,
+  Copy,
+  X,
+  Mail,
+  PhoneIcon as WhatsApp,
+} from "lucide-react"
 import ThreeDAdvertisement from "../components/3d-advertisement-carousel"
 import { toast } from "components/ui/use-toast"
 import { Button } from "components/ui/button"
@@ -85,6 +99,166 @@ const fetchServices = async (params: Record<string, string>): Promise<ServicesRe
   }
 }
 
+// Enhanced Share Button Component
+function ShareButton({ itemId, title, type = "item" }: { itemId: string; title?: string; type?: "item" | "service" }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Base URL for your site
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : ""
+  const shareUrl = `${baseUrl}/${type === "item" ? "products" : "services"}/${itemId}`
+  const shareTitle = title || "Check out this item on LWIE"
+  const encodedTitle = encodeURIComponent(shareTitle)
+  const encodedUrl = encodeURIComponent(shareUrl)
+
+  // Social media share URLs
+  const shareLinks = {
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+    twitter: `https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`,
+    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+    whatsapp: `https://wa.me/?text=${encodedTitle}%20${encodedUrl}`,
+    email: `mailto:?subject=${encodedTitle}&body=${encodedUrl}`,
+  }
+
+  // Handle share button click
+  const handleShare = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsOpen(!isOpen)
+  }
+
+  // Handle social media share
+  const handleSocialShare = (e: React.MouseEvent, platform: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    // For copy to clipboard
+    if (platform === "copy") {
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        toast({
+          title: "Link copied!",
+          description: "The link has been copied to your clipboard.",
+        })
+      })
+      setIsOpen(false)
+      return
+    }
+
+    // For other platforms
+    const shareLink = shareLinks[platform as keyof typeof shareLinks]
+    if (shareLink) {
+      window.open(shareLink, "_blank", "noopener,noreferrer,width=600,height=600")
+      setIsOpen(false)
+    }
+  }
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <motion.button
+        className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:shadow-md"
+        onClick={handleShare}
+        aria-label="Share listing"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <Share2 className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+      </motion.button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 10 }}
+            transition={{ duration: 0.2 }}
+            className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 z-50 overflow-hidden"
+          >
+            <div className="p-2 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Share via</span>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="p-2">
+              <div className="grid grid-cols-4 gap-2 mb-2">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => handleSocialShare(e, "facebook")}
+                  className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                >
+                  <Facebook className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => handleSocialShare(e, "twitter")}
+                  className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-900/20"
+                >
+                  <Twitter className="h-5 w-5 text-sky-500 dark:text-sky-400" />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => handleSocialShare(e, "linkedin")}
+                  className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                >
+                  <Linkedin className="h-5 w-5 text-blue-700 dark:text-blue-500" />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => handleSocialShare(e, "whatsapp")}
+                  className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20"
+                >
+                  <WhatsApp className="h-5 w-5 text-green-500 dark:text-green-400" />
+                </motion.button>
+              </div>
+              <div className="space-y-1">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={(e) => handleSocialShare(e, "email")}
+                  className="w-full flex items-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  <Mail className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-2" />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Email</span>
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={(e) => handleSocialShare(e, "copy")}
+                  className="w-full flex items-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  <Copy className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-2" />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Copy link</span>
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
 export default function Home() {
   const [listings, setListings] = useState<Item[]>([])
   const [services, setServices] = useState<Service[]>([])
@@ -111,7 +285,7 @@ export default function Home() {
     "Jimma",
     "Desse",
     "Debre Birhan",
-    "Sodo"
+    "Sodo",
   ]
 
   const subcities: Record<string, string[]> = {
@@ -137,11 +311,11 @@ export default function Home() {
   ]
 
   const subcategories: Record<string, string[]> = {
-    Electronics: ["Mobile Phones", "Laptops & Computers", "TVs & Monitors", "Tablets" , "Smartphones"],
+    Electronics: ["Mobile Phones", "Laptops & Computers", "TVs & Monitors", "Tablets", "Smartphones"],
     Vehicles: ["Cars", "Motorcycles", "Bicycles", "Vehicle Parts"],
     Property: ["Apartments", "Houses", "Land", "Commercial"],
-    Furniture: ["Sofas & Couches", "Tables", "Chairs", "Beds & Mattresses" , "Storage & Organization"],
-    Sport_and_Outdoors : ["Clothing", "Shoes", "Accessories", "Jewelry"],
+    Furniture: ["Sofas & Couches", "Tables", "Chairs", "Beds & Mattresses", "Storage & Organization"],
+    Sport_and_Outdoors: ["Clothing", "Shoes", "Accessories", "Jewelry"],
     Toys_and_Games: ["Cleaning", "Repair", "Education", "Health"],
     Clothing: ["Full-time", "Part-time", "Freelance", "Internship"],
   }
@@ -353,18 +527,6 @@ export default function Home() {
     }
   }, [selectedCity, selectedCategory, selectedSubcategory, activeTab])
 
-  const handleShare = (e: React.MouseEvent, id: string) => {
-    e.preventDefault()
-    e.stopPropagation()
-    const url = `${window.location.origin}/products/${id}`
-    if (navigator.share) {
-      navigator.share({ title: "Check out this item", url })
-    } else {
-      navigator.clipboard.writeText(url)
-      toast({ title: "Link Copied", description: "Link copied to clipboard" })
-    }
-  }
-
   const handleFavorite = (e: React.MouseEvent, id: string) => {
     e.preventDefault()
     e.stopPropagation()
@@ -391,7 +553,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <CategoryNav />
+      <CategoryNav />
 
       <main className="container mx-auto px-4 py-8">
         <ThreeDAdvertisement />
@@ -500,7 +662,7 @@ export default function Home() {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {listings.map((item) => (
                   <Link href={`/products/${item.id}`} key={item.id} className="block">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm border h-full hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-gray-800 transition-transform transform hover:scale-105 rounded-lg overflow-hidden shadow-sm border h-full hover:shadow-md transition-shadow">
                       <div className="relative h-56">
                         <Image
                           src={item.image_urls && item.image_urls.length > 0 ? item.image_urls[0] : "/placeholder.svg"}
@@ -509,20 +671,16 @@ export default function Home() {
                           className="object-cover"
                         />
                         <div className="absolute top-2 right-2 flex gap-1">
-                          <button
-                            className="bg-white p-2 rounded-full shadow-sm hover:bg-gray-50"
+                          <motion.button
+                            className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:shadow-md"
                             onClick={(e) => handleFavorite(e, item.id)}
                             aria-label="Add to favorites"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                           >
-                            <Heart className="h-4 w-4" />
-                          </button>
-                          <button
-                            className="bg-white p-2 rounded-full shadow-sm hover:bg-gray-50"
-                            onClick={(e) => handleShare(e, item.id)}
-                            aria-label="Share listing"
-                          >
-                            <Share2 className="h-4 w-4" />
-                          </button>
+                            <Heart className="h-4 w-4 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-600 transition-colors duration-200" />
+                          </motion.button>
+                          <ShareButton itemId={item.id} title={item.title} type="item" />
                         </div>
                       </div>
                       <div className="p-4">
@@ -538,12 +696,12 @@ export default function Home() {
                         {(item.category || item.subcategory) && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {item.category && (
-                              <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                              <span className="bg-gray-100 dark:bg-gray-900 text-white-900 text-xs px-2 py-1 rounded">
                                 {item.category}
                               </span>
                             )}
                             {item.subcategory && (
-                              <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                              <span className="bg-gray-100 dark:bg-gray-900 text-white-900 text-xs px-2 py-1 rounded">
                                 {item.subcategory}
                               </span>
                             )}
@@ -561,7 +719,7 @@ export default function Home() {
         {/* Services Listing - Show when activeTab is "all" or "services" */}
         {(activeTab === "all" || activeTab === "services") && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-teal-800 pb-3" >Services Listings</h2>
+            <h2 className="text-2xl font-bold text-teal-800 pb-3">Services Listings</h2>
             {loading ? (
               <div className="flex justify-center items-center py-12">
                 <Loader2 className="animate-spin h-12 w-12 text-teal-500" />
@@ -574,7 +732,7 @@ export default function Home() {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {services.map((service) => (
                   <Link href={`/services/${service.id}`} key={service.id} className="block">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm border h-full hover:shadow-md transition-shadow">
+                    <div className="bg-white dark:bg-gray-800 transition-transform transform hover:scale-105 rounded-lg overflow-hidden shadow-sm border h-full hover:shadow-md transition-shadow">
                       <div className="relative h-56">
                         <Image
                           src={
@@ -587,20 +745,16 @@ export default function Home() {
                           className="object-cover"
                         />
                         <div className="absolute top-2 right-2 flex gap-1">
-                          <button
-                            className="bg-white p-2 rounded-full shadow-sm hover:bg-gray-50"
+                          <motion.button
+                            className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:shadow-md"
                             onClick={(e) => handleFavorite(e, service.id)}
                             aria-label="Add to favorites"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                           >
-                            <Heart className="h-4 w-4" />
-                          </button>
-                          <button
-                            className="bg-white p-2 rounded-full shadow-sm hover:bg-gray-50"
-                            onClick={(e) => handleShare(e, service.id)}
-                            aria-label="Share listing"
-                          >
-                            <Share2 className="h-4 w-4" />
-                          </button>
+                            <Heart className="h-4 w-4 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-600 transition-colors duration-200" />
+                          </motion.button>
+                          <ShareButton itemId={service.id} title={service.title} type="service" />
                         </div>
                       </div>
                       <div className="p-4">
@@ -616,12 +770,12 @@ export default function Home() {
                         {(service.category || service.subcategory) && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {service.category && (
-                              <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                              <span className="bg-gray-100 dark:bg-gray-900 text-white-900 text-xs px-2 py-1 rounded">
                                 {service.category}
                               </span>
                             )}
                             {service.subcategory && (
-                              <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                              <span className="bg-gray-100 dark:bg-gray-900 text-white-800 text-xs px-2 py-1 rounded">
                                 {service.subcategory}
                               </span>
                             )}
@@ -691,13 +845,8 @@ export default function Home() {
               </motion.button>
             </div>
           </motion.div>
-          
         </section>
-        
       </main>
-    
     </div>
-    
   )
-  
 }

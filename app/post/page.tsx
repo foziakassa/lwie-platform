@@ -10,12 +10,12 @@ export default function PostSelectionPage() {
   const [selectedType, setSelectedType] = useState<"item" | "service" | null>(null)
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
-            <h1 className="text-3xl font-bold text-gray-900 mb-3">What would you like to post?</h1>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <h1 className="text-3xl font-bold text-gray-900 mb-3 dark:text-white">What would you like to post?</h1>
+            <p className="text-gray-600 dark:bg-white-800 max-w-2xl mx-auto">
               Choose the type of listing you want to create. You can post items you want to swap or services you can
               offer to others.
             </p>
@@ -24,7 +24,7 @@ export default function PostSelectionPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
             {/* Item Card */}
             <div
-              className={`bg-white rounded-xl shadow-sm border-2 transition-all duration-200 overflow-hidden ${
+              className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 transition-all duration-200 overflow-hidden ${
                 selectedType === "item"
                   ? "border-teal-500 ring-2 ring-teal-200"
                   : "border-transparent hover:border-gray-200"
@@ -39,7 +39,7 @@ export default function PostSelectionPage() {
                   {selectedType === "item" && <CheckCircle2 className="h-6 w-6 text-teal-500" />}
                 </div>
                 <h2 className="text-xl font-bold mb-2">Post an Item</h2>
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-600 dark:text-white-800 mb-4">
                   List physical items you own and want to swap with others. Perfect for electronics, clothing,
                   furniture, and more.
                 </p>
@@ -76,7 +76,7 @@ export default function PostSelectionPage() {
 
             {/* Service Card */}
             <div
-              className={`bg-white rounded-xl shadow-sm border-2 transition-all duration-200 overflow-hidden ${
+              className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 transition-all duration-200 overflow-hidden ${
                 selectedType === "service"
                   ? "border-teal-500 ring-2 ring-teal-200"
                   : "border-transparent hover:border-gray-200"

@@ -7,6 +7,11 @@ interface UserItem {
   title: string;
 }
 
+interface UserService {
+  id: string;
+  title: string;
+}
+
 export interface SwapRequestFormProps {
   itemId: string; // ID of the item being requested
   itemTitle: string; // Title of the item being requested
@@ -14,12 +19,14 @@ export interface SwapRequestFormProps {
 }
 
 export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTitle, onCancel }) => {
-  const [offeredItemId, setOfferedItemId] = useState("");
-  const [userItems, setUserItems] = useState<UserItem[]>([]); // Define type for userItems
+  const [offeredId, setOfferedId] = useState("");
+  const [userItems, setUserItems] = useState<UserItem[]>([]);
+  const [userServices, setUserServices] = useState<UserService[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isOfferingItem, setIsOfferingItem] = useState(true); // State to track if offering an item
 
   useEffect(() => {
-    const fetchUserItems = async () => {
+    const fetchUserItemsAndServices = async () => {
       const authToken = Cookies.get("authToken");
 
       if (!authToken) {
@@ -30,18 +37,30 @@ export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTi
 
       const { id: userId } = JSON.parse(authToken); // Extract user ID from the authToken
 
-      const response = await fetch(`https://liwedoc.vercel.app/postitem/${userId}`); // Endpoint to get user's items
-      const data = await response.json();
+      // Fetch user's items
+      const itemsResponse = await fetch(`https://liwedoc.vercel.app/postitem/${userId}`);
+      const itemsData = await itemsResponse.json();
 
-      if (data.success) {
-        setUserItems(data.items);
+      if (itemsData.success) {
+        setUserItems(itemsData.items);
       } else {
         alert("Failed to load your items.");
       }
+
+      // Fetch user's services
+      const servicesResponse = await fetch(`https://liwedoc.vercel.app/postservice/${userId}`);
+      const servicesData = await servicesResponse.json();
+
+      if (servicesData.success) {
+        setUserServices(servicesData.services);
+      } else {
+        alert("Failed to load your services.");
+      }
+
       setLoading(false);
     };
 
-    fetchUserItems();
+    fetchUserItemsAndServices();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,7 +80,7 @@ export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTi
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ userId, itemId, offeredItemId }),
+      body: JSON.stringify({ userId, itemId, offeredItemId: offeredId }),
     });
 
     const data = await response.json();
@@ -78,26 +97,67 @@ export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTi
     <div>
       <h2 className="text-lg font-bold mb-4">Swap Request for: {itemTitle}</h2>
       {loading ? (
-        <p>Loading your items...</p>
+        <p>Loading your items and services...</p>
       ) : (
         <form onSubmit={handleSubmit}>
-          <label htmlFor="offeredItemId" className="block mb-2">
-            Select Item to Offer:
-            <select
-              id="offeredItemId"
-              value={offeredItemId}
-              onChange={(e) => setOfferedItemId(e.target.value)}
-              className="border border-gray-300 rounded p-2 w-full"
-              required
-            >
-              <option value="">Select an item</option>
-              {userItems.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.title}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="mb-4">
+            <label>
+              <input
+                type="radio"
+                value="item"
+                checked={isOfferingItem}
+                onChange={() => setIsOfferingItem(true)}
+              />
+              Offer an Item
+            </label>
+            <label className="ml-4">
+              <input
+                type="radio"
+                value="service"
+                checked={!isOfferingItem}
+                onChange={() => setIsOfferingItem(false)}
+              />
+              Offer a Service
+            </label>
+          </div>
+
+          {isOfferingItem ? (
+            <label htmlFor="offeredItemId" className="block mb-2">
+              Select Item to Offer:
+              <select
+                id="offeredItemId"
+                value={offeredId}
+                onChange={(e) => setOfferedId(e.target.value)}
+                className="border border-gray-300 rounded p-2 w-full"
+                required
+              >
+                <option value="">Select an item</option>
+                {userItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <label htmlFor="offeredServiceId" className="block mb-2">
+              Select Service to Offer:
+              <select
+                id="offeredServiceId"
+                value={offeredId}
+                onChange={(e) => setOfferedId(e.target.value)}
+                className="border border-gray-300 rounded p-2 w-full"
+                required
+              >
+                <option value="">Select a service</option>
+                {userServices.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <div className="flex justify-end space-x-2 mt-4">
             <button
               type="button"

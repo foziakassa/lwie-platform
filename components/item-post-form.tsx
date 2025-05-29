@@ -14,7 +14,9 @@ import { ImageUploader } from "@/components/image-uploader"
 import { itemCategories, getSubcategories, getSpecifications, getSpecificationOptions } from "@/lib/category-data"
 import { Loader2, ArrowLeft, CheckCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { createPost } from "@/lib/actions"
 import Cookies from "js-cookie"
+import { toast } from "sonner"
 
 // API call to create an item
 const createItem = async (itemData: {
@@ -42,8 +44,7 @@ const createItem = async (itemData: {
   })
 
   if (!response.ok) {
-    // throw new Error("Failed to create item");
-    console.log("ggg")
+    console.log("Error creating item")
   }
 
   return await response.json()
@@ -141,9 +142,6 @@ export function ItemPostForm() {
   const [selectedImages, setSelectedImages] = useState<File[]>([])
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  // const tokenString = Cookies.get("authToken")
-
-  // const userId = "replace-with-actual-user-id" // Replace with actual user ID logic
   type FormData = z.infer<typeof formSchema>
 
   const tokenString = Cookies.get("authToken")
@@ -160,13 +158,12 @@ export function ItemPostForm() {
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true)
-    setError(null)
 
     try {
       // Prepare form data for multiple image uploads
       const formData = new FormData()
       selectedImages.forEach((image) => {
-        formData.append("image_urls", image) // Append each image to FormData
+        formData.append("image_urls", image)
       })
 
       // Upload images to your API route and get URLs
@@ -189,14 +186,26 @@ export function ItemPostForm() {
           email: data.email,
           preferred_contact_method: data.preferredContactMethod,
         },
-        image_urls: result.urls || [], // Use the returned URLs
+        image_urls: result.urls || [],
       }
 
       const newItem = await createItem(itemData)
-      setIsSuccess(true)
-      setCreatedItemId(newItem.itemId)
+
+      // Decrement the user's post count using the createPost action
+      const postResult = await createPost({ title: data.title, content: data.description || "" })
+
+      if (postResult.success) {
+        setIsSuccess(true)
+        setCreatedItemId(newItem.itemId)
+        toast.success("Item posted successfully!")
+      } else {
+        toast.error(postResult.message || "Failed to create post. Please try again.")
+        setIsSubmitting(false)
+        return
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create item. Please try again.")
+      console.error(err)
+      toast.error("Failed to post item. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
@@ -207,10 +216,7 @@ export function ItemPostForm() {
   }
 
   const viewItem = () => {
-    if (createdItemId) {
-      // router.push(`/products/${createdItemId}`)
-      router.push(`/`)
-    }
+    router.push(`/`)
   }
 
   // Updated conditions as specified
@@ -225,11 +231,9 @@ export function ItemPostForm() {
               <CheckCircle className="h-10 w-10 text-teal-600" />
             </div>
             <h1 className="text-2xl font-bold mb-4">Item Posted Successfully!</h1>
-            <p className="text-gray-600 mb-8">
-              Your item has been published and is now visible to other users. You will be redirected to view your item.
-            </p>
+            <p className="text-gray-600 mb-8">Your item has been published and is now visible to other users.</p>
             <Button onClick={viewItem} className="bg-teal-600 hover:bg-teal-700">
-              View Your Item
+              Continue
             </Button>
           </CardContent>
         </Card>

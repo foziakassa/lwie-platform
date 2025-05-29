@@ -14,7 +14,9 @@ import { ImageUploader } from "@/components/image-uploader"
 import { serviceCategories, getSubcategories } from "@/lib/category-data"
 import { Loader2, ArrowLeft, CheckCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { createPost } from "@/lib/actions"
 import Cookies from "js-cookie"
+import { toast } from "sonner"
 
 // API call to create a service
 const createService = async (serviceData: {
@@ -140,10 +142,22 @@ export function ServicePostForm() {
       }
 
       const newService = await createService(serviceData)
-      setCreatedServiceId(newService.serviceId)
-      setIsSuccess(true)
+
+      // Decrement the user's post count using the createPost action
+      const postResult = await createPost({ title: data.title, content: data.description || "" })
+
+      if (postResult.success) {
+        setCreatedServiceId(newService.serviceId)
+        setIsSuccess(true)
+        toast.success("Service posted successfully!")
+      } else {
+        toast.error(postResult.message || "Failed to create post. Please try again.")
+        setIsSubmitting(false)
+        return
+      }
     } catch (err) {
       console.error(err)
+      toast.error("Failed to post service. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
@@ -154,9 +168,7 @@ export function ServicePostForm() {
   }
 
   const viewService = () => {
-    if (createdServiceId) {
-      router.push(`/`)
-    }
+    router.push(`/`)
   }
 
   if (isSuccess) {
@@ -170,7 +182,7 @@ export function ServicePostForm() {
             <h1 className="text-2xl font-bold mb-4">Service Posted Successfully!</h1>
             <p className="text-gray-600 mb-8">Your service has been published and is now visible to other users.</p>
             <Button onClick={viewService} className="bg-teal-600 hover:bg-teal-700">
-              View Your Service
+              Continue
             </Button>
           </CardContent>
         </Card>

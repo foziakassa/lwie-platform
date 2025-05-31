@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie"; // Import js-cookie
 
-// Define an interface for user items
+// Define interfaces for items and services
 interface UserItem {
   id: string;
   title: string;
@@ -23,7 +23,9 @@ export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTi
   const [userItems, setUserItems] = useState<UserItem[]>([]);
   const [userServices, setUserServices] = useState<UserService[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isOfferingItem, setIsOfferingItem] = useState(true); // State to track if offering an item
+  const [isOfferingItem, setIsOfferingItem] = useState(true); // Track if offering item or service
+  const [isMoneyOffer, setIsMoneyOffer] = useState(false); // Track if offering money
+  const [moneyAmount, setMoneyAmount] = useState("");
 
   useEffect(() => {
     const fetchUserItemsAndServices = async () => {
@@ -35,7 +37,7 @@ export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTi
         return;
       }
 
-      const { id: userId } = JSON.parse(authToken); // Extract user ID from the authToken
+      const { id: userId } = JSON.parse(authToken);
 
       // Fetch user's items
       const itemsResponse = await fetch(`https://liwedoc.vercel.app/postitem/${userId}`);
@@ -67,35 +69,55 @@ export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTi
     e.preventDefault();
 
     const authToken = Cookies.get("authToken");
-
     if (!authToken) {
       alert("User not logged in.");
       return;
     }
 
-    const { id: userId } = JSON.parse(authToken); // Extract user ID again for the request
+    const { id: userId } = JSON.parse(authToken);
 
-    const response = await fetch('https://liwedoc.vercel.app/api/swap-request', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        userId,
-        requestedId: itemId,
-        requestedType: "item", // Assuming the requested type is always an item
-        offeredId,
-        offeredType: isOfferingItem ? "item" : "service" // Determine the offered type
-      }),
-    });
-
-    const data = await response.json();
-
-    if (data.success) {
-      alert("Swap request sent successfully!");
-      onCancel(); // Close the dialog
+    // Validation
+    if (isMoneyOffer) {
+      if (!moneyAmount || isNaN(Number(moneyAmount)) || Number(moneyAmount) <= 0) {
+        alert("Please enter a valid money amount.");
+        return;
+      }
     } else {
-      alert("Failed to send swap request: " + data.message);
+      if (!offeredId) {
+        alert("Please select an item or service to offer.");
+        return;
+      }
+    }
+
+    // Prepare request body
+    const body = {
+      userId,
+      requestedId: itemId,
+      requestedType: "item", // Assuming requested is always an item here
+      isMoneyOffer,
+      moneyAmount: isMoneyOffer ? Number(moneyAmount) : null,
+      offeredId: isMoneyOffer ? null : offeredId,
+      offeredType: isMoneyOffer ? null : (isOfferingItem ? "item" : "service"),
+    };
+
+    try {
+      const response = await fetch('https://liwedoc.vercel.app/api/swap-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert("Swap request sent successfully!");
+        onCancel();
+      } else {
+        alert("Failed to send swap request: " + data.message);
+      }
+    } catch (error) {
+      alert("Error sending swap request.");
+      console.error(error);
     }
   };
 
@@ -106,64 +128,107 @@ export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTi
         <p>Loading your items and services...</p>
       ) : (
         <form onSubmit={handleSubmit}>
+          {/* Toggle between offering item/service or money */}
           <div className="mb-4">
             <label>
               <input
                 type="radio"
-                value="item"
-                checked={isOfferingItem}
-                onChange={() => setIsOfferingItem(true)}
+                value="offerItemService"
+                checked={!isMoneyOffer}
+                onChange={() => setIsMoneyOffer(false)}
               />
-              Offer an Item
+              Offer an Item or Service
             </label>
             <label className="ml-4">
               <input
                 type="radio"
-                value="service"
-                checked={!isOfferingItem}
-                onChange={() => setIsOfferingItem(false)}
+                value="offerMoney"
+                checked={isMoneyOffer}
+                onChange={() => setIsMoneyOffer(true)}
               />
-              Offer a Service
+              Offer Money
             </label>
           </div>
 
-          {isOfferingItem ? (
-            <label htmlFor="offeredItemId" className="block mb-2">
-              Select Item to Offer:
-              <select
-                id="offeredItemId"
-                value={offeredId}
-                onChange={(e) => setOfferedId(e.target.value)}
-                className="border border-gray-300 rounded p-2 w-full"
-                required
-              >
-                <option value="">Select an item</option>
-                {userItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.title}
-                  </option>
-                ))}
-              </select>
-            </label>
+          {!isMoneyOffer ? (
+            <>
+              {/* Choose between item or service */}
+              <div className="mb-4">
+                <label>
+                  <input
+                    type="radio"
+                    value="item"
+                    checked={isOfferingItem}
+                    onChange={() => setIsOfferingItem(true)}
+                  />
+                  Offer an Item
+                </label>
+                <label className="ml-4">
+                  <input
+                    type="radio"
+                    value="service"
+                    checked={!isOfferingItem}
+                    onChange={() => setIsOfferingItem(false)}
+                  />
+                  Offer a Service
+                </label>
+              </div>
+
+              {/* Select offered item or service */}
+              {isOfferingItem ? (
+                <label htmlFor="offeredItemId" className="block mb-2">
+                  Select Item to Offer:
+                  <select
+                    id="offeredItemId"
+                    value={offeredId}
+                    onChange={(e) => setOfferedId(e.target.value)}
+                    className="border border-gray-300 rounded p-2 w-full"
+                    required
+                  >
+                    <option value="">Select an item</option>
+                    {userItems.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <label htmlFor="offeredServiceId" className="block mb-2">
+                  Select Service to Offer:
+                  <select
+                    id="offeredServiceId"
+                    value={offeredId}
+                    onChange={(e) => setOfferedId(e.target.value)}
+                    className="border border-gray-300 rounded p-2 w-full"
+                    required
+                  >
+                    <option value="">Select a service</option>
+                    {userServices.map((service) => (
+                      <option key={service.id} value={service.id}>
+                        {service.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </>
           ) : (
-            <label htmlFor="offeredServiceId" className="block mb-2">
-              Select Service to Offer:
-              <select
-                id="offeredServiceId"
-                value={offeredId}
-                onChange={(e) => setOfferedId(e.target.value)}
+            <label htmlFor="moneyAmount" className="block mb-2">
+              Enter Offer Amount ($):
+              <input
+                type="number"
+                id="moneyAmount"
+                value={moneyAmount}
+                onChange={(e) => setMoneyAmount(e.target.value)}
                 className="border border-gray-300 rounded p-2 w-full"
+                min="0.01"
+                step="0.01"
                 required
-              >
-                <option value="">Select a service</option>
-                {userServices.map((service) => (
-                  <option key={service.id} value={service.id}>
-                    {service.title}
-                  </option>
-                ))}
-              </select>
+              />
             </label>
           )}
+
           <div className="flex justify-end space-x-2 mt-4">
             <button
               type="button"

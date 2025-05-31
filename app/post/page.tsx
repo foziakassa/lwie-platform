@@ -5,7 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Package, Briefcase, CheckCircle2 } from "lucide-react"
-
+import PlanSelectionPage  from "@/components/plan-selection-page"
 export default function PostSelectionPage() {
   const [selectedType, setSelectedType] = useState<"item" | "service" | null>(null)
 
@@ -13,6 +13,9 @@ export default function PostSelectionPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
+          <PlanSelectionPage onUpgradeClick={function (): void {
+            throw new Error("Function not implemented.")
+          } } />
           <div className="text-center mb-10">
             <h1 className="text-3xl font-bold text-gray-900 mb-3 dark:text-white">What would you like to post?</h1>
             <p className="text-gray-600 dark:bg-white-800 max-w-2xl mx-auto">

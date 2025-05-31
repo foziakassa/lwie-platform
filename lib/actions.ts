@@ -27,12 +27,13 @@ interface PostsStatusResult {
 }
 
 // This function is a wrapper around the API service to check posts status
-export async function checkPostsStatus() {
+export async function checkPostsStatus(): Promise<PostsStatusResult> {
   const cookieStore = await cookies()
   const userEmail = cookieStore.get("customerEmail")?.value
 
   try {
-    return await getUserPostsStatus(userEmail)
+    const status = await getUserPostsStatus(userEmail)
+    return status
   } catch (error) {
     console.error("Error checking posts status:", error)
 
@@ -63,24 +64,84 @@ export async function checkPostsStatus() {
 export async function createPost(data: {
   title: string
   content: string
-}) {
+}): Promise<{ success: boolean; postId?: string; message?: string }> {
   const cookieStore = await cookies()
   const userEmail = cookieStore.get("customerEmail")?.value
 
-  if (!userEmail) {
-    throw new Error("User email not found. Please log in.")
-  }
-
   try {
-    return await apiCreatePost(userEmail, data)
+    // First check if the user has any posts remaining
+    const status = await checkPostsStatus()
+    const totalRemaining = status.remainingFreePosts + status.remainingPaidPosts
+
+    if (totalRemaining <= 0) {
+      return {
+        success: false,
+        message: "No posts remaining. Please upgrade your plan.",
+      }
+    }
+
+    if (!userEmail) {
+      // For users without email, use cookie-based tracking
+      const usedFreePostsStr = cookieStore.get("used_free_posts")?.value || "0"
+      const usedFreePosts = Number.parseInt(usedFreePostsStr, 10)
+      const totalFreePosts = 3
+
+      if (usedFreePosts >= totalFreePosts) {
+        return {
+          success: false,
+          message: "No posts remaining. Please upgrade your plan.",
+        }
+      }
+
+      // Increment used free posts
+      cookieStore.set("used_free_posts", (usedFreePosts + 1).toString(), {
+        maxAge: 60 * 60 * 24 * 365, // 1 year
+        path: "/",
+      })
+
+      return {
+        success: true,
+        postId: `local_${Date.now()}`,
+        message: "Post created successfully",
+      }
+    }
+
+    try {
+      const result = await apiCreatePost(userEmail, data)
+      return {
+        success: true,
+        postId: result.postId || result.id,
+        message: "Post created successfully",
+      }
+    } catch (error) {
+      console.error("Error creating post:", error)
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to create post",
+      }
+    }
   } catch (error) {
-    console.error("Error creating post:", error)
-    throw error
+    console.error("Error in createPost action:", error)
+    return {
+      success: false,
+      message: "An unexpected error occurred. Please try again.",
+    }
   }
 }
 
 // This function is a wrapper around the API service to add purchased posts
-export async function addPurchasedPosts(numberOfPosts: number) {
+export async function addPurchasedPosts(numberOfPosts: number): Promise<PostsStatusResult> {
+  const cookieStore = await cookies()
+
+  // Update cookies for fallback
+  const currentPaidPostsStr = cookieStore.get("total_paid_posts")?.value || "0"
+  const currentPaidPosts = Number.parseInt(currentPaidPostsStr, 10)
+
+  cookieStore.set("total_paid_posts", (currentPaidPosts + numberOfPosts).toString(), {
+    maxAge: 60 * 60 * 24 * 365, // 1 year
+    path: "/",
+  })
+
   // This is now handled by the API when verifying payment
   // This function remains for backward compatibility
   return await checkPostsStatus()
@@ -94,7 +155,7 @@ export async function processPayment(params: {
   customerName?: string
   customerEmail?: string
   numberOfPosts?: number
-}) {
+}): Promise<PaymentResult> {
   const cookieStore = await cookies()
 
   // Store customer info in cookies for easier access later
@@ -150,13 +211,35 @@ export async function processPayment(params: {
 
 export async function checkRemainingPosts(): Promise<{ remainingPosts: number; totalUsed: number }> {
   const status = await checkPostsStatus()
+  const totalRemaining = status.remainingFreePosts + status.remainingPaidPosts
+  const totalUsed = status.totalFreePosts - status.remainingFreePosts + status.usedPaidPosts
+
   return {
-    remainingPosts: status.remainingFreePosts,
-    totalUsed: status.totalFreePosts - status.remainingFreePosts,
+    remainingPosts: totalRemaining,
+    totalUsed: totalUsed,
   }
 }
 
 export async function checkUserFreeStatus(): Promise<{ hasUsedFreeTier: boolean }> {
   const status = await checkPostsStatus()
   return { hasUsedFreeTier: status.remainingFreePosts < status.totalFreePosts }
+}
+
+// New function to handle post decrementing after successful posting
+export async function decrementPostCount(): Promise<PostsStatusResult> {
+  const cookieStore = await cookies()
+  const userEmail = cookieStore.get("customerEmail")?.value
+
+  if (!userEmail) {
+    // Handle cookie-based decrementing for users without accounts
+    const usedFreePostsStr = cookieStore.get("used_free_posts")?.value || "0"
+    const usedFreePosts = Number.parseInt(usedFreePostsStr, 10)
+
+    cookieStore.set("used_free_posts", (usedFreePosts + 1).toString(), {
+      maxAge: 60 * 60 * 24 * 365, // 1 year
+      path: "/",
+    })
+  }
+
+  return await checkPostsStatus()
 }

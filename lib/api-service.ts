@@ -107,23 +107,49 @@ export async function getUserPostsStatus(userEmail?: string): Promise<PostsStatu
     })
 
     if (!response.ok) {
-      throw new Error("Failed to fetch posts status")
+      // If API fails, return default values for new users
+      return {
+        remainingFreePosts: 3,
+        remainingPaidPosts: 0,
+        totalPaidPosts: 0,
+        usedPaidPosts: 0,
+        totalFreePosts: 3,
+      }
     }
 
     const data = await response.json()
-    return data.success
-      ? data
-      : {
-          remainingFreePosts: 0,
-          remainingPaidPosts: 0,
-          totalPaidPosts: 0,
-          usedPaidPosts: 0,
-          totalFreePosts: 3,
-        }
+
+    // Handle different response structures
+    if (data.success !== undefined) {
+      return data.success
+        ? data
+        : {
+            remainingFreePosts: 3,
+            remainingPaidPosts: 0,
+            totalPaidPosts: 0,
+            usedPaidPosts: 0,
+            totalFreePosts: 3,
+          }
+    }
+
+    // If response has the data directly
+    if (data.remainingFreePosts !== undefined) {
+      return data
+    }
+
+    // Fallback for new users
+    return {
+      remainingFreePosts: 3,
+      remainingPaidPosts: 0,
+      totalPaidPosts: 0,
+      usedPaidPosts: 0,
+      totalFreePosts: 3,
+    }
   } catch (error) {
     console.error("Error fetching posts status:", error)
+    // Return default values for new users when API fails
     return {
-      remainingFreePosts: 0,
+      remainingFreePosts: 3,
       remainingPaidPosts: 0,
       totalPaidPosts: 0,
       usedPaidPosts: 0,

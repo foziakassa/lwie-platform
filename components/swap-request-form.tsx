@@ -80,7 +80,13 @@ export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTi
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ userId, itemId, offeredItemId: offeredId }),
+      body: JSON.stringify({
+        userId,
+        requestedId: itemId,
+        requestedType: "item", // Assuming the requested type is always an item
+        offeredId,
+        offeredType: isOfferingItem ? "item" : "service" // Determine the offered type
+      }),
     });
 
     const data = await response.json();

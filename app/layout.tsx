@@ -32,11 +32,11 @@ export default function RootLayout({
       
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          {(pathname !== '/login' && pathname !== '/register' && pathname !=='/registrationbio') && <Header/>}
+          {(pathname !== '/login' && pathname !== '/register' && pathname !=='/activationmessage') && <Header/>}
 
 
           <main>{children}</main>
-          {(pathname !== '/login' && pathname !== '/register' && pathname !=='/registrationbio') && <Footer />}
+          {(pathname !== '/login' && pathname !== '/register' && pathname !=='/activationmessage') && <Footer />}
 
 
         </ThemeProvider>

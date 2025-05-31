@@ -78,7 +78,7 @@ export default function RegisterPage() {
       }
 
       // Proceed if registration is successful
-      router.push("/registrationbio"); // Navigate to biometric registration
+      router.push("/activationmessage"); // Navigate to biometric registration
 
     } catch (error) {
       // setError("Registration failed. Please try again.");

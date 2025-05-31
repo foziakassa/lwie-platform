@@ -7,7 +7,19 @@ import Image from "next/image"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { AnimatePresence, motion } from "framer-motion"
-import { Search, HelpCircle, ShoppingCart, Sun, Moon, User, LogOut, Settings, Package, RefreshCw, ChevronRight } from 'lucide-react'
+import {
+  Search,
+  HelpCircle,
+  ShoppingCart,
+  Sun,
+  Moon,
+  User,
+  LogOut,
+  Settings,
+  Package,
+  RefreshCw,
+  ChevronRight,
+} from "lucide-react"
 import { NotificationDropdown } from "./notification-dropdown"
 import Cookies from "js-cookie"
 import { useToast } from "@/hooks/use-toast"
@@ -49,6 +61,45 @@ export function Header() {
     { id: "2", title: "Wireless Headphones", image: "/placeholder.svg", price: "2,200 ETB" },
   ]
 
+  // Function to refresh post count - can be called from other components
+  const refreshPostCount = async () => {
+    if (isLoggedIn) {
+      try {
+        const response = await fetch("/api/user/posts-status", {
+          headers: {
+            "x-user-email": Cookies.get("customerEmail") || "",
+          },
+        })
+
+        if (response.ok) {
+          const postsStatus = await response.json()
+          const totalRemaining = (postsStatus.remainingFreePosts || 0) + (postsStatus.remainingPaidPosts || 0)
+          setPostCount(totalRemaining)
+        } else {
+          // Fallback to cookie-based calculation
+          const usedFreePostsStr = Cookies.get("used_free_posts") || "0"
+          const usedFreePosts = Number.parseInt(usedFreePostsStr, 10)
+          const totalFreePosts = 3
+          const remainingFreePosts = Math.max(0, totalFreePosts - usedFreePosts)
+
+          const totalPaidPostsStr = Cookies.get("total_paid_posts") || "0"
+          const usedPaidPostsStr = Cookies.get("used_paid_posts") || "0"
+          const totalPaidPosts = Number.parseInt(totalPaidPostsStr, 10)
+          const usedPaidPosts = Number.parseInt(usedPaidPostsStr, 10)
+          const remainingPaidPosts = Math.max(0, totalPaidPosts - usedPaidPosts)
+
+          const totalRemaining = remainingFreePosts + remainingPaidPosts
+          setPostCount(totalRemaining)
+        }
+      } catch (error) {
+        console.error("Error fetching post count:", error)
+        setPostCount(3)
+      }
+    } else {
+      setPostCount(null)
+    }
+  }
+
   // Safely get and parse user info from cookies
   useEffect(() => {
     const tokenString = Cookies.get("authToken")
@@ -70,46 +121,22 @@ export function Header() {
 
   // Fetch post count when component mounts or user logs in
   useEffect(() => {
-    const fetchPostCount = async () => {
-      if (isLoggedIn) {
-        try {
-          const response = await fetch("/api/user/posts-status", {
-            headers: {
-              "x-user-email": Cookies.get("customerEmail") || "",
-            },
-          })
+    refreshPostCount()
+  }, [isLoggedIn])
 
-          if (response.ok) {
-            const postsStatus = await response.json()
-            const totalRemaining = (postsStatus.remainingFreePosts || 0) + (postsStatus.remainingPaidPosts || 0)
-            setPostCount(totalRemaining)
-          } else {
-            // Fallback to cookie-based calculation
-            const usedFreePostsStr = Cookies.get("used_free_posts") || "0"
-            const usedFreePosts = Number.parseInt(usedFreePostsStr, 10)
-            const totalFreePosts = 3
-            const remainingFreePosts = Math.max(0, totalFreePosts - usedFreePosts)
-
-            const totalPaidPostsStr = Cookies.get("total_paid_posts") || "0"
-            const usedPaidPostsStr = Cookies.get("used_paid_posts") || "0"
-            const totalPaidPosts = Number.parseInt(totalPaidPostsStr, 10)
-            const usedPaidPosts = Number.parseInt(usedPaidPostsStr, 10)
-            const remainingPaidPosts = Math.max(0, totalPaidPosts - usedPaidPosts)
-
-            const totalRemaining = remainingFreePosts + remainingPaidPosts
-            setPostCount(totalRemaining)
-          }
-        } catch (error) {
-          console.error("Error fetching post count:", error)
-          // Default to 3 for new users
-          setPostCount(3)
-        }
-      } else {
-        setPostCount(null)
-      }
+  // Listen for post submission events to update count
+  useEffect(() => {
+    const handlePostSubmitted = () => {
+      // Refresh the post count when a post is successfully submitted
+      refreshPostCount()
     }
 
-    fetchPostCount()
+    // Listen for custom event from post submission
+    window.addEventListener("postSubmitted", handlePostSubmitted)
+
+    return () => {
+      window.removeEventListener("postSubmitted", handlePostSubmitted)
+    }
   }, [isLoggedIn])
 
   // Handle click outside to close dropdowns
@@ -122,7 +149,7 @@ export function Header() {
         setShowProfileDropdown(false)
       }
       if (cartRef.current && !cartRef.current.contains(event.target as Node)) {
-        setShowCartPreview(false) // Close cart preview on outside click
+        setShowCartPreview(false)
       }
     }
 
@@ -135,7 +162,6 @@ export function Header() {
   // Live search implementation
   useEffect(() => {
     if (searchQuery.length > 2) {
-      // In a real app, you would fetch from an API
       const filteredResults = mockSearchResults.filter((item) =>
         item.title.toLowerCase().includes(searchQuery.toLowerCase()),
       )
@@ -189,7 +215,6 @@ export function Header() {
   const navigateToPost = async () => {
     if (isLoggedIn) {
       try {
-        // Check if user has remaining posts using the API route
         const response = await fetch("/api/user/posts-status", {
           headers: {
             "x-user-email": Cookies.get("customerEmail") || "",
@@ -199,15 +224,12 @@ export function Header() {
         if (response.ok) {
           const postsStatus = await response.json()
           const totalRemaining = (postsStatus.remainingFreePosts || 0) + (postsStatus.remainingPaidPosts || 0)
-          
-          // Update the post count state
+
           setPostCount(totalRemaining)
 
           if (totalRemaining > 0) {
-            // User has posts remaining, proceed to post selection page
             router.push("/post")
           } else {
-            // No posts remaining, show upgrade toast and navigate to plan selection
             toast({
               title: "No posts remaining",
               description: "Please upgrade your plan to create more posts",
@@ -216,7 +238,6 @@ export function Header() {
             router.push("/plans")
           }
         } else {
-          // If API fails, check cookies for fallback
           const usedFreePostsStr = Cookies.get("used_free_posts") || "0"
           const usedFreePosts = Number.parseInt(usedFreePostsStr, 10)
           const totalFreePosts = 3
@@ -229,12 +250,10 @@ export function Header() {
           const remainingPaidPosts = Math.max(0, totalPaidPosts - usedPaidPosts)
 
           const totalRemaining = remainingFreePosts + remainingPaidPosts
-          
-          // Update the post count state
+
           setPostCount(totalRemaining)
 
           if (totalRemaining > 0) {
-            // Go to post selection page
             router.push("/post")
           } else {
             toast({
@@ -247,7 +266,6 @@ export function Header() {
         }
       } catch (error) {
         console.error("Error checking posts status:", error)
-        // For new users or when API fails, assume they have free posts
         router.push("/post")
       }
     } else {
@@ -262,10 +280,8 @@ export function Header() {
 
   return (
     <header className="bg-teal-700 dark:bg-teal-900 sticky top-0 z-50">
-      {/* Main Navigation */}
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-18">
-          {/* Logo */}
           <Link href="/" className="flex items-center">
             <motion.div
               whileHover={{ scale: 1.05, rotate: -2 }}
@@ -283,7 +299,6 @@ export function Header() {
             </motion.div>
           </Link>
 
-          {/* Search */}
           <div className="flex-1 max-w-xl mx-8 relative" ref={searchRef}>
             <form onSubmit={handleSearch}>
               <div className="relative">
@@ -299,7 +314,6 @@ export function Header() {
               </div>
             </form>
 
-            {/* Search Results Dropdown */}
             <AnimatePresence>
               {showSearchResults && searchResults.length > 0 && (
                 <motion.div
@@ -337,7 +351,6 @@ export function Header() {
             </AnimatePresence>
           </div>
 
-          {/* Actions */}
           <div className="flex items-center space-x-4">
             <motion.button
               whileHover={{ scale: 1.1 }}
@@ -349,10 +362,8 @@ export function Header() {
               <HelpCircle className="h-6 w-6" />
             </motion.button>
 
-            {/* Notifications - Now using separate component */}
             <NotificationDropdown isLoggedIn={isLoggedIn} userInfo={userInfo} />
 
-            {/* Cart */}
             {isLoggedIn && (
               <div className="relative" ref={cartRef}>
                 <motion.button
@@ -415,7 +426,6 @@ export function Header() {
               </div>
             )}
 
-            {/* Login/Profile Button */}
             {!isLoggedIn && (
               <div className="relative" ref={profileRef}>
                 <motion.button
@@ -429,7 +439,6 @@ export function Header() {
               </div>
             )}
 
-            {/* Post Button with Post Count */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -445,7 +454,6 @@ export function Header() {
               )}
             </motion.button>
 
-            {/* Dark Mode Toggle */}
             {mounted && (
               <motion.button
                 whileHover={{ rotate: 15 }}
@@ -458,7 +466,6 @@ export function Header() {
               </motion.button>
             )}
 
-            {/* Profile Avatar or User Icon */}
             {isLoggedIn ? (
               <div className="relative" ref={profileRef}>
                 <motion.button
@@ -487,7 +494,6 @@ export function Header() {
                       transition={{ duration: 0.2 }}
                       className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-xl z-10 overflow-hidden"
                     >
-                      {/* User info section */}
                       <div className="p-4 bg-gradient-to-r from-teal-500 to-teal-600 dark:from-teal-700 dark:to-teal-800">
                         <div className="flex items-center">
                           <div className="h-16 w-16 relative mr-3 flex-shrink-0 border-2 border-white rounded-full overflow-hidden shadow-md">
@@ -516,7 +522,6 @@ export function Header() {
                         </div>
                       </div>
 
-                      {/* Menu items */}
                       <div className="py-2">
                         <Link
                           href="/profile"
@@ -590,8 +595,6 @@ export function Header() {
           </div>
         </div>
       </div>
-
-      {/* <CategoryNav /> */}
     </header>
   )
 }

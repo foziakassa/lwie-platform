@@ -12,11 +12,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card"
 import { ImageUploader } from "@/components/image-uploader"
 import { itemCategories, getSubcategories, getSpecifications, getSpecificationOptions } from "@/lib/category-data"
-import { Loader2, ArrowLeft, CheckCircle } from "lucide-react"
+import { Loader2, ArrowLeft, CheckCircle } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { createPost } from "@/lib/actions"
 import Cookies from "js-cookie"
 import { toast } from "sonner"
+
+// Utility function to trigger header post count update
+const triggerPostCountUpdate = () => {
+  window.dispatchEvent(new CustomEvent("postSubmitted"))
+}
 
 // API call to create an item
 const createItem = async (itemData: {
@@ -198,6 +203,9 @@ export function ItemPostForm() {
         setIsSuccess(true)
         setCreatedItemId(newItem.itemId)
         toast.success("Item posted successfully!")
+        
+        // 🎯 TRIGGER HEADER UPDATE - This will automatically update the post count in header
+        triggerPostCountUpdate()
       } else {
         toast.error(postResult.message || "Failed to create post. Please try again.")
         setIsSubmitting(false)

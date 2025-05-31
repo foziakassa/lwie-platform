@@ -18,6 +18,11 @@ import { createPost } from "@/lib/actions"
 import Cookies from "js-cookie"
 import { toast } from "sonner"
 
+// Utility function to trigger header post count update
+const triggerPostCountUpdate = () => {
+  window.dispatchEvent(new CustomEvent("postSubmitted"))
+}
+
 // API call to create a service
 const createService = async (serviceData: {
   price: number
@@ -150,6 +155,9 @@ export function ServicePostForm() {
         setCreatedServiceId(newService.serviceId)
         setIsSuccess(true)
         toast.success("Service posted successfully!")
+
+        // 🎯 TRIGGER HEADER UPDATE - This will automatically update the post count in header
+        triggerPostCountUpdate()
       } else {
         toast.error(postResult.message || "Failed to create post. Please try again.")
         setIsSubmitting(false)

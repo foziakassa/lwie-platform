@@ -12,8 +12,14 @@ import Image from "next/image";
 
 const registerSchema = z
   .object({
-    Firstname: z.string().min(2, "Full name must be at least 2 characters"),
-    Lastname: z.string().min(2, "Full name must be at least 2 characters"),
+ Firstname: z
+    .string()
+    .min(2, "First name must be at least 2 characters")
+    .regex(/^[a-zA-Z]+$/, "First name must contain only letters"),
+  Lastname: z
+    .string()
+    .min(2, "Last name must be at least 2 characters")
+    .regex(/^[a-zA-Z]+$/, "Last name must contain only letters"),
     Email: z.string().email("Please enter a valid email address"),
     Password: z
       .string()

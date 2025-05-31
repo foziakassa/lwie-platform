@@ -6,9 +6,15 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Package, Briefcase, CheckCircle2 } from "lucide-react"
+<<<<<<< HEAD
 import { checkPostsStatus } from "@/lib/actions"
 import { toast } from "sonner"
 import { PostCounter } from "@/components/post-counter"
+=======
+import { PostCounter } from "@/components/post-counter"
+import { checkPostsStatus } from "@/lib/actions"
+import { toast } from "sonner"
+>>>>>>> e99d89d72782338215e62cca8ab717785e0b4c4e
 
 export default function PostSelectionPage() {
   const [selectedType, setSelectedType] = useState<"item" | "service" | null>(null)

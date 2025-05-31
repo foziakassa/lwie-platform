@@ -30,6 +30,21 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Helper to get hidden notification IDs from cookie
+  const getHiddenIds = () => {
+    const hidden = Cookies.get("hiddennotif");
+    return hidden ? (JSON.parse(hidden) as string[]) : [];
+  };
+
+  // Helper to add a notification ID to the hidden list in cookie
+  const addHiddenId = (id: string) => {
+    const hiddenIds = getHiddenIds();
+    if (!hiddenIds.includes(id)) {
+      hiddenIds.push(id);
+      Cookies.set("hiddennotif", JSON.stringify(hiddenIds), { expires: 30 }); // expires in 30 days
+    }
+  };
+
   const fetchNotifications = async () => {
     const tokenString = Cookies.get("authToken");
     const userId = tokenString ? JSON.parse(tokenString).id : null;
@@ -43,7 +58,12 @@ export default function NotificationsPage() {
       const response = await fetch(`https://liwedoc.vercel.app/api/notifications/${userId}`);
       if (response.ok) {
         const data = await response.json();
-        setNotifications(data.notifications);
+        // Filter out hidden notifications
+        const hiddenIds = getHiddenIds();
+        const visibleNotifications = data.notifications.filter(
+          (notif: Notification) => !hiddenIds.includes(notif.id)
+        );
+        setNotifications(visibleNotifications);
       } else {
         console.error("Failed to fetch notifications");
       }
@@ -55,6 +75,7 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     fetchNotifications();
+    // eslint-disable-next-line
   }, []);
 
   const markAsRead = (id: string) => {
@@ -95,13 +116,16 @@ export default function NotificationsPage() {
     }
 
     try {
-      const response = await fetch(`https://liwedoc.vercel.app/api/swap-requests/accept/${notificationId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${Cookies.get("authToken")}`,
-        },
-      });
+      const response = await fetch(
+        `https://liwedoc.vercel.app/api/swap-requests/accept/${notificationId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Cookies.get("authToken")}`,
+          },
+        }
+      );
 
       if (response.ok) {
         markAsRead(notificationId);
@@ -121,15 +145,20 @@ export default function NotificationsPage() {
 
   const handleReject = async (notificationId: string) => {
     try {
-      const response = await fetch(`https://liwedoc.vercel.app/api/notifications/reject/${notificationId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${Cookies.get("authToken")}`,
-        },
-      });
+      const response = await fetch(
+        `https://liwedoc.vercel.app/api/notifications/reject/${notificationId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Cookies.get("authToken")}`,
+          },
+        }
+      );
 
       if (response.ok) {
+        // Store the rejected notification ID in cookie
+        addHiddenId(notificationId);
         deleteNotification(notificationId);
       } else {
         console.error("Failed to reject notification");
@@ -139,11 +168,18 @@ export default function NotificationsPage() {
     }
   };
 
+  // Filter out hidden notifications before rendering (in case cookie changes)
+  const hiddenIds = getHiddenIds();
+  const visibleNotifications = notifications.filter(
+    (notif) => !hiddenIds.includes(notif.id)
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
       <div className="container mx-auto px-4">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Notifications</h1>
-
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+          Notifications
+        </h1>
         {/* Success message */}
         {successMessage && (
           <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-md border border-green-300">
@@ -155,7 +191,7 @@ export default function NotificationsPage() {
           <p>Loading...</p>
         ) : (
           <AnimatePresence>
-            {notifications.length === 0 ? (
+            {visibleNotifications.length === 0 ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -163,11 +199,15 @@ export default function NotificationsPage() {
                 className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-10 text-center"
               >
                 <Bell className="h-8 w-8 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-                <h3 className="text-gray-900 dark:text-white text-xl font-medium mb-2">No notifications</h3>
-                <p className="text-gray-600 dark:text-gray-300">You don't have any notifications right now.</p>
+                <h3 className="text-gray-900 dark:text-white text-xl font-medium mb-2">
+                  No notifications
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  You don't have any notifications right now.
+                </p>
               </motion.div>
             ) : (
-              notifications.map((notification) => (
+              visibleNotifications.map((notification) => (
                 <motion.div
                   key={notification.id}
                   initial={{ opacity: 0, y: 10 }}
@@ -191,7 +231,9 @@ export default function NotificationsPage() {
                             {new Date(notification.created_at).toLocaleString()}
                           </p>
                         </div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">{notification.type}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {notification.type}
+                        </span>
                       </div>
                       <div className="mt-4 flex justify-between items-center">
                         {notification.product_link ? (
@@ -204,7 +246,9 @@ export default function NotificationsPage() {
                             <ChevronRight className="h-4 w-4 ml-1" />
                           </Link>
                         ) : (
-                          <span className="text-gray-500 dark:text-gray-400 text-sm">No link available</span>
+                          <span className="text-gray-500 dark:text-gray-400 text-sm">
+                            No link available
+                          </span>
                         )}
                         <div className="flex space-x-1">
                           <button

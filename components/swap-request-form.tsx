@@ -58,7 +58,10 @@ export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTi
         const itemsData = await itemsResponse.json()
 
         if (itemsData.success) {
-          setUserItems(itemsData.items)
+          setUserItems(itemsData.items.map((item: any) => ({
+            id: String(item.id),
+            title: item.title,
+          })))
         } else {
           alert("Failed to load your items.")
         }
@@ -68,7 +71,10 @@ export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTi
         const servicesData = await servicesResponse.json()
 
         if (servicesData.success) {
-          setUserServices(servicesData.services)
+          setUserServices(servicesData.services.map((service: any) => ({
+            id: String(service.id),
+            title: service.title,
+          })))
         } else {
           alert("Failed to load your services.")
         }
@@ -158,6 +164,13 @@ export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTi
     )
   }
 
+  // Helper to get the selected item's/service's title
+  const selectedTitle = !isMoneyOffer && offeredId
+    ? (isOfferingItem
+        ? userItems.find((i) => i.id === offeredId)?.title
+        : userServices.find((s) => s.id === offeredId)?.title)
+    : undefined
+
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader className="space-y-4">
@@ -234,13 +247,16 @@ export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTi
                   </div>
                 </RadioGroup>
               </div>
-
               {/* Selection Dropdown */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Select {isOfferingItem ? "Item" : "Service"} to Offer:</Label>
                 <Select value={offeredId} onValueChange={setOfferedId}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder={`Choose a ${isOfferingItem ? "item" : "service"} from your collection`} />
+                    <SelectValue
+                      placeholder={`Choose a ${isOfferingItem ? "item" : "service"} from your collection`}
+                    >
+                      {selectedTitle}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {(isOfferingItem ? userItems : userServices).length === 0 ? (
@@ -256,6 +272,12 @@ export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTi
                     )}
                   </SelectContent>
                 </Select>
+                {/* Show selected below for clarity */}
+                {offeredId && selectedTitle && (
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    Selected: <span className="font-semibold">{selectedTitle}</span>
+                  </div>
+                )}
               </div>
             </div>
           ) : (

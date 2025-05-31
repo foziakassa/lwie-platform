@@ -1,91 +1,113 @@
-import React, { useEffect, useState } from "react";
-import Cookies from "js-cookie"; // Import js-cookie
+"use client"
+
+import type React from "react"
+import { useEffect, useState } from "react"
+import Cookies from "js-cookie"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
+import { Loader2, Package, Wrench, DollarSign, ArrowRight } from "lucide-react"
 
 // Define interfaces for items and services
 interface UserItem {
-  id: string;
-  title: string;
+  id: string
+  title: string
 }
 
 interface UserService {
-  id: string;
-  title: string;
+  id: string
+  title: string
 }
 
 export interface SwapRequestFormProps {
-  itemId: string; // ID of the item being requested
-  itemTitle: string; // Title of the item being requested
-  onCancel: () => void; // Function to close the dialog
+  itemId: string
+  itemTitle: string
+  onCancel: () => void
 }
 
 export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTitle, onCancel }) => {
-  const [offeredId, setOfferedId] = useState("");
-  const [userItems, setUserItems] = useState<UserItem[]>([]);
-  const [userServices, setUserServices] = useState<UserService[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isOfferingItem, setIsOfferingItem] = useState(true); // Track if offering item or service
-  const [isMoneyOffer, setIsMoneyOffer] = useState(false); // Track if offering money
-  const [moneyAmount, setMoneyAmount] = useState("");
+  const [offeredId, setOfferedId] = useState("")
+  const [userItems, setUserItems] = useState<UserItem[]>([])
+  const [userServices, setUserServices] = useState<UserService[]>([])
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [isOfferingItem, setIsOfferingItem] = useState(true)
+  const [isMoneyOffer, setIsMoneyOffer] = useState(false)
+  const [moneyAmount, setMoneyAmount] = useState("")
 
   useEffect(() => {
     const fetchUserItemsAndServices = async () => {
-      const authToken = Cookies.get("authToken");
+      const authToken = Cookies.get("authToken")
 
       if (!authToken) {
-        alert("User not logged in.");
-        setLoading(false);
-        return;
+        alert("User not logged in.")
+        setLoading(false)
+        return
       }
 
-      const { id: userId } = JSON.parse(authToken);
+      const { id: userId } = JSON.parse(authToken)
 
-      // Fetch user's items
-      const itemsResponse = await fetch(`https://liwedoc.vercel.app/postitem/${userId}`);
-      const itemsData = await itemsResponse.json();
+      try {
+        // Fetch user's items
+        const itemsResponse = await fetch(`https://liwedoc.vercel.app/postitem/${userId}`)
+        const itemsData = await itemsResponse.json()
 
-      if (itemsData.success) {
-        setUserItems(itemsData.items);
-      } else {
-        alert("Failed to load your items.");
+        if (itemsData.success) {
+          setUserItems(itemsData.items)
+        } else {
+          alert("Failed to load your items.")
+        }
+
+        // Fetch user's services
+        const servicesResponse = await fetch(`https://liwedoc.vercel.app/postservice/${userId}`)
+        const servicesData = await servicesResponse.json()
+
+        if (servicesData.success) {
+          setUserServices(servicesData.services)
+        } else {
+          alert("Failed to load your services.")
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error)
+        alert("Failed to load your items and services.")
       }
 
-      // Fetch user's services
-      const servicesResponse = await fetch(`https://liwedoc.vercel.app/postservice/${userId}`);
-      const servicesData = await servicesResponse.json();
-
-      if (servicesData.success) {
-        setUserServices(servicesData.services);
-      } else {
-        alert("Failed to load your services.");
-      }
-
-      setLoading(false);
-    };
-
-    fetchUserItemsAndServices();
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const authToken = Cookies.get("authToken");
-    if (!authToken) {
-      alert("User not logged in.");
-      return;
+      setLoading(false)
     }
 
-    const { id: userId } = JSON.parse(authToken);
+    fetchUserItemsAndServices()
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+
+    const authToken = Cookies.get("authToken")
+    if (!authToken) {
+      alert("User not logged in.")
+      setSubmitting(false)
+      return
+    }
+
+    const { id: userId } = JSON.parse(authToken)
 
     // Validation
     if (isMoneyOffer) {
       if (!moneyAmount || isNaN(Number(moneyAmount)) || Number(moneyAmount) <= 0) {
-        alert("Please enter a valid money amount.");
-        return;
+        alert("Please enter a valid money amount.")
+        setSubmitting(false)
+        return
       }
     } else {
       if (!offeredId) {
-        alert("Please select an item or service to offer.");
-        return;
+        alert("Please select an item or service to offer.")
+        setSubmitting(false)
+        return
       }
     }
 
@@ -93,159 +115,198 @@ export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTi
     const body = {
       userId,
       requestedId: itemId,
-      requestedType: "item", // Assuming requested is always an item here
+      requestedType: "item",
       isMoneyOffer,
       moneyAmount: isMoneyOffer ? Number(moneyAmount) : null,
       offeredId: isMoneyOffer ? null : offeredId,
-      offeredType: isMoneyOffer ? null : (isOfferingItem ? "item" : "service"),
-    };
+      offeredType: isMoneyOffer ? null : isOfferingItem ? "item" : "service",
+    }
 
     try {
-      const response = await fetch('https://liwedoc.vercel.app/api/swap-request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("https://liwedoc.vercel.app/api/swap-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
-      });
+      })
 
-      const data = await response.json();
+      const data = await response.json()
 
       if (data.success) {
-        alert("Swap request sent successfully!");
-        onCancel();
+        alert("Swap request sent successfully!")
+        onCancel()
       } else {
-        alert("Failed to send swap request: " + data.message);
+        alert("Failed to send swap request: " + data.message)
       }
     } catch (error) {
-      alert("Error sending swap request.");
-      console.error(error);
+      alert("Error sending swap request.")
+      console.error(error)
     }
-  };
+
+    setSubmitting(false)
+  }
+
+  if (loading) {
+    return (
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardContent className="flex items-center justify-center py-12">
+          <div className="flex items-center space-x-2">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span className="text-lg">Loading your items and services...</span>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
-    <div>
-      <h2 className="text-lg font-bold mb-4">Swap Request for: {itemTitle}</h2>
-      {loading ? (
-        <p>Loading your items and services...</p>
-      ) : (
-        <form onSubmit={handleSubmit}>
-          {/* Toggle between offering item/service or money */}
-          <div className="mb-4">
-            <label>
-              <input
-                type="radio"
-                value="offerItemService"
-                checked={!isMoneyOffer}
-                onChange={() => setIsMoneyOffer(false)}
-              />
-              Offer an Item or Service
-            </label>
-            <label className="ml-4">
-              <input
-                type="radio"
-                value="offerMoney"
-                checked={isMoneyOffer}
-                onChange={() => setIsMoneyOffer(true)}
-              />
-              Offer Money
-            </label>
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <Package className="h-6 w-6 text-primary" />
+          <CardTitle className="text-2xl">Create Swap Request</CardTitle>
+        </div>
+        <CardDescription className="text-base">
+          You're requesting to swap for:{" "}
+          <Badge variant="secondary" className="ml-1 text-sm font-medium">
+            {itemTitle}
+          </Badge>
+        </CardDescription>
+        <Separator />
+      </CardHeader>
+
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Offer Type Selection */}
+          <div className="space-y-4">
+            <Label className="text-base font-semibold">What would you like to offer?</Label>
+            <RadioGroup
+              value={isMoneyOffer ? "money" : "item-service"}
+              onValueChange={(value) => setIsMoneyOffer(value === "money")}
+              className="grid grid-cols-1 gap-4"
+            >
+              <div className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+                <RadioGroupItem value="item-service" id="item-service" />
+                <div className="flex items-center space-x-2">
+                  <Package className="h-5 w-5 text-muted-foreground" />
+                  <Label htmlFor="item-service" className="font-medium cursor-pointer">
+                    Offer an Item or Service
+                  </Label>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+                <RadioGroupItem value="money" id="money" />
+                <div className="flex items-center space-x-2">
+                  <DollarSign className="h-5 w-5 text-muted-foreground" />
+                  <Label htmlFor="money" className="font-medium cursor-pointer">
+                    Offer Money
+                  </Label>
+                </div>
+              </div>
+            </RadioGroup>
           </div>
 
           {!isMoneyOffer ? (
-            <>
-              {/* Choose between item or service */}
-              <div className="mb-4">
-                <label>
-                  <input
-                    type="radio"
-                    value="item"
-                    checked={isOfferingItem}
-                    onChange={() => setIsOfferingItem(true)}
-                  />
-                  Offer an Item
-                </label>
-                <label className="ml-4">
-                  <input
-                    type="radio"
-                    value="service"
-                    checked={!isOfferingItem}
-                    onChange={() => setIsOfferingItem(false)}
-                  />
-                  Offer a Service
-                </label>
+            <div className="space-y-4">
+              {/* Item vs Service Selection */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Choose what to offer:</Label>
+                <RadioGroup
+                  value={isOfferingItem ? "item" : "service"}
+                  onValueChange={(value) => {
+                    setIsOfferingItem(value === "item")
+                    setOfferedId("") // Reset selection when switching
+                  }}
+                  className="flex space-x-6"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="item" id="offer-item" />
+                    <Label htmlFor="offer-item" className="cursor-pointer flex items-center space-x-1">
+                      <Package className="h-4 w-4" />
+                      <span>Item</span>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="service" id="offer-service" />
+                    <Label htmlFor="offer-service" className="cursor-pointer flex items-center space-x-1">
+                      <Wrench className="h-4 w-4" />
+                      <span>Service</span>
+                    </Label>
+                  </div>
+                </RadioGroup>
               </div>
 
-              {/* Select offered item or service */}
-              {isOfferingItem ? (
-                <label htmlFor="offeredItemId" className="block mb-2">
-                  Select Item to Offer:
-                  <select
-                    id="offeredItemId"
-                    value={offeredId}
-                    onChange={(e) => setOfferedId(e.target.value)}
-                    className="border border-gray-300 rounded p-2 w-full"
-                    required
-                  >
-                    <option value="">Select an item</option>
-                    {userItems.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.title}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : (
-                <label htmlFor="offeredServiceId" className="block mb-2">
-                  Select Service to Offer:
-                  <select
-                    id="offeredServiceId"
-                    value={offeredId}
-                    onChange={(e) => setOfferedId(e.target.value)}
-                    className="border border-gray-300 rounded p-2 w-full"
-                    required
-                  >
-                    <option value="">Select a service</option>
-                    {userServices.map((service) => (
-                      <option key={service.id} value={service.id}>
-                        {service.title}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-            </>
+              {/* Selection Dropdown */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Select {isOfferingItem ? "Item" : "Service"} to Offer:</Label>
+                <Select value={offeredId} onValueChange={setOfferedId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={`Choose a ${isOfferingItem ? "item" : "service"} from your collection`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(isOfferingItem ? userItems : userServices).length === 0 ? (
+                      <SelectItem value="none" disabled>
+                        No {isOfferingItem ? "items" : "services"} available
+                      </SelectItem>
+                    ) : (
+                      (isOfferingItem ? userItems : userServices).map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.title}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           ) : (
-            <label htmlFor="moneyAmount" className="block mb-2">
-              Enter Offer Amount ($):
-              <input
-                type="number"
-                id="moneyAmount"
-                value={moneyAmount}
-                onChange={(e) => setMoneyAmount(e.target.value)}
-                className="border border-gray-300 rounded p-2 w-full"
-                min="0.01"
-                step="0.01"
-                required
-              />
-            </label>
+            <div className="space-y-2">
+              <Label htmlFor="money-amount" className="text-sm font-medium">
+                Enter Offer Amount ($):
+              </Label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="money-amount"
+                  type="number"
+                  value={moneyAmount}
+                  onChange={(e) => setMoneyAmount(e.target.value)}
+                  className="pl-10"
+                  placeholder="0.00"
+                  min="0.01"
+                  step="0.01"
+                  required={isMoneyOffer}
+                />
+              </div>
+            </div>
           )}
 
-          <div className="flex justify-end space-x-2 mt-4">
-            <button
-              type="button"
-              className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-              onClick={onCancel}
-            >
+          <Separator />
+
+          {/* Action Buttons */}
+          <div className="flex justify-end space-x-3 pt-4">
+            <Button type="button" variant="outline" onClick={onCancel} disabled={submitting}>
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              className="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700"
+              disabled={submitting || (!isMoneyOffer && !offeredId) || (isMoneyOffer && !moneyAmount)}
+              className="min-w-[140px]"
             >
-              Submit Request
-            </button>
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  Send Request
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
           </div>
         </form>
-      )}
-    </div>
-  );
-};
+      </CardContent>
+    </Card>
+  )
+}

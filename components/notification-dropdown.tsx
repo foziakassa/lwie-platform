@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { Bell } from "lucide-react"
+import Cookies from "js-cookie"
 
 interface Notification {
   id: string
@@ -21,16 +22,39 @@ export function NotificationDropdown({ isLoggedIn, userInfo }: NotificationDropd
   const [notifications, setNotifications] = useState<Notification[]>([])
   const notificationRef = useRef<HTMLDivElement>(null)
 
-  // Fetch notifications when logged in
+  // Helper to get hidden notification IDs from cookie
+  const getHiddenIds = () => {
+    const hidden = Cookies.get("hiddennotif")
+    return hidden ? (JSON.parse(hidden) as string[]) : []
+  }
+
+  // Helper to add a notification ID to hiddennotif cookie
+  const addHiddenId = (id: string) => {
+    const hiddenIds = getHiddenIds()
+    if (!hiddenIds.includes(id)) {
+      hiddenIds.push(id)
+      Cookies.set("hiddennotif", JSON.stringify(hiddenIds), { expires: 30 })
+    }
+  }
+
+  // Fetch notifications when logged in and filter hidden
   useEffect(() => {
     if (isLoggedIn && userInfo) {
       const fetchNotifications = async () => {
-        const response = await fetch(`https://liwedoc.vercel.app/api/notifications/${userInfo.id}`)
-        if (response.ok) {
-          const data = await response.json()
-          setNotifications(data.notifications)
-        } else {
-          console.error("Failed to fetch notifications")
+        try {
+          const response = await fetch(`https://liwedoc.vercel.app/api/notifications/${userInfo.id}`)
+          if (response.ok) {
+            const data = await response.json()
+            const hiddenIds = getHiddenIds()
+            const visibleNotifications = data.notifications.filter(
+              (notif: Notification) => !hiddenIds.includes(notif.id)
+            )
+            setNotifications(visibleNotifications)
+          } else {
+            console.error("Failed to fetch notifications")
+          }
+        } catch (error) {
+          console.error("Error fetching notifications", error)
         }
       }
       fetchNotifications()
@@ -55,6 +79,14 @@ export function NotificationDropdown({ isLoggedIn, userInfo }: NotificationDropd
     return null
   }
 
+  // Reject notification handler
+  const handleReject = (id: string) => {
+    // Optionally call your API to reject notification here
+
+    addHiddenId(id)
+    setNotifications((prev) => prev.filter((notif) => notif.id !== id))
+  }
+
   return (
     <div className="relative" ref={notificationRef}>
       <motion.button
@@ -65,9 +97,11 @@ export function NotificationDropdown({ isLoggedIn, userInfo }: NotificationDropd
         aria-label="Notifications"
       >
         <Bell className="h-6 w-6" />
-        <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center">
-          {notifications.length}
-        </span>
+        {notifications.length > 0 && (
+          <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center">
+            {notifications.length}
+          </span>
+        )}
       </motion.button>
 
       <AnimatePresence>
@@ -89,17 +123,27 @@ export function NotificationDropdown({ isLoggedIn, userInfo }: NotificationDropd
                 View All
               </Link>
             </div>
-            <div className="divide-y divide-gray-100 dark:divide-gray-700">
+            <div className="divide-y divide-gray-100 dark:divide-gray-700 max-h-96 overflow-y-auto">
               {notifications.length > 0 ? (
                 notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                    className="flex justify-between items-start px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                   >
-                    <p className="font-medium text-gray-900 dark:text-white">{notification.message}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {new Date(notification.created_at).toLocaleString()}
-                    </p>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">{notification.message}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(notification.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleReject(notification.id)}
+                      className="ml-2 text-red-600 hover:text-red-800 dark:hover:text-red-400 text-sm font-semibold"
+                      aria-label="Reject notification"
+                      title="Ignore"
+                    >
+                      ✕
+                    </button>
                   </div>
                 ))
               ) : (

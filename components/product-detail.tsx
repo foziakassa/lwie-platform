@@ -426,6 +426,7 @@ export function ProductDetail({ product, similarProducts }: ProductDetailProps) 
             <SwapRequestForm
               itemId={product.id}
               itemTitle={product.title}
+              req="item"
               onCancel={() => setIsSwapDialogOpen(false)}
             />
           </DialogContent>

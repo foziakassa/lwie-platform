@@ -195,6 +195,32 @@ export default function ProfilePage() {
       setLoadingItems(false); // Hide loading state
     }
   }
+  const handleRemoveItem = async (itemId: number) => {
+  const confirmRemoval = window.confirm("Are you sure you want to remove this item?");
+  if (!confirmRemoval) return;
+
+  try {
+    const response = await fetch(`https://liwedoc.vercel.app/api/deleteitem/${itemId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Update local state to remove the item
+      setMyItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
+      alert("Item deleted successfully!");
+    } else {
+      alert("Failed to delete item: " + data.message);
+    }
+  } catch (error) {
+    alert("Error deleting item.");
+    console.error(error);
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#f9fafb] dark:bg-[#1f2937] py-8">
@@ -366,10 +392,8 @@ export default function ProfilePage() {
                           <div className="relative h-48 bg-gray-100 dark:bg-gray-800">
                             <Image
                               src={
-                                item.image_urls
-                                  ? item.image_urls.length > 0
-                                    ? item.image_urls[0]
-                                    : "/placeholder.svg"
+                                item.image_urls && item.image_urls.length > 0
+                                  ? item.image_urls[0]
                                   : "/placeholder.svg"
                               }
                               alt={item.title}
@@ -393,6 +417,12 @@ export default function ProfilePage() {
                                 {item.price ? `${item.price} ETB` : ""}
                               </span>
                             </div>
+                            <Button
+                              className="mt-2 bg-red-500 hover:bg-red-600 text-white"
+                              onClick={() => handleRemoveItem(item.id)}
+                            >
+                              Remove Item
+                            </Button>
                           </CardContent>
                         </Card>
                       ))
@@ -512,7 +542,7 @@ export default function ProfilePage() {
                     )}
                   </div>
                 </TabsContent>
-                
+
 
 
                 {/* <TabsContent value="swaps" className="space-y-4">

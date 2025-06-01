@@ -444,22 +444,22 @@ export default function HelpPage() {
           </div>
 
           {/* Video Modal */}
-          {showModal && (
-            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50">
-              <div className="relative bg-white rounded-lg overflow-hidden shadow-lg">
-                <button
-                  onClick={closeModal}
-                  className="absolute top-2 right-2 text-white bg-red-500 rounded-full p-2"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-                <video className="w-full h-full" controls autoPlay>
-                  <source src={videoSrc} type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-            </div>
-          )}
+{showModal && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50">
+    <div className="relative bg-white rounded-lg overflow-hidden shadow-lg">
+      <button
+        onClick={closeModal}
+        className="absolute top-2 right-2 text-white bg-red-500 rounded-full p-2"
+      >
+        <X className="h-5 w-5" />
+      </button>
+      <video className="w-full h-full" controls autoPlay>
+        <source src={videoSrc || ''} type="video/mp4" /> {/* Ensure src is a string */}
+        Your browser does not support the video tag.
+      </video>
+    </div>
+  </div>
+)}
         </motion.div>
       </div>
     </div>

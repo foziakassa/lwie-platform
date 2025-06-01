@@ -149,6 +149,9 @@ export default function HelpPage() {
   const [openFaqs, setOpenFaqs] = useState<Record<string, boolean>>({})
   const [searchQuery, setSearchQuery] = useState("")
   const [contactOpen, setContactOpen] = useState(false)
+  const [showVideos, setShowVideos] = useState(false) // New state for video display
+  const [videoSrc, setVideoSrc] = useState<string | null>(null); // For the video to play
+  const [showModal, setShowModal] = useState(false); // For the modal
 
   const toggleCategory = (title: string) => {
     setOpenCategory(openCategory === title ? null : title)
@@ -160,6 +163,16 @@ export default function HelpPage() {
       [question]: !prev[question],
     }))
   }
+
+  const openModal = (src: string) => {
+    setVideoSrc(src);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setVideoSrc(null);
+  };
 
   // Filter FAQs based on search query
   const filteredCategories = searchQuery
@@ -393,23 +406,6 @@ export default function HelpPage() {
           {/* Additional resources */}
           <div className="mt-12 grid md:grid-cols-3 gap-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-              <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30 inline-block mb-3">
-                <MessageCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Community Forum</h3>
-              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                Connect with other users to share tips and get advice.
-              </p>
-              <Link
-                href="/community"
-                className="text-teal-600 dark:text-teal-400 text-sm font-medium hover:underline inline-flex items-center"
-              >
-                Visit Forum
-                <ChevronDown className="h-4 w-4 ml-1 transform -rotate-90" />
-              </Link>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
               <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30 inline-block mb-3">
                 <HelpCircle className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
@@ -417,32 +413,53 @@ export default function HelpPage() {
               <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                 Watch step-by-step guides on how to use LWIE features.
               </p>
-              <Link
-                href="/tutorials"
+              <button
+                onClick={() => setShowVideos(!showVideos)} // Toggle video display
                 className="text-teal-600 dark:text-teal-400 text-sm font-medium hover:underline inline-flex items-center"
               >
-                Watch Videos
+                {showVideos ? "Hide Videos" : "Watch Videos"}
                 <ChevronDown className="h-4 w-4 ml-1 transform -rotate-90" />
-              </Link>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-              <div className="p-3 rounded-full bg-amber-100 dark:bg-amber-900/30 inline-block mb-3">
-                <Mail className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Newsletter</h3>
-              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                Subscribe to get updates, tips, and special offers.
-              </p>
-              <Link
-                href="/newsletter"
-                className="text-teal-600 dark:text-teal-400 text-sm font-medium hover:underline inline-flex items-center"
-              >
-                Subscribe
-                <ChevronDown className="h-4 w-4 ml-1 transform -rotate-90" />
-              </Link>
+              </button>
+              {showVideos && ( // Conditional rendering of videos
+                <div className="mt-4">
+                  <video
+                    className="w-full rounded-lg cursor-pointer"
+                    controls
+                    onClick={() => openModal("/Video/post.mp4")}
+                  >
+                    <source src="/Video/post.mp4" type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                  <video
+                    className="w-full rounded-lg mt-4 cursor-pointer"
+                    controls
+                    onClick={() => openModal("/Video/swap.mp4")}
+                  >
+                    <source src="/Video/swap.mp4" type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Video Modal */}
+{showModal && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50">
+    <div className="relative bg-white rounded-lg overflow-hidden shadow-lg">
+      <button
+        onClick={closeModal}
+        className="absolute top-2 right-2 text-white bg-red-500 rounded-full p-2"
+      >
+        <X className="h-5 w-5" />
+      </button>
+      <video className="w-full h-full" controls autoPlay>
+        <source src={videoSrc || ''} type="video/mp4" /> {/* Ensure src is a string */}
+        Your browser does not support the video tag.
+      </video>
+    </div>
+  </div>
+)}
         </motion.div>
       </div>
     </div>

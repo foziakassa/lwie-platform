@@ -299,7 +299,7 @@ export function Header() {
             </motion.div>
           </Link>
 
-          <div className="flex-1 max-w-xl mx-8 relative" ref={searchRef}>
+          {/* <div className="flex-1 max-w-xl mx-8 relative" ref={searchRef}>
             <form onSubmit={handleSearch}>
               <div className="relative">
                 <input
@@ -349,7 +349,7 @@ export function Header() {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
+          </div> */}
 
           <div className="flex items-center space-x-4">
             <motion.button

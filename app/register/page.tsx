@@ -1,4 +1,5 @@
-"use client";
+"use client"
+
 import poster from "@/shared/post";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -8,6 +9,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Image from "next/image";
+import Cookies from "js-cookie"; // Import Cookies
 
 const registerSchema = z
   .object({
@@ -63,28 +65,31 @@ export default function RegisterPage() {
         Password: data.Password,
       };
 
-      // Use the poster function to send a POST request to register the user
-      const response = await poster('users', payload);
+      const response = await poster("users", payload);
+      console.log("Registration response:", response);
 
-      // Check if the user already exists
+      // Handle error responses from API
       if (response.error) {
         if (response.error.includes("User already exists")) {
           setError("User already exists. Please use a different email.");
         } else {
           setError(response.error);
-          console.log(response.error) // Display any other error message returned by the API
+          console.error(response.error);
         }
-        return; // Prevent further processing
+        return;
       }
 
-      // Proceed if registration is successful
-      router.push("/activationmessage"); // Navigate to biometric registration
+      // Save user email in cookie (expires in 7 days)
+      Cookies.set("userEmail", data.Email, { expires: 7 });
 
-    } catch (error) {
-      // setError("Registration failed. Please try again.");
-      
-          setError("User already exists. Please use a different email.");
-       
+      // Save user ID in cookie (expires in 7 days)
+    
+
+      // Redirect to activation message page
+      router.push("/activationmessage");
+    } catch (err) {
+      console.error("Registration failed:", err);
+      setError("Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }

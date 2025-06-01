@@ -51,10 +51,10 @@ export function NotificationDropdown({ isLoggedIn, userInfo }: NotificationDropd
             )
             setNotifications(visibleNotifications)
           } else {
-            console.error("Failed to fetch notifications")
+            console.log("Failed to fetch notifications")
           }
         } catch (error) {
-          console.error("Error fetching notifications", error)
+          console.log("Error fetching notifications", error)
         }
       }
       fetchNotifications()

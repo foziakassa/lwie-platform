@@ -109,7 +109,7 @@ export default function ProfilePage() {
       })
       .finally(() => setLoadingItems(false))
   }, [userId])
-   useEffect(() => {
+  useEffect(() => {
     if (!userId) {
       setError("User not logged in")
       setLoadingItems(false)
@@ -163,6 +163,37 @@ export default function ProfilePage() {
     localStorage.removeItem("isLoggedIn")
     Cookies.remove("authToken")
     router.push("/login")
+  }
+
+  const handleRepost = async (itemId: number) => {
+    try {
+      setLoadingItems(true); // Show loading state
+
+      const response = await fetch(`https://liwedoc.vercel.app/api/items/repost/${itemId}`, {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Cookies.get("authToken")}`, // Include auth token if needed
+        },
+      });
+
+      if (response.ok) {
+        const updatedItem = await response.json();
+        // Update local state with the reposted item
+        setMySwape((prevItems) =>
+          prevItems.map((item) => (item.id === itemId ? updatedItem.item : item))
+        );
+        alert('Item reposted successfully!');
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || 'Failed to repost item.');
+      }
+    } catch (error) {
+      console.error('Error reposting item:', error);
+      setError('An error occurred while reposting the item.');
+    } finally {
+      setLoadingItems(false); // Hide loading state
+    }
   }
 
   return (
@@ -368,7 +399,7 @@ export default function ProfilePage() {
                     )}
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="services" className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">My Listed Services</h2>
@@ -426,14 +457,10 @@ export default function ProfilePage() {
                     )}
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="swaps" className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">My Swape  Items</h2>
-                    {/* <Button className="bg-teal-500 hover:bg-teal-600 text-white transition-colors duration-200">
-                      <Camera className="h-4 w-4 mr-2" />
-                      Post New Item
-                    </Button> */}
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">My Swape Items</h2>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {loadingItems ? (
@@ -443,20 +470,14 @@ export default function ProfilePage() {
                     ) : !mySwape || mySwape.length === 0 ? (
                       <div className="col-span-full text-center text-gray-500">No items listed yet.</div>
                     ) : (
-                      (mySwape || []).map((item) => (
+                      mySwape.map((item) => (
                         <Card
                           key={item.id}
                           className="overflow-hidden border border-gray-200 dark:border-gray-800 hover:shadow-md transition-all duration-200"
                         >
                           <div className="relative h-48 bg-gray-100 dark:bg-gray-800">
                             <Image
-                              src={
-                                item.image_urls
-                                  ? item.image_urls.length > 0
-                                    ? item.image_urls[0]
-                                    : "/placeholder.svg"
-                                  : "/placeholder.svg"
-                              }
+                              src={item.image_urls && item.image_urls.length > 0 ? item.image_urls[0] : "/placeholder.svg"}
                               alt={item.title}
                               fill
                               className="object-cover"
@@ -478,12 +499,20 @@ export default function ProfilePage() {
                                 {item.price ? `${item.price} ETB` : ""}
                               </span>
                             </div>
+                            {/* Repost Button */}
+                            <button
+                              onClick={() => handleRepost(item.id)}
+                              className="mt-2 w-full px-4 py-2 text-sm text-white bg-teal-600 hover:bg-teal-700 rounded-md transition-colors"
+                            >
+                              Repost
+                            </button>
                           </CardContent>
                         </Card>
                       ))
                     )}
                   </div>
                 </TabsContent>
+                
 
 
                 {/* <TabsContent value="swaps" className="space-y-4">

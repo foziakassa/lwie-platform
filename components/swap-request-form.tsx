@@ -27,16 +27,19 @@ interface UserService {
 export interface SwapRequestFormProps {
   itemId: string
   itemTitle: string
+  req:string
   onCancel: () => void
 }
 
-export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTitle, onCancel }) => {
+export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTitle, onCancel  , req}) => {
   const [offeredId, setOfferedId] = useState("")
   const [userItems, setUserItems] = useState<UserItem[]>([])
   const [userServices, setUserServices] = useState<UserService[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [isOfferingItem, setIsOfferingItem] = useState(true)
+  const [isOfferingService, setIsOfferingService] = useState(false)
+
   const [isMoneyOffer, setIsMoneyOffer] = useState(false)
   const [moneyAmount, setMoneyAmount] = useState("")
 
@@ -121,7 +124,7 @@ export const SwapRequestForm: React.FC<SwapRequestFormProps> = ({ itemId, itemTi
     const body = {
       userId,
       requestedId: itemId,
-      requestedType: "item",
+      requestedType: req,
       isMoneyOffer,
       moneyAmount: isMoneyOffer ? Number(moneyAmount) : null,
       offeredId: isMoneyOffer ? null : offeredId,

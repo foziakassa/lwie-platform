@@ -462,6 +462,7 @@ export function ServiceDetail({ service, similarServices }: ServiceDetailProps) 
             <SwapRequestForm
               itemId={service.id}
               itemTitle={service.title}
+              req ="service"
               onCancel={() => setIsSwapDialogOpen(false)}
             />
           </DialogContent>

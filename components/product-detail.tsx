@@ -328,6 +328,34 @@ export function ProductDetail({ product, similarProducts }: ProductDetailProps) 
                 )}
               </div>
             </div>
+             <div className="bg-white rounded-lg shadow-sm p-6">
+                          <div className="flex items-center mb-4">
+                            <Shield className="h-5 w-5 text-teal-600 mr-2" />
+                            <h3 className="text-lg font-semibold">Safety Tips</h3>
+                          </div>
+                          <ul className="space-y-2 text-sm text-gray-700">
+                            <li className="flex items-start">
+                              <span className="mr-2 text-teal-500">•</span>
+                              <span>Meet poster in a safe public place</span>
+                            </li>
+                            <li className="flex items-start">
+                              <span className="mr-2 text-teal-500">•</span>
+                              <span>Check the item before you swap</span>
+                            </li>
+                            <li className="flex items-start">
+                              <span className="mr-2 text-teal-500">•</span>
+                              <span>Pay or swap only after inspecting the item</span>
+                            </li>
+                            <li className="flex items-start">
+                              <span className="mr-2 text-teal-500">•</span>
+                              <span>Never pay in advance</span>
+                            </li>
+                            <li className="flex items-start">
+                              <span className="mr-2 text-teal-500">•</span>
+                              <span>Report suspicious behavior</span>
+                            </li>
+                          </ul>
+                        </div>
 
             {/* Action Buttons */}
             <div className="space-y-3">

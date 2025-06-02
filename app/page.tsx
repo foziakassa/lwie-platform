@@ -671,15 +671,7 @@ export default function Home() {
                           className="object-cover"
                         />
                         <div className="absolute top-2 right-2 flex gap-1">
-                          <motion.button
-                            className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:shadow-md"
-                            onClick={(e) => handleFavorite(e, item.id)}
-                            aria-label="Add to favorites"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            <Heart className="h-4 w-4 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-600 transition-colors duration-200" />
-                          </motion.button>
+                         
                           <ShareButton itemId={item.id} title={item.title} type="item" />
                         </div>
                       </div>
@@ -745,15 +737,7 @@ export default function Home() {
                           className="object-cover"
                         />
                         <div className="absolute top-2 right-2 flex gap-1">
-                          <motion.button
-                            className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:shadow-md"
-                            onClick={(e) => handleFavorite(e, service.id)}
-                            aria-label="Add to favorites"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            <Heart className="h-4 w-4 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-600 transition-colors duration-200" />
-                          </motion.button>
+                          
                           <ShareButton itemId={service.id} title={service.title} type="service" />
                         </div>
                       </div>

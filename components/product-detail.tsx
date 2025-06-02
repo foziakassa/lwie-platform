@@ -401,12 +401,12 @@ export function ProductDetail({ product, similarProducts }: ProductDetailProps) 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {similarProducts.map((item) => (
                 <Link key={item.id} href={`/products/${item.id}`} className="block">
-                  <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
+                  <div className="bg-white dark:bg-gray-800 hover:scale-105 rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
                     <div className="relative aspect-square">
                       <Image src={item.image || "/placeholder.svg"} alt={item.title} fill className="object-cover" />
                     </div>
                     <div className="p-4">
-                      <h3 className="font-medium text-gray-900 mb-1 truncate">{item.title}</h3>
+                      <h3 className="font-medium text-gray-900 dark:text-white mb-1 truncate">{item.title}</h3>
                       <p className="text-teal-600 font-semibold">{item.price.toLocaleString()} ETB</p>
                       <div className="flex justify-between items-center mt-2">
                         <Badge variant="outline" className="text-xs">

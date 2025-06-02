@@ -25,6 +25,23 @@ async function fetchUserById(userId: string) {
   return await res.json();
 }
 
+// Function to fetch similar services by subcategory
+async function fetchSimilarServices(subcategory: string) {
+  const res = await fetch(`https://liwedoc.vercel.app/api/services/subcategory/${subcategory}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch similar services");
+  }
+
+  const data = await res.json();
+  return data.services; // Ensure this returns an array of services
+}
+
 export default async function ServicePage(props: ServicePageProps) {
   const { id } = props.params;
   console.log("Fetching service with ID:", id);
@@ -63,33 +80,8 @@ export default async function ServicePage(props: ServicePageProps) {
       }
     }
 
-    // Mock similar services data
-    const similarServices = [
-      {
-        id: "sim1",
-        title: "Similar Service 1",
-        price: 300,
-        condition: "Available",
-        image: "/placeholder.svg?height=300&width=300&text=Similar+Service+1",
-        city: "Addis Ababa",
-      },
-      {
-        id: "sim2",
-        title: "Similar Service 2",
-        price: 450,
-        condition: "Available",
-        image: "/placeholder.svg?height=300&width=300&text=Similar+Service+2",
-        city: "Dire Dawa",
-      },
-      {
-        id: "sim3",
-        title: "Similar Service 3",
-        price: 250,
-        condition: "Available",
-        image: "/placeholder.svg?height=300&width=300&text=Similar+Service+3",
-        city: "Hawassa",
-      },
-    ];
+    // Fetch similar services based on the service's subcategory
+    const similarServices = await fetchSimilarServices(service.subcategory);
 
     // Format the service data for the component
     const formattedService = {

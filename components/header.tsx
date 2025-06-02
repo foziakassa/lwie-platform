@@ -480,17 +480,6 @@ export function Header() {
                               <p className="text-teal-100 text-sm">{userInfo?.email || "user@example.com"}</p>
                             </div>
                           </div>
-
-                          <div className="flex justify-between mt-4 text-white text-sm">
-                            <div className="text-center">
-                              <p className="font-bold text-lg">{userInfo?.itemsCount || 0}</p>
-                              <p className="text-teal-100">Items</p>
-                            </div>
-                            <div className="text-center">
-                              <p className="font-bold text-lg">{userInfo?.swapsCount || 0}</p>
-                              <p className="text-teal-100">Swaps</p>
-                            </div>
-                          </div>
                         </div>
 
                         <div className="py-2">

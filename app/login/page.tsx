@@ -153,11 +153,11 @@ export default function LoginPage() {
                 </label>
               </div>
 
-              <div className="text-sm">
+              {/* <div className="text-sm">
                 <Link href="/forgot-password" className="font-medium text-teal-600 hover:text-teal-500">
                   Forgot your password?
                 </Link>
-              </div>
+              </div> */}
             </div>
 
             <div>

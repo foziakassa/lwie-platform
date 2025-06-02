@@ -257,12 +257,12 @@ export default function AdvertisementBannerWithAPI({ className }: AdvertisementB
             <Badge className="bg-yellow-400 text-yellow-900 hover:bg-yellow-300 px-3 py-1 text-xs font-semibold animate-pulse">
               SPECIAL OFFER
             </Badge>
-            <Link href={advertisement.website_url || "#"}>
-              <Button className="bg-white text-indigo-700 hover:bg-white/90 font-medium group px-5">
-                Learn More
-                <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Button>
-            </Link>
+            <Link href={advertisement?.website_url || "https://www.youtube.com/"}>
+  <Button className="bg-white text-indigo-700 hover:bg-white/90 font-medium group px-5">
+    Learn More
+    <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+  </Button>
+</Link>
           </div>
         </div>
       </div>

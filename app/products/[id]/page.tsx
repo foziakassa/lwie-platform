@@ -23,6 +23,23 @@ async function fetchUserById(userId: string) {
   return await res.json();
 }
 
+// Function to fetch similar products by subcategory
+async function fetchSimilarProducts(subcategory: string) {
+  const res = await fetch(`https://liwedoc.vercel.app/api/items/subcategory/${subcategory}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch similar products");
+  }
+
+  const data = await res.json();
+  return data.items;
+}
+
 export default async function ProductPage(props: ProductPageProps) {
   const { id } = props.params;
   console.log("Fetching product with ID:", id);
@@ -61,13 +78,8 @@ export default async function ProductPage(props: ProductPageProps) {
       }
     }
 
-    // Mock similar products data
-    const similarProducts = [
-      { id: "sim1", title: "Similar Product 1", price: 500, condition: "Used", image: "/placeholder.svg?height=300&width=300&text=Similar+Product+1", city: "Addis Ababa" },
-      { id: "sim2", title: "Similar Product 2", price: 750, condition: "Like New", image: "/placeholder.svg?height=300&width=300&text=Similar+Product+2", city: "Dire Dawa" },
-      { id: "sim3", title: "Similar Product 3", price: 600, condition: "Good", image: "/placeholder.svg?height=300&width=300&text=Similar+Product+3", city: "Hawassa" },
-      { id: "sim4", title: "Similar Product 4", price: 450, condition: "Fair", image: "/placeholder.svg?height=300&width=300&text=Similar+Product+4", city: "Bahir Dar" },
-    ];
+    // Fetch similar products based on the product's subcategory
+    const similarProducts = await fetchSimilarProducts(product.subcategory);
 
     // Format the product data for the component
     const formattedProduct = {

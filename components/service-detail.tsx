@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import Cookies from "js-cookie"
 import {
   ArrowLeft,
   Clock,
@@ -72,6 +73,12 @@ export function ServiceDetail({ service, similarServices }: ServiceDetailProps) 
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showContactInfo, setShowContactInfo] = useState(false)
   const [isSwapDialogOpen, setIsSwapDialogOpen] = useState(false)
+  const authToken = Cookies.get("authToken")
+  if(!authToken){
+    return
+  }
+  const userData = JSON.parse(authToken)
+  const currentUserId = userData.id
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? service.images.length - 1 : prev - 1))
@@ -387,9 +394,12 @@ export function ServiceDetail({ service, similarServices }: ServiceDetailProps) 
 
             {/* Action Buttons */}
             <div className="space-y-3">
+              {service.user.id !== currentUserId && (
+
               <Button className="w-full bg-teal-600 hover:bg-teal-700 py-6 text-lg" onClick={handleSendRequest}>
                 Book Service
               </Button>
+              )}
               <div className="flex space-x-2">
                 <Button variant="outline" className="flex-1 flex items-center justify-center" onClick={handleFavorite}>
                   <Heart className="h-4 w-4 mr-2" />

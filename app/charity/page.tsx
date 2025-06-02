@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { motion } from "framer-motion"
 import { Heart, Gift, ArrowRight, Search, Check } from "lucide-react"
-import poster from "@/shared/post"
 import fetch from "@/shared/fetch"
 
 // Mock data for charities
@@ -91,33 +90,31 @@ const donationTypes = [
   },
 ]
 
-
-export default  function CharityPage() {
+export default function CharityPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [selectedDonationType, setSelectedDonationType] = useState("items")
 
-  const [charitydata, setCharityData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const router = useRouter();
+  const [charitydata, setCharityData] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const router = useRouter()
 
   useEffect(() => {
     const getCharities = async () => {
       try {
-        const data = await fetch('/charities'); // Fetch data from the API
-        setCharityData(data);
-        
+        const data = await fetch("/charities") // Fetch data from the API
+        setCharityData(data)
       } catch (err) {
-        setError("Failed to fetch charities.");
-        console.error(err);
+        setError("Failed to fetch charities.")
+        console.error(err)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    getCharities();
-  }, []);
+    getCharities()
+  }, [])
 
   // useEffect(() => {
   //   const getCharities = async () => {
@@ -138,10 +135,6 @@ export default  function CharityPage() {
 
   //   getCharities();
   // }, []);
-  
-
-
-
 
   // Filter charities based on search and category
   const filteredCharities = charities.filter((charity) => {
@@ -178,7 +171,6 @@ export default  function CharityPage() {
   }
 
   return (
-    
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
       <div className="container mx-auto px-4">
         <motion.div
@@ -265,78 +257,81 @@ export default  function CharityPage() {
           </div>
         </div>
 
-       
         {/* Charities List which are connected to the */}
 
         <motion.div
-      className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      {charitydata.map((charity:{id:number | string ; name:string ;image : any ; description:string; location:string; needed:string[]; progress:number; goal:number ;}) => (
-        <motion.div
-          key={charity.id}
-          variants={itemVariants}
-          className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
+          className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
         >
-          <div className="relative h-48">
-            <Image 
-              src={charity.image || "/placeholder.svg"} 
-              alt={charity.name} 
-              fill 
-              className="object-cover" 
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-            <div className="absolute bottom-0 left-0 p-4">
-              <p className="text-white text-sm flex items-center">
-                <Gift className="h-4 w-4 mr-1" />
-                {charity.progress} / {charity.goal} items donated
-              </p>
-            </div>
-          </div>
-          <div className="p-4">
-            <h3 className="font-bold text-xl mb-2 text-gray-900 dark:text-white">{charity.name}</h3>
-            <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">{charity.description}</p>
+          {charitydata.map(
+            (charity: {
+              id: number | string
+              name: string
+              image: any
+              description: string
+              location: string
+              needed: string[]
+              progress: number
+              goal: number
+            }) => (
+              <motion.div
+                key={charity.id}
+                variants={itemVariants}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
+              >
+                <div className="relative h-48">
+                  <Image src={charity.image || "/placeholder.svg"} alt={charity.name} fill className="object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                  <div className="absolute bottom-0 left-0 p-4">
+                    <p className="text-white text-sm flex items-center">
+                      <Gift className="h-4 w-4 mr-1" />
+                      {charity.progress} / {charity.goal} items donated
+                    </p>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-bold text-xl mb-2 text-gray-900 dark:text-white">{charity.name}</h3>
+                  <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">{charity.description}</p>
 
-            <div className="mb-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Location: {charity.location}</p>
-              <div className="flex flex-wrap gap-2 mb-3">
-                {charity.needed.map((item:any  , index :number) => (
-                  <span
-                    key={index}
-                    className="text-xs bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 px-2 py-1 rounded-full"
+                  <div className="mb-4">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Location: {charity.location}</p>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {charity.needed.map((item: any, index: number) => (
+                        <span
+                          key={index}
+                          className="text-xs bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 px-2 py-1 rounded-full"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div
+                        className="bg-teal-600 h-2 rounded-full"
+                        style={{ width: `${(charity.progress / charity.goal) * 100}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-right mt-1 text-gray-500 dark:text-gray-400">
+                      {Math.round((charity.progress / charity.goal) * 100)}% of goal reached
+                    </p>
+                  </div>
+
+                  <button
+                    className="w-full py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors flex items-center justify-center"
+                    onClick={() => router.push(`/donate/${charity.id}`)} // Navigate to the donate page by ID
                   >
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div
-                  className="bg-teal-600 h-2 rounded-full"
-                  style={{ width: `${(charity.progress / charity.goal) * 100}%` }}
-                ></div>
-              </div>
-              <p className="text-xs text-right mt-1 text-gray-500 dark:text-gray-400">
-                {Math.round((charity.progress / charity.goal) * 100)}% of goal reached
-              </p>
-            </div>
-
-            <button
-      className="w-full py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors flex items-center justify-center"
-      onClick={() => router.push(`/donate`)} // Navigate to the donate page
-    >
-      Donate Now <ArrowRight className="ml-2 h-4 w-4" />
-    </button>
-          </div>
+                    Donate Now <ArrowRight className="ml-2 h-4 w-4" />
+                  </button>
+                </div>
+              </motion.div>
+            ),
+          )}
         </motion.div>
-      ))}
-    </motion.div>
-
-        
 
         {filteredCharities.length === 0 && (
           <div className="text-center py-12">
@@ -382,11 +377,11 @@ export default  function CharityPage() {
                   - Ayana Tadesse, Director at Hope for Children Organization
                 </p>
                 <button
-      className="mt-4 text-teal-600 dark:text-teal-400 font-medium flex items-center hover:underline"
-      onClick={() => router.push('/impact-story')} // Navigate to the impact-story page
-    >
-      Read full story <ArrowRight className="ml-1 h-4 w-4" />
-    </button>
+                  className="mt-4 text-teal-600 dark:text-teal-400 font-medium flex items-center hover:underline"
+                  onClick={() => router.push("/impact-story")} // Navigate to the impact-story page
+                >
+                  Read full story <ArrowRight className="ml-1 h-4 w-4" />
+                </button>
               </div>
             </div>
           </div>
@@ -395,4 +390,3 @@ export default  function CharityPage() {
     </div>
   )
 }
-

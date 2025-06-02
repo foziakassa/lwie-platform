@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -65,10 +65,20 @@ interface ProductDetailProps {
   }>;
 }
 
+// Function to get the current user ID from cookies
+
+
 export function ProductDetail({ product, similarProducts }: ProductDetailProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [isSwapDialogOpen, setIsSwapDialogOpen] = useState(false);
+
+  const authToken = Cookies.get("authToken");
+  if(!authToken){
+    return
+  }
+  const userdata = JSON.parse(authToken)
+  const  currentUserId = userdata.id
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
@@ -129,7 +139,7 @@ export function ProductDetail({ product, similarProducts }: ProductDetailProps) 
   };
 
   return (
-    <div className="min-h-screen  dark:bg-gray-900 bg-gray-50">
+    <div className="min-h-screen dark:bg-gray-900 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Back Button */}
         <Link href="/" className="flex items-center text-gray-600 hover:text-teal-600 mb-4">
@@ -137,10 +147,10 @@ export function ProductDetail({ product, similarProducts }: ProductDetailProps) 
           <span>Back to Home</span>
         </Link>
 
-        <div className="grid grid-cols-1  dark:bg-gray-900 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 dark:bg-gray-900 md:grid-cols-3 gap-8">
           {/* Product Images */}
           <div className="md:col-span-2">
-            <div className="bg-white  dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden mb-6">
               <div className="relative aspect-video">
                 <Image
                   src={product.images[currentImageIndex] || "/placeholder.svg"}
@@ -170,7 +180,7 @@ export function ProductDetail({ product, similarProducts }: ProductDetailProps) 
 
               {/* Thumbnails */}
               {product.images.length > 1 && (
-                <div className="flex space-x-2 p-4 bg-white  dark:bg-gray-900">
+                <div className="flex space-x-2 p-4 bg-white dark:bg-gray-900">
                   {product.images.map((image, index) => (
                     <button
                       key={index}
@@ -192,7 +202,7 @@ export function ProductDetail({ product, similarProducts }: ProductDetailProps) 
               )}
             </div>
 
-            <div className="bg-white  dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
               <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
               <div className="flex items-center text-gray-500 mb-4">
                 <MapPin className="h-4 w-4 mr-1" />
@@ -277,7 +287,7 @@ export function ProductDetail({ product, similarProducts }: ProductDetailProps) 
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Poster Information */}
-            <div className="bg-white  dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-semibold mb-4">Poster Information</h3>
               <div className="flex items-center mb-4">
                 <Avatar className="h-12 w-12 mr-4">
@@ -319,41 +329,13 @@ export function ProductDetail({ product, similarProducts }: ProductDetailProps) 
               </div>
             </div>
 
-            {/* Safety Tips */}
-            <div className="bg-white  dark:bg-gray-800 rounded-lg shadow-sm p-6">
-              <div className="flex items-center mb-4">
-                <Shield className="h-5 w-5 text-teal-600 mr-2" />
-                <h3 className="text-lg font-semibold">Safety Tips</h3>
-              </div>
-              <ul className="space-y-2 text-sm text-gray-500">
-                <li className="flex items-start">
-                  <span className="mr-2 text-teal-500">•</span>
-                  <span>Meet poster in a safe public place</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2 text-teal-500">•</span>
-                  <span>Check the item before you swap</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2 text-teal-500">•</span>
-                  <span>Pay or swap only after inspecting the item</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2 text-teal-500">•</span>
-                  <span>Never pay in advance</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2 text-teal-500">•</span>
-                  <span>Report suspicious behavior</span>
-                </li>
-              </ul>
-            </div>
-
             {/* Action Buttons */}
             <div className="space-y-3">
-              <Button className="w-full bg-teal-600 hover:bg-teal-700 py-6 text-lg" onClick={handleSendRequest}>
-                Send Request
-              </Button>
+              {product.user.id !== currentUserId && (
+                <Button className="w-full bg-teal-600 hover:bg-teal-700 py-6 text-lg" onClick={handleSendRequest}>
+                  Send Request
+                </Button>
+              )}
               <div className="flex space-x-2">
                 <Button variant="outline" className="flex-1 flex items-center justify-center" onClick={handleFavorite}>
                   <Heart className="h-4 w-4 mr-2" />
@@ -363,12 +345,7 @@ export function ProductDetail({ product, similarProducts }: ProductDetailProps) 
                   <Share2 className="h-4 w-4 mr-2" />
                   <span>Share</span>
                 </Button>
-                <Button
-                  variant="outline"
-                  className="flex items-center justify-center px-3"
-                  onClick={handleReport}
-                  aria-label="Report listing"
-                >
+                <Button variant="outline" className="flex items-center justify-center px-3" onClick={handleReport}>
                   <Flag className="h-4 w-4" />
                 </Button>
               </div>
@@ -396,7 +373,7 @@ export function ProductDetail({ product, similarProducts }: ProductDetailProps) 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {similarProducts.map((item) => (
                 <Link key={item.id} href={`/products/${item.id}`} className="block">
-                  <div className="bg-white  dark:bg-gray-800 rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
                     <div className="relative aspect-square">
                       <Image src={item.image || "/placeholder.svg"} alt={item.title} fill className="object-cover" />
                     </div>

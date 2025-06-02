@@ -455,7 +455,7 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
             <SwapRequestForm
               itemId={product.id}
               itemTitle={product.title}
-              onCancel={() => setIsSwapDialogOpen(false)} req="item"          />
+              onCancel={() => setIsSwapDialogOpen(false)} req="item"            />
           </DialogContent>
         </Dialog>
       </div>

@@ -369,13 +369,7 @@ export default function ProfilePage() {
 
                 {/* My Items Tab */}
                 <TabsContent value="items" className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">My Listed Items</h2>
-                    <Button className="bg-teal-500 hover:bg-teal-600 text-white transition-colors duration-200">
-                      <Camera className="h-4 w-4 mr-2" />
-                      Post New Item
-                    </Button>
-                  </div>
+                  
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {loadingItems ? (
                       <div className="col-span-full text-center text-gray-500">Loading...</div>
@@ -431,13 +425,7 @@ export default function ProfilePage() {
                 </TabsContent>
 
                 <TabsContent value="services" className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">My Listed Services</h2>
-                    <Button className="bg-teal-500 hover:bg-teal-600 text-white transition-colors duration-200">
-                      <Camera className="h-4 w-4 mr-2" />
-                      Post New Service
-                    </Button>
-                  </div>
+                  
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {loadingItems ? (
                       <div className="col-span-full text-center text-gray-500">Loading...</div>

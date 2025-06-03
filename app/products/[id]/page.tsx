@@ -74,7 +74,7 @@ export default async function ProductPage(props: ProductPageProps) {
         const userData = await fetchUserById(product.user_id);
         user = userData; // Assume userData contains user details
       } catch (error) {
-        console.error("Error fetching user:", error);
+        console.log("Error fetching user:", error);
       }
     }
 

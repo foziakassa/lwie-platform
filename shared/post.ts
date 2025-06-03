@@ -6,7 +6,7 @@ const poster = async (url: string, data: object) => {
       return response.data;
     } catch (error) {
       // Log error for debugging
-      console.error("Error in poster function:", error);
+      console.log("Error in poster function:", error);
     //   throw error.response ? error.response.data : new Error("An unexpected error occurred");
     }
   };

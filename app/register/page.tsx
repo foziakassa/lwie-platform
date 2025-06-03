@@ -73,10 +73,12 @@ export default function RegisterPage() {
         if (response.error.includes("User already exists")) {
           setError("User already exists. Please use a different email.");
         } else {
-          setError(response.error);
-          console.error(response.error);
+          // setError(response.error);
+          setError("User already exists. Please use a different email.");
+
+          console.log(response.error);
         }
-        return;
+        return "user already exist "
       }
 
       // Save user email in cookie (expires in 7 days)
@@ -88,7 +90,7 @@ export default function RegisterPage() {
       // Redirect to activation message page
       router.push("/activationmessage");
     } catch (err) {
-      console.error("Registration failed:", err);
+      console.log("Registration failed:", err);
       setError("Registration failed. Please try again.");
     } finally {
       setIsLoading(false);

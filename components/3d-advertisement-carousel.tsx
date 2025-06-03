@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Button } from "components/ui/button"
 import { Badge } from "components/ui/badge"
@@ -34,14 +33,12 @@ export default function AdvertisementBannerWithAPI({ className }: AdvertisementB
   const [loading, setLoading] = useState<boolean>(true)
   const [isVisible, setIsVisible] = useState(true)
   const [hiddenAdIds, setHiddenAdIds] = useState<string[]>([])
-  const [refreshKey, setRefreshKey] = useState(0) // Key to force re-render
+  const [refreshKey, setRefreshKey] = useState(0)
   const [highlightIndex, setHighlightIndex] = useState(0)
   const highlights = ["Premium Quality", "24/7 Support", "Best Value"]
 
-  // Generate random styles for background pattern circles
   const [circleStyles, setCircleStyles] = useState<React.CSSProperties[]>([])
 
-  // Load hidden ad IDs from local storage on component mount
   useEffect(() => {
     const storedHiddenAdIds = localStorage.getItem("hiddenAdIds")
     if (storedHiddenAdIds) {
@@ -49,19 +46,14 @@ export default function AdvertisementBannerWithAPI({ className }: AdvertisementB
     }
   }, [])
 
-  // Fetch advertisement data from API
   useEffect(() => {
     const fetchApprovedAdvertisement = async () => {
       setLoading(true)
       try {
         const response = await axiosInstance.get<Advertisement[]>("/advertisements")
-
         if (response.data && response.data.length > 0) {
-          // Filter out hidden ads and non-approved ads
           const visibleAds = response.data.filter((ad) => !hiddenAdIds.includes(ad.id) && ad.approved === true)
-
           if (visibleAds.length > 0) {
-            // Get a random ad from the list
             const randomIndex = Math.floor(Math.random() * visibleAds.length)
             setAdvertisement(visibleAds[randomIndex])
             setError(null)
@@ -82,9 +74,8 @@ export default function AdvertisementBannerWithAPI({ className }: AdvertisementB
     }
 
     fetchApprovedAdvertisement()
-  }, [hiddenAdIds, refreshKey]) // Depend on hiddenAdIds and refreshKey
+  }, [hiddenAdIds, refreshKey])
 
-  // Check if current ad should be visible
   useEffect(() => {
     if (advertisement && hiddenAdIds.includes(advertisement.id)) {
       setIsVisible(false)
@@ -93,13 +84,12 @@ export default function AdvertisementBannerWithAPI({ className }: AdvertisementB
     }
   }, [hiddenAdIds, advertisement])
 
-  // Set up the interval to change the ad
   useEffect(() => {
     const intervalId = setInterval(() => {
-      setRefreshKey((prevKey) => prevKey + 1) // Update state to trigger re-fetch
-    }, 180000) // 3 minutes
+      setRefreshKey((prevKey) => prevKey + 1)
+    }, 180000)
 
-    return () => clearInterval(intervalId) // Clean up on unmount
+    return () => clearInterval(intervalId)
   }, [])
 
   useEffect(() => {
@@ -128,7 +118,6 @@ export default function AdvertisementBannerWithAPI({ className }: AdvertisementB
 
   const handleClose = () => {
     if (!advertisement) return
-
     const updatedHiddenAdIds = [...hiddenAdIds, advertisement.id]
     setHiddenAdIds(updatedHiddenAdIds)
     localStorage.setItem("hiddenAdIds", JSON.stringify(updatedHiddenAdIds))
@@ -182,7 +171,6 @@ export default function AdvertisementBannerWithAPI({ className }: AdvertisementB
         className,
       )}
     >
-      {/* Background pattern */}
       <div className={styles.backgroundPattern}>
         <div className="absolute top-0 left-0 w-full h-full">
           {circleStyles.map((style, i) => (
@@ -191,10 +179,9 @@ export default function AdvertisementBannerWithAPI({ className }: AdvertisementB
         </div>
       </div>
 
-      <div className={`container mx-auto px-7 py-5 sm:py-6 relative z-10 max-w-7xl ${styles.carouselContent}`}>
+      <div className={`container mx-auto px-4 py-5 sm:py-6 relative z-10 max-w-7xl ${styles.carouselContent}`}>
         <div className="flex flex-col md:flex-row items-center justify-start md:gap-14 lg:gap-18">
-          {/* Left side with image and company info */}
-          <div className={`flex items-center gap-7 flex-shrink-0 min-w-0 ${styles.carouselLeft}`}>
+          <div className={`flex items-center gap-5 flex-shrink-0 min-w-0 ${styles.carouselLeft}`}>
             <div className="relative h-16 w-16 md:h-20 md:w-20 rounded-full overflow-hidden border-2 border-white/30 shadow-lg">
               <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent z-10 rounded-full" />
               <Image
@@ -216,11 +203,10 @@ export default function AdvertisementBannerWithAPI({ className }: AdvertisementB
             </div>
           </div>
 
-          {/* Middle section with description and highlights */}
           <div className={`flex-grow text-center md:text-left md:mx-7 lg:mx-12 min-w-0 ${styles.carouselMiddle}`}>
             <p className="text-white text-sm md:text-base max-w-xl mb-4">{advertisement.product_description}</p>
 
-            <div className="flex flex-wrap items-center gap-7 justify-center md:justify-start">
+            <div className="flex flex-wrap items-center gap-5 justify-center md:justify-start">
               <div className="flex items-center gap-2 text-white/90 text-xs">
                 <Mail className="h-3 w-3" />
                 <span>{advertisement.email}</span>
@@ -235,7 +221,6 @@ export default function AdvertisementBannerWithAPI({ className }: AdvertisementB
               </div>
             </div>
 
-            {/* Animated highlights */}
             <div className="mt-4 h-6 overflow-hidden relative">
               {highlights.map((highlight, index) => (
                 <div
@@ -252,8 +237,7 @@ export default function AdvertisementBannerWithAPI({ className }: AdvertisementB
             </div>
           </div>
 
-          {/* Right side with CTA */}
-          <div className={`flex items-center gap-7 flex-shrink-0 min-w-0 justify-start ${styles.carouselRight}`}>
+          <div className={`flex items-center gap-5 flex-shrink-0 min-w-0 justify-start ${styles.carouselRight}`}>
             <Badge className="bg-yellow-400 text-yellow-900 hover:bg-yellow-300 px-3 py-1 text-xs font-semibold animate-pulse">
               SPECIAL OFFER
             </Badge>
@@ -267,7 +251,6 @@ export default function AdvertisementBannerWithAPI({ className }: AdvertisementB
         </div>
       </div>
 
-      {/* Close button */}
       <button onClick={handleClose} className={styles.closeButton} aria-label="Close advertisement">
         <X className="h-5 w-5" />
       </button>

@@ -222,7 +222,7 @@ const DonatePage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-teal-500 to-blue-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-teal-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading charity details...</p>
@@ -233,10 +233,10 @@ const DonatePage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br dark:bg-gray-800 from-teal-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 mb-4">{error}</p>
-          <Button onClick={() => router.push("/charity")} className="bg-teal-600 hover:bg-teal-700">
+          <Button onClick={() => router.push("/charity")} className="bg-teal-600  hover:bg-teal-700">
             Back to Charities
           </Button>
         </div>
@@ -247,11 +247,11 @@ const DonatePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50">
       {/* Header */}
-      <div className="bg-white shadow-sm">
+      <div className="bg-white dark:bg-gray-900 shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <Link
             href="/charity"
-            className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-teal-500 transition-colors"
+            className="inline-flex items-center text-sm font-medium text-white hover:text-teal-500 transition-colors"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Charities
@@ -260,7 +260,7 @@ const DonatePage: React.FC = () => {
       </div>
 
       {charity && (
-        <div className="container mx-auto px-4 py-8">
+        <div className="container dark:bg-gray-900 mx-auto px-4 py-8">
           {/* Hero Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -296,7 +296,7 @@ const DonatePage: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Charity Details */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-6 ">
               {/* Progress Card */}
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
@@ -305,7 +305,7 @@ const DonatePage: React.FC = () => {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center">
+                    <CardTitle className="flex items-center ">
                       <Target className="h-5 w-5 mr-2 text-teal-600" />
                       Donation Progress
                     </CardTitle>

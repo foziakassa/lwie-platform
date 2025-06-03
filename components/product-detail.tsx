@@ -65,20 +65,30 @@ interface ProductDetailProps {
   }>;
 }
 
-// Function to get the current user ID from cookies
-
-
 export function ProductDetail({ product, similarProducts }: ProductDetailProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [isSwapDialogOpen, setIsSwapDialogOpen] = useState(false);
 
   const authToken = Cookies.get("authToken");
-  if(!authToken){
-    return
+  
+  // Redirect to login or show message if authToken is not present
+  if (!authToken) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="bg-white dark:bg-gray-800 border border-teal-500 rounded-lg shadow-lg p-6 max-w-md text-center">
+          <h2 className="text-xl font-bold text-teal-600">You need to log in to view this product.</h2>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">Please log in to access this feature.</p>
+          <Link href="/login" className="mt-4 inline-block bg-teal-600 text-white rounded-md px-4 py-2 hover:bg-teal-700 transition">
+            Go to Login
+          </Link>
+        </div>
+      </div>
+    );
   }
-  const userdata = JSON.parse(authToken)
-  const  currentUserId = userdata.id
+
+  const userdata = JSON.parse(authToken);
+  const currentUserId = userdata.id;
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
@@ -328,34 +338,6 @@ export function ProductDetail({ product, similarProducts }: ProductDetailProps) 
                 )}
               </div>
             </div>
-             <div className="bg-white rounded-lg shadow-sm p-6">
-                          <div className="flex items-center mb-4">
-                            <Shield className="h-5 w-5 text-teal-600 mr-2" />
-                            <h3 className="text-lg font-semibold">Safety Tips</h3>
-                          </div>
-                          <ul className="space-y-2 text-sm text-gray-700">
-                            <li className="flex items-start">
-                              <span className="mr-2 text-teal-500">•</span>
-                              <span>Meet poster in a safe public place</span>
-                            </li>
-                            <li className="flex items-start">
-                              <span className="mr-2 text-teal-500">•</span>
-                              <span>Check the item before you swap</span>
-                            </li>
-                            <li className="flex items-start">
-                              <span className="mr-2 text-teal-500">•</span>
-                              <span>Pay or swap only after inspecting the item</span>
-                            </li>
-                            <li className="flex items-start">
-                              <span className="mr-2 text-teal-500">•</span>
-                              <span>Never pay in advance</span>
-                            </li>
-                            <li className="flex items-start">
-                              <span className="mr-2 text-teal-500">•</span>
-                              <span>Report suspicious behavior</span>
-                            </li>
-                          </ul>
-                        </div>
 
             {/* Action Buttons */}
             <div className="space-y-3">

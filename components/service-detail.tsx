@@ -74,9 +74,22 @@ export function ServiceDetail({ service, similarServices }: ServiceDetailProps) 
   const [showContactInfo, setShowContactInfo] = useState(false)
   const [isSwapDialogOpen, setIsSwapDialogOpen] = useState(false)
   const authToken = Cookies.get("authToken")
-  if(!authToken){
-    return
-  }
+  // if(!authToken){
+  //   return
+  // }
+  if (!authToken) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+          <div className="bg-white dark:bg-gray-800 border border-teal-500 rounded-lg shadow-lg p-6 max-w-md text-center">
+            <h2 className="text-xl font-bold text-teal-600">You need to log in to view this product.</h2>
+            <p className="text-gray-600 dark:text-gray-300 mt-2">Please log in to access this feature.</p>
+            <Link href="/login" className="mt-4 inline-block bg-teal-600 text-white rounded-md px-4 py-2 hover:bg-teal-700 transition">
+              Go to Login
+            </Link>
+          </div>
+        </div>
+      );
+    }
   const userData = JSON.parse(authToken)
   const currentUserId = userData.id
 

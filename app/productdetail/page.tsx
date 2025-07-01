@@ -171,7 +171,7 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
             <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
               <div className="relative aspect-video">
                 <Image
-                  src={product.images[currentImageIndex] || "/placeholder.svg"}
+                  src={product.images[currentImageIndex]}
                   alt={product.title}
                   fill
                   className="object-contain"

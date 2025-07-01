@@ -34,7 +34,7 @@ interface ProductDetailProps {
     description: string;
     price: number;
     condition: string;
-    images: string[];
+    // images: string[];
     category: string;
     subcategory: string;
     city: string;
@@ -68,13 +68,13 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [isSwapDialogOpen, setIsSwapDialogOpen] = useState(false);
 
-  const handlePrevImage = () => {
-    setCurrentImageIndex((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
-  };
+  // const handlePrevImage = () => {
+  //   setCurrentImageIndex((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
+  // };
 
-  const handleNextImage = () => {
-    setCurrentImageIndex((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
-  };
+  // const handleNextImage = () => {
+  //   setCurrentImageIndex((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
+  // };
 
   const handleSendRequest = () => {
     setIsSwapDialogOpen(true);
@@ -127,7 +127,7 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-2">
             <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
-              <div className="relative aspect-video">
+              {/* <div className="relative aspect-video">
                 <Image
                   src={product.images[currentImageIndex] || "/placeholder.svg"}
                   alt={product.title}
@@ -144,9 +144,9 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
                     </button>
                   </>
                 )}
-              </div>
+              </div> */}
 
-              {product.images.length > 1 && (
+              {/* {product.images.length > 1 && (
                 <div className="flex space-x-2 p-4 bg-white">
                   {product.images.map((image, index) => (
                     <button
@@ -159,7 +159,7 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
                     </button>
                   ))}
                 </div>
-              )}
+              )} */}
             </div>
 
             <div className="bg-white rounded-lg shadow-sm p-6 mb-6">

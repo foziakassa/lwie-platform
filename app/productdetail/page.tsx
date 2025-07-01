@@ -39,7 +39,7 @@ interface ProductDetailProps {
     subcategory: string
     city: string
     subcity?: string
-    additional_details?: string
+    // additional_details?: string
     contact_info: {
       phone: string
       email: string
@@ -113,13 +113,13 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
 
   // Parse additional details if available
   let additionalDetails = {}
-  if (product.additional_details) {
-    try {
-      additionalDetails = JSON.parse(product.additional_details)
-    } catch (e) {
-      console.error("Error parsing additional details:", e)
-    }
-  }
+  // if (product.additional_details) {
+  //   try {
+  //     additionalDetails = JSON.parse(product.additional_details)
+  //   } catch (e) {
+  //     console.error("Error parsing additional details:", e)
+  //   }
+  // }
 
   // Format date
   const formatDate = (dateString: string) => {

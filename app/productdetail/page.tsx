@@ -1,11 +1,10 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Image from "next/image"
-import Link from "next/link"
+import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import {
   ArrowLeft,
-  Clock,
   Phone,
   Mail,
   Heart,
@@ -18,68 +17,68 @@ import {
   Calendar,
   Tag,
   Info,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { SwapRequestForm } from "@/components/swap-request-form"
-import { toast } from "@/components/ui/use-toast"
-import { Separator } from "@/components/ui/separator"
+  Clock,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { SwapRequestForm } from "@/components/swap-request-form";
+import { toast } from "@/components/ui/use-toast";
+import { Separator } from "@/components/ui/separator";
 
 interface ProductDetailProps {
   product: {
-    id: string
-    title: string
-    description: string
-    price: number
-    condition: string
-    images: string[]
-    category: string
-    subcategory: string
-    city: string
-    subcity?: string
-    // additional_details?: string
+    id: string;
+    title: string;
+    description: string;
+    price: number;
+    condition: string;
+    images: string[];
+    category: string;
+    subcategory: string;
+    city: string;
+    subcity?: string;
     contact_info: {
-      phone: string
-      email: string
-      preferred_contact_method: string
-    }
-    created_at: string
+      phone: string;
+      email: string;
+      preferred_contact_method: string;
+    };
+    created_at: string;
     user: {
-      id: string
-      name: string
-      avatar?: string
-      joined_date: string
-      response_time?: string
-    }
-  }
+      id: string;
+      name: string;
+      avatar?: string;
+      joined_date: string;
+      response_time?: string;
+    };
+  };
   similarProducts: Array<{
-    id: string
-    title: string
-    price: number
-    condition: string
-    image: string
-    city: string
-  }>
+    id: string;
+    title: string;
+    price: number;
+    condition: string;
+    image: string;
+    city: string;
+  }>;
 }
 
 export default function ProductDetail({ product, similarProducts }: ProductDetailProps) {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [showContactInfo, setShowContactInfo] = useState(false)
-  const [isSwapDialogOpen, setIsSwapDialogOpen] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showContactInfo, setShowContactInfo] = useState(false);
+  const [isSwapDialogOpen, setIsSwapDialogOpen] = useState(false);
 
   const handlePrevImage = () => {
-    setCurrentImageIndex((prev) => (prev === 0 ? product.images.length - 1 : prev - 1))
-  }
+    setCurrentImageIndex((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
+  };
 
   const handleNextImage = () => {
-    setCurrentImageIndex((prev) => (prev === product.images.length - 1 ? 0 : prev + 1))
-  }
+    setCurrentImageIndex((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
+  };
 
   const handleSendRequest = () => {
-    setIsSwapDialogOpen(true)
-  }
+    setIsSwapDialogOpen(true);
+  };
 
   const handleShare = () => {
     if (navigator.share) {
@@ -87,134 +86,76 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
         title: product.title,
         text: `Check out this ${product.title} on LWIE`,
         url: window.location.href,
-      })
+      });
     } else {
-      navigator.clipboard.writeText(window.location.href)
+      navigator.clipboard.writeText(window.location.href);
       toast({
         title: "Link Copied",
         description: "Product link copied to clipboard",
-      })
+      });
     }
-  }
+  };
 
   const handleFavorite = () => {
     toast({
       title: "Added to Favorites",
       description: "This item has been added to your favorites",
-    })
-  }
+    });
+  };
 
   const handleReport = () => {
     toast({
       title: "Report Submitted",
       description: "Thank you for your report. We'll review this listing.",
-    })
-  }
-
-  // Parse additional details if available
-  // let additionalDetails = {}
-  // if (product.additional_details) {
-  //   try {
-  //     additionalDetails = JSON.parse(product.additional_details)
-  //   } catch (e) {
-  //     console.error("Error parsing additional details:", e)
-  //   }
-  // }
+    });
+  };
 
   // Format date
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-  }
-
-  // Categories for the navigation bar
-  const categories = [
-    "All",
-    "Electronics",
-    "Home Appliances",
-    "Toys and Games",
-    "Sport",
-    "Health and Beauty",
-    "Clothing",
-    "Pet Supplies",
-    "Medical Instrument",
-    "Travel Gear",
-  ]
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Category Navigation */}
-      <div className="bg-white shadow-sm overflow-x-auto">
-        <div className="flex items-center space-x-6 px-4 py-2 max-w-7xl mx-auto">
-          {categories.map((category, index) => (
-            <Link
-              key={index}
-              href={`/category/${category.toLowerCase().replace(/\s+/g, "-")}`}
-              className="text-sm whitespace-nowrap hover:text-teal-600 transition-colors"
-            >
-              {category}
-            </Link>
-          ))}
-        </div>
-      </div>
-
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Back Button */}
         <Link href="/" className="flex items-center text-gray-600 hover:text-teal-600 mb-4">
           <ArrowLeft className="h-4 w-4 mr-1" />
           <span>Back to Home</span>
         </Link>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Product Images */}
           <div className="md:col-span-2">
             <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
               <div className="relative aspect-video">
                 <Image
-                  src={product.images[currentImageIndex]}
+                  src={product.images[currentImageIndex] || "/placeholder.svg"}
                   alt={product.title}
                   fill
                   className="object-contain"
                 />
-
                 {product.images.length > 1 && (
                   <>
-                    <button
-                      onClick={handlePrevImage}
-                      className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full p-2 shadow-md hover:bg-white"
-                      aria-label="Previous image"
-                    >
+                    <button onClick={handlePrevImage} aria-label="Previous image">
                       <ChevronLeft className="h-5 w-5" />
                     </button>
-                    <button
-                      onClick={handleNextImage}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full p-2 shadow-md hover:bg-white"
-                      aria-label="Next image"
-                    >
+                    <button onClick={handleNextImage} aria-label="Next image">
                       <ChevronRight className="h-5 w-5" />
                     </button>
                   </>
                 )}
               </div>
 
-              {/* Thumbnails */}
               {product.images.length > 1 && (
                 <div className="flex space-x-2 p-4 bg-white">
                   {product.images.map((image, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`relative w-16 h-16 border-2 rounded overflow-hidden ${
-                        index === currentImageIndex ? "border-teal-500" : "border-gray-200"
-                      }`}
+                      className={`relative w-16 h-16 border-2 rounded overflow-hidden ${index === currentImageIndex ? "border-teal-500" : "border-gray-200"}`}
                       aria-label={`View image ${index + 1}`}
                     >
-                      <Image
-                        src={image || "/placeholder.svg"}
-                        alt={`Thumbnail ${index + 1}`}
-                        fill
-                        className="object-cover"
-                      />
+                      <Image src={image || "/placeholder.svg"} alt={`Thumbnail ${index + 1}`} fill className="object-cover" />
                     </button>
                   ))}
                 </div>
@@ -246,7 +187,6 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
 
               <Separator className="my-6" />
 
-              {/* Description */}
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-3">Description</h3>
                 <p className="text-gray-700 whitespace-pre-line">{product.description}</p>
@@ -254,19 +194,9 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
 
               <Separator className="my-6" />
 
-              {/* Details */}
               <div>
                 <h3 className="text-lg font-semibold mb-3">Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* {Object.entries(additionalDetails).map(([key, value]) => (
-                    <div key={key} className="flex items-start">
-                      <Tag className="h-5 w-5 mr-2 text-gray-400 mt-0.5" />
-                      <div>
-                        <span className="text-gray-500 text-sm">{key}</span>
-                        <p className="font-medium">{String(value)}</p>
-                      </div>
-                    </div>
-                  ))} */}
                   <div className="flex items-start">
                     <Tag className="h-5 w-5 mr-2 text-gray-400 mt-0.5" />
                     <div>
@@ -292,10 +222,7 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
                     <MapPin className="h-5 w-5 mr-2 text-gray-400 mt-0.5" />
                     <div>
                       <span className="text-gray-500 text-sm">Location</span>
-                      <p className="font-medium">
-                        {product.city}
-                        {product.subcity && `, ${product.subcity}`}
-                      </p>
+                      <p className="font-medium">{product.city}{product.subcity && `, ${product.subcity}`}</p>
                     </div>
                   </div>
                 </div>
@@ -305,7 +232,6 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Poster Information */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-semibold mb-4">Poster Information</h3>
               <div className="flex items-center mb-4">
@@ -348,7 +274,6 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
               </div>
             </div>
 
-            {/* Safety Tips */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex items-center mb-4">
                 <Shield className="h-5 w-5 text-teal-600 mr-2" />
@@ -378,7 +303,6 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
               </ul>
             </div>
 
-            {/* Action Buttons */}
             <div className="space-y-3">
               <Button className="w-full bg-teal-600 hover:bg-teal-700 py-6 text-lg" onClick={handleSendRequest}>
                 Send Request
@@ -403,7 +327,6 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
               </div>
             </div>
 
-            {/* Verification Notice */}
             <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
               <div className="flex gap-3">
                 <Info className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
@@ -418,7 +341,6 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
           </div>
         </div>
 
-        {/* Similar Products */}
         {similarProducts.length > 0 && (
           <div className="mt-12">
             <h2 className="text-xl font-bold mb-6">Similar Products</h2>
@@ -433,9 +355,7 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
                       <h3 className="font-medium text-gray-900 mb-1 truncate">{item.title}</h3>
                       <p className="text-teal-600 font-semibold">{item.price.toLocaleString()} ETB</p>
                       <div className="flex justify-between items-center mt-2">
-                        <Badge variant="outline" className="text-xs">
-                          {item.condition}
-                        </Badge>
+                        <Badge variant="outline" className="text-xs">{item.condition}</Badge>
                         <span className="text-xs text-gray-500">{item.city}</span>
                       </div>
                     </div>
@@ -446,7 +366,6 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
           </div>
         )}
 
-        {/* Dialog for Swap Request */}
         <Dialog open={isSwapDialogOpen} onOpenChange={setIsSwapDialogOpen}>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
@@ -455,10 +374,12 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
             <SwapRequestForm
               itemId={product.id}
               itemTitle={product.title}
-              onCancel={() => setIsSwapDialogOpen(false)} req="item"            />
+              onCancel={() => setIsSwapDialogOpen(false)}
+              req="item"
+            />
           </DialogContent>
         </Dialog>
       </div>
     </div>
-  )
+  );
 }

@@ -112,7 +112,7 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
   }
 
   // Parse additional details if available
-  let additionalDetails = {}
+  // let additionalDetails = {}
   // if (product.additional_details) {
   //   try {
   //     additionalDetails = JSON.parse(product.additional_details)
@@ -258,7 +258,7 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
               <div>
                 <h3 className="text-lg font-semibold mb-3">Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Object.entries(additionalDetails).map(([key, value]) => (
+                  {/* {Object.entries(additionalDetails).map(([key, value]) => (
                     <div key={key} className="flex items-start">
                       <Tag className="h-5 w-5 mr-2 text-gray-400 mt-0.5" />
                       <div>
@@ -266,7 +266,7 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
                         <p className="font-medium">{String(value)}</p>
                       </div>
                     </div>
-                  ))}
+                  ))} */}
                   <div className="flex items-start">
                     <Tag className="h-5 w-5 mr-2 text-gray-400 mt-0.5" />
                     <div>
